@@ -25,7 +25,7 @@ using System.IO;
 using System.Xml;
 
 namespace GapiCodegen {
-	public class CallbackGen : GenBase, IAccessor {
+	public class CallbackGen : GenBase, IPropertyAccessor {
 
 		private Parameters parms;
 		private Signature sig = null;

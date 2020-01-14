@@ -23,7 +23,7 @@ using System.IO;
 using System.Xml;
 
 namespace GapiCodegen {
-	public abstract class HandleBase : ClassBase, IAccessor, IOwnable {
+	public abstract class HandleBase : ClassBase, IPropertyAccessor, IOwnable {
 
 		protected HandleBase (XmlElement ns, XmlElement elem) : base (ns, elem) {}
 					

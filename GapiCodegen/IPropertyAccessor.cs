@@ -1,4 +1,4 @@
-// IAccessor.cs - Interface to generate property accessors.
+﻿// IAccessor.cs - Interface to generate property accessors.
 //
 // Author: Mike Kestner <mkestner@novell.com>
 //
@@ -18,10 +18,12 @@
 // Free Software Foundation, Inc., 59 Temple Place - Suite 330,
 // Boston, MA 02111-1307, USA.
 
+using System.IO;
+
 namespace GapiCodegen
 {
-    public interface IAccessor
+    public interface IPropertyAccessor
     {
-        void WriteAccessors(System.IO.TextWriter sw, string indentation, string field_name);
+        void WriteAccessors(TextWriter sw, string indentation, string field_name);
     }
 }

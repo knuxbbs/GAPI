@@ -22,7 +22,7 @@ using System.IO;
 
 namespace GapiCodegen
 {
-    public class LPGen : SimpleGen, IAccessor
+    public class LPGen : SimpleGen, IPropertyAccessor
     {
         public LPGen(string ctype) : base(ctype, "long", "0L") { }
 

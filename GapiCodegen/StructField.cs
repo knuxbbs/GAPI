@@ -88,7 +88,7 @@ namespace GapiCodegen {
 				string wrapped_name = SymbolTable.Table.MangleName (CName);
 				IGeneratable gen = table [CType];
 
-				if (IsArray || gen is IAccessor)
+				if (IsArray || gen is IPropertyAccessor)
 					return Access == "public" ? StudlyName : Name;
 				else if (IsBitfield)
 					return Name;
@@ -240,11 +240,11 @@ namespace GapiCodegen {
 				}
 			} else if (IsBitfield) {
 				base.Generate (gen_info, indent);
-			} else if (gen is IAccessor) {
+			} else if (gen is IPropertyAccessor) {
 				sw.WriteLine (indent + "private {0} {1};", gen.MarshalType, name);
 
 				if (Access != "private") {
-					IAccessor acc = table [CType] as IAccessor;
+					IPropertyAccessor acc = table [CType] as IPropertyAccessor;
 					sw.WriteLine (indent + Access + " " + wrapped + " " + studly_name + " {");
 					acc.WriteAccessors (sw, indent + "\t", name);
 					sw.WriteLine (indent + "}");
