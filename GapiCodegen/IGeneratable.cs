@@ -19,45 +19,44 @@
 // Free Software Foundation, Inc., 59 Temple Place - Suite 330,
 // Boston, MA 02111-1307, USA.
 
+namespace GapiCodegen
+{
+    public interface IGeneratable
+    {
+        // The C name of the generatable
+        string CName { get; }
 
-namespace GapiCodegen {
+        // The (short) C# name of the generatable
+        string Name { get; }
 
-	public interface IGeneratable  {
+        // The fully-qualified C# name of the generatable
+        string QualifiedName { get; }
 
-		// The C name of the generatable
-		string CName {get;}
+        // The type (possibly including "ref" or "out") to use in the import
+        // signature when passing this generatable to unmanaged code
+        string MarshalType { get; }
 
-		// The (short) C# name of the generatable
-		string Name {get;}
+        // The value returned by callbacks that are interrupted prematurely
+        // by managed exceptions or other conditions where an appropriate
+        // value can't be otherwise obtained.
+        string DefaultValue { get; }
 
-		// The fully-qualified C# name of the generatable
-		string QualifiedName {get;}
+        // Generates an expression to convert var_name to MarshalType
+        string CallByName(string var_name);
 
-		// The type (possibly including "ref" or "out") to use in the import
-		// signature when passing this generatable to unmanaged code
-		string MarshalType {get;}
+        // Generates an expression to convert var from MarshalType
+        string FromNative(string var);
 
-		// The value returned by callbacks that are interrupted prematurely
-		// by managed exceptions or other conditions where an appropriate
-		// value can't be otherwise obtained.
-		string DefaultValue {get;}
+        // Generates code to get size of the type
+        string GenerateGetSizeOf();
 
-		// Generates an expression to convert var_name to MarshalType
-		string CallByName (string var_name);
+        // Generates code to get size of the type
+        string GenerateAlign();
 
-		// Generates an expression to convert var from MarshalType
-		string FromNative (string var);
+        bool Validate();
 
-		// Generates code to get size of the type
-		string GenerateGetSizeOf ();
+        void Generate();
 
-		// Generates code to get size of the type
-		string GenerateAlign ();
-
-		bool Validate ();
-
-		void Generate ();
-
-		void Generate (GenerationInfo gen_info);
-	}
+        void Generate(GenerationInfo gen_info);
+    }
 }

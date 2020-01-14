@@ -147,7 +147,7 @@ namespace GapiCodegen
                 schema_name = null;
             }
 
-            Parser p = new Parser();
+            var p = new Parser();
 
             foreach (var include in includes)
             {

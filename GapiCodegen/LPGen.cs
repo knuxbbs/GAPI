@@ -18,39 +18,40 @@
 // Free Software Foundation, Inc., 59 Temple Place - Suite 330,
 // Boston, MA 02111-1307, USA.
 
-
 using System.IO;
 
-namespace GapiCodegen {
-	public class LPGen : SimpleGen, IAccessor {
-		
-		public LPGen (string ctype) : base (ctype, "long", "0L") {}
+namespace GapiCodegen
+{
+    public class LPGen : SimpleGen, IAccessor
+    {
+        public LPGen(string ctype) : base(ctype, "long", "0L") { }
 
-		public override string MarshalType {
-			get {
-				return "IntPtr";
-			}
-		}
+        public override string MarshalType
+        {
+            get
+            {
+                return "IntPtr";
+            }
+        }
 
-		public override string CallByName (string var_name)
-		{
-			return "new IntPtr (" + var_name + ")";
-		}
-		
-		public override string FromNative(string var)
-		{
-			return "(long) " + var;
-		}
+        public override string CallByName(string var_name)
+        {
+            return "new IntPtr (" + var_name + ")";
+        }
 
-		public void WriteAccessors (TextWriter sw, string indent, string var)
-		{
-			sw.WriteLine (indent + "get {");
-			sw.WriteLine (indent + "\treturn " + FromNative (var) + ";");
-			sw.WriteLine (indent + "}");
-			sw.WriteLine (indent + "set {");
-			sw.WriteLine (indent + "\t" + var + " = " + CallByName ("value") + ";");
-			sw.WriteLine (indent + "}");
-		}
-	}
+        public override string FromNative(string var)
+        {
+            return "(long) " + var;
+        }
+
+        public void WriteAccessors(TextWriter sw, string indent, string var)
+        {
+            sw.WriteLine(indent + "get {");
+            sw.WriteLine(indent + "\treturn " + FromNative(var) + ";");
+            sw.WriteLine(indent + "}");
+            sw.WriteLine(indent + "set {");
+            sw.WriteLine(indent + "\t" + var + " = " + CallByName("value") + ";");
+            sw.WriteLine(indent + "}");
+        }
+    }
 }
-

@@ -20,10 +20,11 @@
 
 using System;
 
-namespace GapiCodegen {
-	public class AliasGen : SimpleBase {
-		
-		public AliasGen (string ctype, string type) : base (ctype, type, string.Empty) {}
-	}
+namespace GapiCodegen
+{
+    public class AliasGen : SimpleBase
+    {
+        public AliasGen(string ctype, string type) : base(ctype, type, string.Empty) { }
+    }
 }
 

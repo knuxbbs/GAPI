@@ -14,11 +14,10 @@
 // Free Software Foundation, Inc., 59 Temple Place - Suite 330,
 // Boston, MA 02111-1307, USA.
 
-
-namespace GapiCodegen {
-
-	public interface IOwnable {
-
-		string FromNative (string var, bool owned);
-	}
+namespace GapiCodegen
+{
+    public interface IOwnable
+    {
+        string FromNative(string var, bool owned);
+    }
 }

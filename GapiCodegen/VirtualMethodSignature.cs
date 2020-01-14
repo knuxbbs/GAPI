@@ -18,72 +18,74 @@
 // Free Software Foundation, Inc., 59 Temple Place - Suite 330,
 // Boston, MA 02111-1307, USA.
 
-
 using System;
 using System.Collections.Generic;
 
-namespace GapiCodegen {
-	public class VirtualMethodSignature  {
-		
-		private IList<Parameter> parms = new List<Parameter> ();
+namespace GapiCodegen
+{
+    public class VirtualMethodSignature
+    {
+        private IList<Parameter> parms = new List<Parameter>();
 
-		public VirtualMethodSignature (Parameters parms)
-		{
-			bool has_cb = parms.HideData;
-			for (int i = 0; i < parms.Count; i++) {
-				Parameter p = parms [i];
+        public VirtualMethodSignature(Parameters parms)
+        {
+            bool has_cb = parms.HideData;
+            for (int i = 0; i < parms.Count; i++)
+            {
+                Parameter p = parms[i];
 
-				if (i > 0 && p.IsLength && parms [i - 1].IsString)
-					continue;
+                if (i > 0 && p.IsLength && parms[i - 1].IsString)
+                    continue;
 
-				if (p.IsCount && ((i > 0 && parms [i - 1].IsArray) || (i < parms.Count - 1 && parms [i + 1].IsArray)))
-					continue;
+                if (p.IsCount && ((i > 0 && parms[i - 1].IsArray) || (i < parms.Count - 1 && parms[i + 1].IsArray)))
+                    continue;
 
-				has_cb = has_cb || p.Generatable is CallbackGen;
-				if (p.IsUserData && has_cb)
-					continue;
+                has_cb = has_cb || p.Generatable is CallbackGen;
+                if (p.IsUserData && has_cb)
+                    continue;
 
-				if (p.CType == "GError**")
-					continue;
+                if (p.CType == "GError**")
+                    continue;
 
-				if (p.Scope == "notified")
-					i += 2;
+                if (p.Scope == "notified")
+                    i += 2;
 
-				this.parms.Add (p);
-			}
-		}
+                this.parms.Add(p);
+            }
+        }
 
-		public string GetCallString (bool use_place_holders)
-		{
-			if (parms.Count == 0)
-				return "";
+        public string GetCallString(bool use_place_holders)
+        {
+            if (parms.Count == 0)
+                return "";
 
-			string[] result = new string [parms.Count];
-			int i = 0;
-			foreach (Parameter p in parms) {
-				result [i] = p.PassAs != "" ? p.PassAs + " " : "";
-				result [i] += use_place_holders ? "{" + i + "}" : p.Name;
-				i++;
-			}
+            string[] result = new string[parms.Count];
+            int i = 0;
+            foreach (Parameter p in parms)
+            {
+                result[i] = p.PassAs != "" ? p.PassAs + " " : "";
+                result[i] += use_place_holders ? "{" + i + "}" : p.Name;
+                i++;
+            }
 
-			return string.Join (", ", result);
-		}
+            return string.Join(", ", result);
+        }
 
-		public override string ToString ()
-		{
-			if (parms.Count == 0)
-				return "";
+        public override string ToString()
+        {
+            if (parms.Count == 0)
+                return "";
 
-			string[] result = new string [parms.Count];
-			int i = 0;
+            string[] result = new string[parms.Count];
+            int i = 0;
 
-			foreach (Parameter p in parms) {
-				result [i] = p.PassAs != "" ? p.PassAs + " " : "";
-				result [i++] += p.CSType + " " + p.Name;
-			}
+            foreach (Parameter p in parms)
+            {
+                result[i] = p.PassAs != "" ? p.PassAs + " " : "";
+                result[i++] += p.CSType + " " + p.Name;
+            }
 
-			return string.Join (", ", result);
-		}
-	}
+            return string.Join(", ", result);
+        }
+    }
 }
-
