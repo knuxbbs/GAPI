@@ -151,14 +151,14 @@ namespace GapiCodegen
 
             foreach (var include in includes)
             {
-                log.Info("Parsing included gapi: " + include);
+                log.Info($"Parsing included gapi: {include}");
                 IGeneratable[] curr_gens = p.Parse(include, schema_name, gapidir);
                 table.AddTypes(curr_gens);
             }
 
             foreach (var filename in filenames)
             {
-                log.Info("Parsing included gapi: " + filename);
+                log.Info($"Parsing included gapi: {filename}");
                 IGeneratable[] curr_gens = p.Parse(filename, schema_name, gapidir);
                 table.AddTypes(curr_gens);
                 gens.AddRange(curr_gens);
