@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ContentModelStore">
+    <e p="$USER_HOME$/.Rider2019.3/system/extResources" t="IncludeRecursive" />
+    <e p="$USER_HOME$/.Rider2019.3/system/resharper-host/local/Transient/ReSharperHost/v193/SolutionCaches/_Tools.576684165.00" t="ExcludeRecursive" />
+    <e p="$USER_HOME$/BuildOutput/Tools" t="ExcludeRecursive" />
+    <e p="$PROJECT_DIR$" t="IncludeFlat">
+      <e p=".git/info/exclude" t="IncludeRecursive" />
+      <e p="GapiCodegen" t="IncludeRecursive">
+        <e p="AliasGen.cs" t="Include" />
+        <e p="ArrayParameter.cs" t="Include" />
+        <e p="BoxedGen.cs" t="Include" />
+        <e p="ByRefGen.cs" t="Include" />
+        <e p="CallbackGen.cs" t="Include" />
+        <e p="ChildProperty.cs" t="Include" />
+        <e p="ClassBase.cs" t="Include" />
+        <e p="ClassField.cs" t="Include" />
+        <e p="ClassGen.cs" t="Include" />
+        <e p="CodeGenerator.cs" t="Include" />
+        <e p="ConstFilenameGen.cs" t="Include" />
+        <e p="ConstStringGen.cs" t="Include" />
+        <e p="Constant.cs" t="Include" />
+        <e p="Ctor.cs" t="Include" />
+        <e p="DefaultSignalHandler.cs" t="Include" />
+        <e p="EnumGen.cs" t="Include" />
+        <e p="FieldBase.cs" t="Include" />
+        <e p="GObjectVM.cs" t="Include" />
+        <e p="GapiCodegen.csproj" t="IncludeRecursive" />
+        <e p="GenBase.cs" t="Include" />
+        <e p="GenerationInfo.cs" t="Include" />
+        <e p="HandleBase.cs" t="Include" />
+        <e p="IAccessor.cs" t="Include" />
+        <e p="IGeneratable.cs" t="Include" />
+        <e p="IManualMarshaler.cs" t="Include" />
+        <e p="IOwnable.cs" t="Include" />
+        <e p="InterfaceGen.cs" t="Include" />
+        <e p="InterfaceVM.cs" t="Include" />
+        <e p="LPGen.cs" t="Include" />
+        <e p="LPUGen.cs" t="Include" />
+        <e p="LogWriter.cs" t="Include" />
+        <e p="ManagedCallString.cs" t="Include" />
+        <e p="ManualGen.cs" t="Include" />
+        <e p="MarshalGen.cs" t="Include" />
+        <e p="Method.cs" t="Include" />
+        <e p="MethodABIField.cs" t="Include" />
+        <e p="MethodBase.cs" t="Include" />
+        <e p="MethodBody.cs" t="Include" />
+        <e p="NativeStructGen.cs" t="Include" />
+        <e p="ObjectBase.cs" t="Include" />
+        <e p="ObjectField.cs" t="Include" />
+        <e p="ObjectGen.cs" t="Include" />
+        <e p="OpaqueGen.cs" t="Include" />
+        <e p="Options.cs" t="Include" />
+        <e p="OwnableGen.cs" t="Include" />
+        <e p="Parameter.cs" t="Include" />
+        <e p="Parameters.cs" t="Include" />
+        <e p="Parser.cs" t="Include" />
+        <e p="Property.cs" t="Include" />
+        <e p="PropertyBase.cs" t="Include" />
+        <e p="ReturnValue.cs" t="Include" />
+        <e p="Signal.cs" t="Include" />
+        <e p="Signature.cs" t="Include" />
+        <e p="SimpleBase.cs" t="Include" />
+        <e p="SimpleGen.cs" t="Include" />
+        <e p="Statistics.cs" t="Include" />
+        <e p="StructABIField.cs" t="Include" />
+        <e p="StructBase.cs" t="Include" />
+        <e p="StructField.cs" t="Include" />
+        <e p="StructGen.cs" t="Include" />
+        <e p="SymbolTable.cs" t="Include" />
+        <e p="UnionABIField.cs" t="Include" />
+        <e p="UnionGen.cs" t="Include" />
+        <e p="VMSignature.cs" t="Include" />
+        <e p="VirtualMethod.cs" t="Include" />
+        <e p="XmlElementExtensions.cs" t="Include" />
+        <e p="obj" t="ExcludeRecursive">
+          <e p="Debug" t="Include">
+            <e p="GapiCodegen.AssemblyInfo.cs" t="Include" />
+          </e>
+        </e>
+      </e>
+      <e p="GapiFixup" t="IncludeRecursive">
+        <e p="GapiFixup.cs" t="Include" />
+        <e p="GapiFixup.csproj" t="IncludeRecursive" />
+        <e p="obj" t="ExcludeRecursive">
+          <e p="Debug" t="Include">
+            <e p="GapiFixup.AssemblyInfo.cs" t="Include" />
+          </e>
+        </e>
+      </e>
+      <e p="Tools.sln" t="IncludeFlat" />
+      <e p="packages" t="ExcludeRecursive" />
+    </e>
+  </component>
+</project>
