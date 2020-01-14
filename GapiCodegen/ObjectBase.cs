@@ -38,7 +38,7 @@ namespace GapiCodegen {
 
 		protected IList<ClassField> class_fields = new List<ClassField> ();
 		// The default handlers of these signals need to be overridden with g_signal_override_class_closure
-		protected IList<GObjectVM> virtual_methods = new List<GObjectVM> ();
+		protected IList<GObjectVirtualMethod> virtual_methods = new List<GObjectVirtualMethod> ();
 		// virtual methods that are generated as an IntPtr in the class struct
 		protected IList<VirtualMethod> hidden_vms = new List<VirtualMethod> ();
 		protected IList<InterfaceVM> interface_vms = new List<InterfaceVM> ();
@@ -151,13 +151,13 @@ namespace GapiCodegen {
 				string target_name = vm_elem.HasAttribute ("target_method") ? vm_elem.GetAttribute ("target_method") : vm_elem.GetAttribute ("name");
 				vm = new InterfaceVM (vm_elem, GetMethod (target_name), this);
 			} else
-				vm = new GObjectVM (vm_elem, this);
+				vm = new GObjectVirtualMethod (vm_elem, this);
 
 			if (vm_elem.GetAttributeAsBoolean ("padding") || vm_elem.GetAttributeAsBoolean ("hidden"))
 				hidden_vms.Add (vm);
 			else {
-				if (vm is GObjectVM) {
-					virtual_methods.Add ((GObjectVM)vm);
+				if (vm is GObjectVirtualMethod) {
+					virtual_methods.Add ((GObjectVirtualMethod)vm);
 				} else {
 					interface_vms.Add ((InterfaceVM)vm);
 				}
@@ -295,7 +295,7 @@ namespace GapiCodegen {
 
 		public void GenVirtualMethods (GenerationInfo gen_info, ObjectBase implementor)
 		{
-			foreach (GObjectVM vm in virtual_methods)
+			foreach (GObjectVirtualMethod vm in virtual_methods)
 				vm.Generate (gen_info, implementor);
 		}
 
@@ -309,11 +309,11 @@ namespace GapiCodegen {
 
 			ArrayList invalids = new ArrayList ();
 
-			foreach (GObjectVM vm in virtual_methods)
+			foreach (GObjectVirtualMethod vm in virtual_methods)
 				if (!vm.Validate (log))
 					invalids.Add (vm);
 
-			foreach (GObjectVM invalid_vm in invalids) {
+			foreach (GObjectVirtualMethod invalid_vm in invalids) {
 				virtual_methods.Remove (invalid_vm);
 				hidden_vms.Add (invalid_vm);
 			}

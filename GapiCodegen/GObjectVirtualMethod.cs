@@ -1,4 +1,4 @@
-// GtkSharp.Generation.GObjectVM.cs - GObject specific part of VM creation
+﻿// GtkSharp.Generation.GObjectVM.cs - GObject specific part of VM creation
 //
 // Author: Christian Hoff <christian_hoff@gmx.net>
 //
@@ -25,12 +25,12 @@ using System.IO;
 using System.Xml;
 
 namespace GapiCodegen {
-	public class GObjectVM : VirtualMethod
+	public class GObjectVirtualMethod : VirtualMethod
 	{
 		protected string class_struct_name;
 		const bool force_glue_generation = false;
 
-		public GObjectVM (XmlElement elem, ObjectBase container_type) : base (elem, container_type)
+		public GObjectVirtualMethod (XmlElement elem, ObjectBase container_type) : base (elem, container_type)
 		{
 			parms.HideData = false;
 			Protection = "protected";

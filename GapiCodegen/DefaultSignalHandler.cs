@@ -24,7 +24,7 @@ using System.IO;
 using System.Xml;
 
 namespace GapiCodegen {
-	public class DefaultSignalHandler : GObjectVM {
+	public class DefaultSignalHandler : GObjectVirtualMethod {
 		private string signal_name;
 
 		public DefaultSignalHandler (XmlElement elem, ObjectBase container_type) : base (elem, container_type)

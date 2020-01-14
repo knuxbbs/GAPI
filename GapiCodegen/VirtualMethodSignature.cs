@@ -1,4 +1,4 @@
-// GtkSharp.Generation.VMSignature.cs - The Virtual Method Signature Generation Class.
+﻿// GtkSharp.Generation.VMSignature.cs - The Virtual Method Signature Generation Class.
 //
 // Author: Mike Kestner <mkestner@ximian.com>
 //
@@ -23,11 +23,11 @@ using System;
 using System.Collections.Generic;
 
 namespace GapiCodegen {
-	public class VMSignature  {
+	public class VirtualMethodSignature  {
 		
 		private IList<Parameter> parms = new List<Parameter> ();
 
-		public VMSignature (Parameters parms)
+		public VirtualMethodSignature (Parameters parms)
 		{
 			bool has_cb = parms.HideData;
 			for (int i = 0; i < parms.Count; i++) {

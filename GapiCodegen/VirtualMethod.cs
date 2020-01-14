@@ -43,11 +43,11 @@ namespace GapiCodegen {
 			get;
 		}
 
-		VMSignature signature;
-		protected new VMSignature Signature {
+		VirtualMethodSignature signature;
+		protected new VirtualMethodSignature Signature {
 			get {
 				if (signature == null)
-					signature = new VMSignature (parms);
+					signature = new VirtualMethodSignature (parms);
 
 				return signature;
 			}

@@ -47,7 +47,7 @@ namespace GapiFixup
             {
                 if (arg.StartsWith("--metadata="))
                 {
-                    var meta_filename = arg.Substring(11);
+                    var meta_filename = arg.Substring("--metadata=".Length);
 
                     try
                     {
@@ -64,7 +64,7 @@ namespace GapiFixup
                 }
                 else if (arg.StartsWith("--api="))
                 {
-                    api_filename = arg.Substring(6);
+                    api_filename = arg.Substring("--api=".Length);
 
                     try
                     {
@@ -81,7 +81,7 @@ namespace GapiFixup
                 }
                 else if (arg.StartsWith("--symbols="))
                 {
-                    var symbol_filename = arg.Substring(10);
+                    var symbol_filename = arg.Substring("--symbols=".Length);
 
                     try
                     {
