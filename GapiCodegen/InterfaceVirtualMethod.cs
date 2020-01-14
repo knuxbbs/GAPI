@@ -1,4 +1,4 @@
- 
+﻿ 
 // GtkSharp.Generation.InterfaceVM.cs - interface-specific part of VM creation
 //
 // Author: Christian Hoff <christian_hoff@gmx.net>
@@ -24,11 +24,11 @@ using System.IO;
 using System.Xml;
 
 namespace GapiCodegen {
-	public class InterfaceVM : VirtualMethod
+	public class InterfaceVirtualMethod : VirtualMethod
 	{
 		private Method target;
 
-		public InterfaceVM (XmlElement elem, Method target, ObjectBase container_type) : base (elem, container_type)
+		public InterfaceVirtualMethod (XmlElement elem, Method target, ObjectBase container_type) : base (elem, container_type)
 		{
 			this.target = target;
 			parms.HideData = true;
@@ -64,7 +64,7 @@ namespace GapiCodegen {
 			}
 		}
 
-		public void GenerateDeclaration (StreamWriter sw, InterfaceVM complement)
+		public void GenerateDeclaration (StreamWriter sw, InterfaceVirtualMethod complement)
 		{
 			if (IsGetter) {
 				string name = Name.StartsWith ("Get") ? Name.Substring (3) : Name;

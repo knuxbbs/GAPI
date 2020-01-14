@@ -121,7 +121,7 @@ namespace GapiCodegen {
 			sw.WriteLine ("\t\tstatic " + AdapterName + " ()");
 			sw.WriteLine ("\t\t{");
 			sw.WriteLine ("\t\t\tGLib.GType.Register (_gtype, typeof ({0}));", AdapterName);
-			foreach (InterfaceVM vm in interface_vms) {
+			foreach (InterfaceVirtualMethod vm in interface_vms) {
 				if (vm.Validate (new LogWriter (QualifiedName)))
 					sw.WriteLine ("\t\t\tiface.{0} = new {0}NativeDelegate ({0}_cb);", vm.Name);
 			}
@@ -140,7 +140,7 @@ namespace GapiCodegen {
 			if (interface_vms.Count > 0) {
 				sw.WriteLine ("\t\t\tIntPtr ifaceptr = new IntPtr (ptr.ToInt64 () + class_offset);");
 				sw.WriteLine ("\t\t\t{0} native_iface = ({0}) Marshal.PtrToStructure (ifaceptr, typeof ({0}));", class_struct_name);
-				foreach (InterfaceVM vm in interface_vms) {
+				foreach (InterfaceVirtualMethod vm in interface_vms) {
 					sw.WriteLine ("\t\t\tnative_iface." + vm.Name + " = iface." + vm.Name + ";");
 				}
 				sw.WriteLine ("\t\t\tMarshal.StructureToPtr (native_iface, ifaceptr, false);");
@@ -151,7 +151,7 @@ namespace GapiCodegen {
 
 		void GenerateCallbacks (StreamWriter sw)
 		{
-			foreach (InterfaceVM vm in interface_vms) {
+			foreach (InterfaceVirtualMethod vm in interface_vms) {
 				vm.GenerateCallback (sw, null);
 				}
 			}
@@ -322,11 +322,11 @@ namespace GapiCodegen {
 			string access = IsInternal ? "internal" : "public";
 			sw.WriteLine ("\t" + access + " partial interface " + ImplementorName + " : GLib.IWrapper {");
 			sw.WriteLine ();
-			var vm_table = new Dictionary<string, InterfaceVM> ();
-			foreach (InterfaceVM vm in interface_vms) {
+			var vm_table = new Dictionary<string, InterfaceVirtualMethod> ();
+			foreach (InterfaceVirtualMethod vm in interface_vms) {
 				vm_table [vm.Name] = vm;
 			}
-			foreach (InterfaceVM vm in interface_vms) {
+			foreach (InterfaceVirtualMethod vm in interface_vms) {
 				if (!vm_table.ContainsKey (vm.Name)) {
 					continue;
 				} else if (!vm.Validate (new LogWriter (QualifiedName))) {
@@ -334,7 +334,7 @@ namespace GapiCodegen {
 					continue;
 				} else if (vm.IsGetter || vm.IsSetter) {
 					string cmp_name = (vm.IsGetter ? "Set" : "Get") + vm.Name.Substring (3);
-					InterfaceVM cmp = null;
+					InterfaceVirtualMethod cmp = null;
 					if (vm_table.TryGetValue (cmp_name, out cmp) && (cmp.IsGetter || cmp.IsSetter)) {
 						if (vm.IsSetter)
 							cmp.GenerateDeclaration (sw, vm);

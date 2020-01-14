@@ -41,7 +41,7 @@ namespace GapiCodegen {
 		protected IList<GObjectVirtualMethod> virtual_methods = new List<GObjectVirtualMethod> ();
 		// virtual methods that are generated as an IntPtr in the class struct
 		protected IList<VirtualMethod> hidden_vms = new List<VirtualMethod> ();
-		protected IList<InterfaceVM> interface_vms = new List<InterfaceVM> ();
+		protected IList<InterfaceVirtualMethod> interface_vms = new List<InterfaceVirtualMethod> ();
 		protected Hashtable sigs = new Hashtable();
 
 		protected ObjectBase (XmlElement ns, XmlElement elem, bool is_interface) : base (ns, elem) 
@@ -149,7 +149,7 @@ namespace GapiCodegen {
 				vm = new DefaultSignalHandler (vm_elem, this);
 			else if (is_interface) {
 				string target_name = vm_elem.HasAttribute ("target_method") ? vm_elem.GetAttribute ("target_method") : vm_elem.GetAttribute ("name");
-				vm = new InterfaceVM (vm_elem, GetMethod (target_name), this);
+				vm = new InterfaceVirtualMethod (vm_elem, GetMethod (target_name), this);
 			} else
 				vm = new GObjectVirtualMethod (vm_elem, this);
 
@@ -159,7 +159,7 @@ namespace GapiCodegen {
 				if (vm is GObjectVirtualMethod) {
 					virtual_methods.Add ((GObjectVirtualMethod)vm);
 				} else {
-					interface_vms.Add ((InterfaceVM)vm);
+					interface_vms.Add ((InterfaceVirtualMethod)vm);
 				}
 			}
 			if (vm.CName != "")
@@ -328,11 +328,11 @@ namespace GapiCodegen {
 				if (!field.Validate (log))
 					class_abi_valid = false;
 			
-			foreach (InterfaceVM vm in interface_vms)
+			foreach (InterfaceVirtualMethod vm in interface_vms)
 				if (!vm.Validate (log))
 					invalids.Add (vm);
 
-			foreach (InterfaceVM invalid_vm in invalids) {
+			foreach (InterfaceVirtualMethod invalid_vm in invalids) {
 				interface_vms.Remove (invalid_vm);
 				hidden_vms.Add (invalid_vm);
 			}
