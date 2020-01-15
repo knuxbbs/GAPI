@@ -18,6 +18,7 @@
 
 
 using System.Xml;
+using GapiCodegen.Generatables;
 
 namespace GapiCodegen {
 	public class ClassField : StructField {

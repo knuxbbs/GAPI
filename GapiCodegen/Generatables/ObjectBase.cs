@@ -25,9 +25,8 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Xml;
-using GapiCodegen.Generatables;
 
-namespace GapiCodegen {
+namespace GapiCodegen.Generatables {
 	public abstract class ObjectBase : HandleBase {
 		bool is_interface;
 		protected string class_struct_name = null;
