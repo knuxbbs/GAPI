@@ -20,6 +20,7 @@
 
 using System.IO;
 using System.Xml;
+using GapiCodegen.Generatables;
 
 namespace GapiCodegen
 {
@@ -38,7 +39,7 @@ namespace GapiCodegen
         {
             get
             {
-                return HasGetterName && ((!retval.IsVoid && parms.Count == 0) || (retval.IsVoid && parms.Count == 1 && parms[0].PassAs == "out"));
+                return HasGetterName && (!retval.IsVoid && parms.Count == 0 || retval.IsVoid && parms.Count == 1 && parms[0].PassAs == "out");
             }
         }
 
@@ -49,7 +50,7 @@ namespace GapiCodegen
                 if (!HasSetterName || !retval.IsVoid)
                     return false;
 
-                if (parms.Count == 1 || (parms.Count == 3 && parms[0].Scope == "notified"))
+                if (parms.Count == 1 || parms.Count == 3 && parms[0].Scope == "notified")
                     return true;
                 else
                     return false;
@@ -61,7 +62,7 @@ namespace GapiCodegen
             get
             {
                 if (IsGetter)
-                    return (target.Name.StartsWith("Get") ? target.Name.Substring(3) : target.Name);
+                    return target.Name.StartsWith("Get") ? target.Name.Substring(3) : target.Name;
                 else if (IsSetter)
                     return target.Name.Substring(3) + " = " + call;
                 else

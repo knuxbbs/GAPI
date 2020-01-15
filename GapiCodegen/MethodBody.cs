@@ -20,8 +20,8 @@
 // Boston, MA 02111-1307, USA.
 
 
-using System;
 using System.IO;
+using GapiCodegen.Generatables;
 
 namespace GapiCodegen {
 	public class MethodBody  {
@@ -53,7 +53,7 @@ namespace GapiCodegen {
 				bool is_prop = is_set && i == 0;
 
 				if (i > 0 && parameters [i - 1].IsString && p.IsLength && p.PassAs == string.Empty) {
-					string string_name = (i == 1 && is_set) ? "value" : parameters [i - 1].Name;
+					string string_name = i == 1 && is_set ? "value" : parameters [i - 1].Name;
 					result[i] = igen.CallByName (CastFromInt (p.CSType) + "System.Text.Encoding.UTF8.GetByteCount (" +  string_name + ")");
 					continue;
 				}

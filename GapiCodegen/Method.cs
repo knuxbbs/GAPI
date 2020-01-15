@@ -20,9 +20,9 @@
 // Boston, MA 02111-1307, USA.
 
 
-using System;
 using System.IO;
 using System.Xml;
+using GapiCodegen.Generatables;
 
 namespace GapiCodegen {
 	public class Method : MethodBase  {
@@ -81,8 +81,8 @@ namespace GapiCodegen {
 			}
 
 			Parameters parms = Parameters;
-			is_get = ((parms.IsAccessor && retval.IsVoid) || (parms.Count == 0 && !retval.IsVoid)) && HasGetterName;
-			is_set = ((parms.IsAccessor || (parms.VisibleCount == 1 && retval.IsVoid)) && HasSetterName);
+			is_get = (parms.IsAccessor && retval.IsVoid || parms.Count == 0 && !retval.IsVoid) && HasGetterName;
+			is_set = (parms.IsAccessor || parms.VisibleCount == 1 && retval.IsVoid) && HasSetterName;
 
 			call = "(" + (IsStatic ? "" : container_type.CallByName () + (parms.Count > 0 ? ", " : "")) + Body.GetCallString (is_set) + ")";
 
@@ -119,9 +119,9 @@ namespace GapiCodegen {
 
 			if (Name == "ToString" && Parameters.Count == 0 && (!(container_type is InterfaceGen)|| implementor != null))
 				sw.Write("override ");
-			else if (Name == "GetGType" && (container_type is ObjectGen || (container_type.Parent != null && container_type.Parent.Methods.ContainsKey ("GetType"))))
+			else if (Name == "GetGType" && (container_type is ObjectGen || container_type.Parent != null && container_type.Parent.Methods.ContainsKey ("GetType")))
 				sw.Write("new ");
-			else if (Modifiers == "new " || (dup != null && ((dup.Signature != null && Signature != null && dup.Signature.ToString() == Signature.ToString()) || (dup.Signature == null && Signature == null))))
+			else if (Modifiers == "new " || dup != null && (dup.Signature != null && Signature != null && dup.Signature.ToString() == Signature.ToString() || dup.Signature == null && Signature == null))
 				sw.Write("new ");
 
 			if (Name.StartsWith (container_type.Name))
@@ -165,7 +165,7 @@ namespace GapiCodegen {
 				GenerateDeclCommon (sw, null);
 
 				sw.Write("\t\t\t");
-				sw.Write ((is_get) ? "get;" : "set;");
+				sw.Write (is_get ? "get;" : "set;");
 
 				if (comp != null && comp.is_set)
 					sw.WriteLine (" set;");
@@ -251,7 +251,7 @@ namespace GapiCodegen {
 			if (is_get || is_set)
 			{
 				gen_info.Writer.Write ("\t\t\t");
-				gen_info.Writer.Write ((is_get) ? "get" : "set");
+				gen_info.Writer.Write (is_get ? "get" : "set");
 				GenerateBody (gen_info, implementor, "\t");
 			}
 			else

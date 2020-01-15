@@ -1,6 +1,6 @@
-using System;
 using System.IO;
 using System.Xml;
+using GapiCodegen.Generatables;
 
 namespace GapiCodegen {
 	public class StructABIField : StructField {
@@ -44,7 +44,7 @@ namespace GapiCodegen {
 
 		public override bool Validate (LogWriter log)
 		{
-			string cstype = SymbolTable.Table.GetCSType(CType, true);
+			string cstype = SymbolTable.Table.GetCsType(CType, true);
 
 			if (elem.GetAttributeAsBoolean("is_callback"))
 				return true;

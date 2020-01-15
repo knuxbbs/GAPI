@@ -20,9 +20,9 @@
 // Boston, MA 02111-1307, USA.
 
 
-using System;
 using System.Collections.Generic;
 using System.Xml;
+using GapiCodegen.Generatables;
 
 namespace GapiCodegen {
 	public class ArrayParameter : Parameter {
@@ -129,7 +129,7 @@ namespace GapiCodegen {
 
 		string CountType {
 			get {
-				return SymbolTable.Table.GetCSType(count_elem.GetAttribute("type"));
+				return SymbolTable.Table.GetCsType(count_elem.GetAttribute("type"));
 			}
 		}
 

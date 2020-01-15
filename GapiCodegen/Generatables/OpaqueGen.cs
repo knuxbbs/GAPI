@@ -19,11 +19,10 @@
 // Boston, MA 02111-1307, USA.
 
 
-using System;
 using System.IO;
 using System.Xml;
 
-namespace GapiCodegen {
+namespace GapiCodegen.Generatables {
 	public class OpaqueGen : HandleBase {
 
 		public OpaqueGen (XmlElement ns, XmlElement elem) : base (ns, elem) {}
@@ -63,7 +62,7 @@ namespace GapiCodegen {
 			if (IsDeprecated)
 				sw.WriteLine ("\t[Obsolete]");
 			sw.Write ("\t{0} partial {1}class " + Name, IsInternal ? "internal" : "public", IsAbstract ? "abstract " : string.Empty);
-			string cs_parent = table.GetCSType(Elem.GetAttribute("parent"));
+			string cs_parent = table.GetCsType(Elem.GetAttribute("parent"));
 			if (cs_parent != "")
 				sw.Write (" : " + cs_parent);
 			else

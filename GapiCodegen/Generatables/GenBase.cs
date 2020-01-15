@@ -22,7 +22,7 @@
 
 using System.Xml;
 
-namespace GapiCodegen {
+namespace GapiCodegen.Generatables {
 	public abstract class GenBase : IGeneratable {
 		
 		private XmlElement ns;

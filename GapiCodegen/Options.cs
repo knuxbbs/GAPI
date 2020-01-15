@@ -181,7 +181,7 @@ namespace GapiCodegen
 
 		private static int GetNextWidth (IEnumerator<int> ewidths, int curWidth, ref bool? eValid)
 		{
-			if (!eValid.HasValue || (eValid.HasValue && eValid.Value)) {
+			if (!eValid.HasValue || eValid.HasValue && eValid.Value) {
 				curWidth = (eValid = ewidths.MoveNext ()).Value ? ewidths.Current : curWidth;
 				// '.' is any character, - is for a continuation
 				const string minWidth = ".-";
@@ -378,7 +378,7 @@ namespace GapiCodegen
 			this.prototype   = prototype;
 			this.description = description;
 			count       = maxValueCount;
-			names       = (this is OptionSet.Category)
+			names       = this is OptionSet.Category
 				// append GetHashCode() so that "duplicate" categories have distinct
 				// names, e.g. adding multiple "" categories should be valid.
 				? new[]{prototype + GetHashCode ()}
@@ -400,8 +400,8 @@ namespace GapiCodegen
 						string.Format ("Cannot provide maxValueCount of {0} for OptionValueType.None.", maxValueCount),
 						"maxValueCount");
 			if (Array.IndexOf (names, "<>") >= 0 && 
-					((names.Length == 1 && type != OptionValueType.None) ||
-					 (names.Length > 1 && MaxValueCount > 1)))
+					(names.Length == 1 && type != OptionValueType.None ||
+					 names.Length > 1 && MaxValueCount > 1))
 				throw new ArgumentException (
 						"The default option handler '<>' cannot require values.",
 						"prototype");
@@ -1091,7 +1091,7 @@ namespace GapiCodegen
 			Option p;
 			string rn;
 			if (n.Length >= 1 && (n [n.Length-1] == '+' || n [n.Length-1] == '-') &&
-					Contains ((rn = n.Substring (0, n.Length-1)))) {
+					Contains (rn = n.Substring (0, n.Length-1))) {
 				p = this [rn];
 				string v = n [n.Length-1] == '+' ? option : null;
 				c.OptionName  = option;
@@ -1313,7 +1313,7 @@ namespace GapiCodegen
 						break;
 					case '}':
 						if (start < 0) {
-							if ((i+1) == description.Length || description [i+1] != '}')
+							if (i+1 == description.Length || description [i+1] != '}')
 								throw new InvalidOperationException ("Invalid option description: " + description);
 							++i;
 							sb.Append ("}");

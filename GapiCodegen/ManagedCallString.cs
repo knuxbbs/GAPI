@@ -19,8 +19,8 @@
 // Boston, MA 02111-1307, USA.
 
 
-using System;
 using System.Collections.Generic;
+using GapiCodegen.Generatables;
 
 namespace GapiCodegen {
 	public class ManagedCallString {
@@ -50,7 +50,7 @@ namespace GapiCodegen {
 				}
 
 				bool special = false;
-				if (p.PassAs != string.Empty && (p.Name != p.FromNative (p.Name)))
+				if (p.PassAs != string.Empty && p.Name != p.FromNative (p.Name))
 					special = true;
 				else if (p.Generatable is CallbackGen)
 					special = true;

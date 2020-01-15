@@ -24,7 +24,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Xml;
 
-namespace GapiCodegen
+namespace GapiCodegen.Generatables
 {
     /// <summary>
     /// The Object Generatable.
@@ -166,7 +166,7 @@ namespace GapiCodegen
                 sw.WriteLine("\t" + attr);
             sw.Write("\t{0} {1}partial class " + Name, IsInternal ? "internal" : "public",
                 IsAbstract ? "abstract " : "");
-            string cs_parent = table.GetCSType(Elem.GetAttribute("parent"));
+            string cs_parent = table.GetCsType(Elem.GetAttribute("parent"));
             if (cs_parent != "")
             {
                 di.objects.Add(CName, QualifiedName);
@@ -177,7 +177,7 @@ namespace GapiCodegen
             {
                 if (Parent != null && Parent.Implements(iface))
                     continue;
-                sw.Write(", " + table.GetCSType(iface));
+                sw.Write(", " + table.GetCsType(iface));
             }
 
             foreach (string iface in managed_interfaces)
@@ -195,7 +195,7 @@ namespace GapiCodegen
             GenFields(gen_info);
             GenChildProperties(gen_info);
 
-            bool has_sigs = (sigs != null && sigs.Count > 0);
+            bool has_sigs = sigs != null && sigs.Count > 0;
             if (!has_sigs)
             {
                 foreach (string iface in interfaces)

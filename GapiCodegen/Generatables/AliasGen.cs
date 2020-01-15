@@ -1,7 +1,8 @@
-// Authors:
-//   Stephan Sundermann <stephansundermann@gmail.com>
+// GtkSharp.Generation.AliasGen.cs - The Alias type Generatable.
 //
-// Copyright (c) 2013 Stephan Sundermann
+// Author: Mike Kestner <mkestner@speakeasy.net>
+//
+// Copyright (c) 2003 Mike Kestner
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of version 2 of the GNU General Public
@@ -17,20 +18,11 @@
 // Free Software Foundation, Inc., 59 Temple Place - Suite 330,
 // Boston, MA 02111-1307, USA.
 
-using System.Xml;
-
-namespace GapiCodegen
+namespace GapiCodegen.Generatables
 {
-	public class UnionGen : StructBase {
-
-		public UnionGen (XmlElement ns, XmlElement elem) : base (ns, elem)
-		{
-		}
-
-		public override bool Union {
-			get {
-				return true;
-			}
-		}
-	}
+    public class AliasGen : SimpleBase
+    {
+        public AliasGen(string ctype, string type) : base(ctype, type, string.Empty) { }
+    }
 }
+

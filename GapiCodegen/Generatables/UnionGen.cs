@@ -1,8 +1,7 @@
-// GtkSharp.Generation.SimpleGen.cs - The Simple type Generatable.
+// Authors:
+//   Stephan Sundermann <stephansundermann@gmail.com>
 //
-// Author: Mike Kestner <mkestner@speakeasy.net>
-//
-// Copyright (c) 2003 Mike Kestner
+// Copyright (c) 2013 Stephan Sundermann
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of version 2 of the GNU General Public
@@ -18,19 +17,20 @@
 // Free Software Foundation, Inc., 59 Temple Place - Suite 330,
 // Boston, MA 02111-1307, USA.
 
+using System.Xml;
 
-namespace GapiCodegen {
-	public class SimpleGen : SimpleBase {
-		string size_of;
+namespace GapiCodegen.Generatables
+{
+	public class UnionGen : StructBase {
 
-		public SimpleGen (string ctype, string type, string default_value) : base (ctype, type, default_value) {}
-		public SimpleGen (string ctype, string type, string default_value, string size_of) : base (ctype, type, default_value) {
-			this.size_of = size_of;
+		public UnionGen (XmlElement ns, XmlElement elem) : base (ns, elem)
+		{
 		}
 
-		public override string GenerateGetSizeOf () {
-			return size_of;
+		public override bool Union {
+			get {
+				return true;
+			}
 		}
 	}
 }
-

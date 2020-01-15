@@ -23,6 +23,7 @@
 using System;
 using System.IO;
 using System.Xml;
+using GapiCodegen.Generatables;
 
 namespace GapiCodegen {
 	public class StructField : FieldBase {
@@ -108,17 +109,17 @@ namespace GapiCodegen {
 		public virtual bool IsCPointer() {
 			IGeneratable gen = SymbolTable.Table[CType];
 
-			return (CType.EndsWith("*") ||
-						CType.EndsWith ("pointer") ||
-						gen is CallbackGen ||
-						cstype == "string" ||
-						(CType == "guint8" && (IsArray && IsNullTermArray)) ||
-						elem.GetAttributeAsBoolean("is_callback"));
+			return CType.EndsWith("*") ||
+                   CType.EndsWith ("pointer") ||
+                   gen is CallbackGen ||
+                   cstype == "string" ||
+                   CType == "guint8" && IsArray && IsNullTermArray ||
+                   elem.GetAttributeAsBoolean("is_callback");
 
 		}
 
 		public virtual string GenerateGetSizeOf(string indent) {
-			string cstype = SymbolTable.Table.GetCSType(CType, true);
+			string cstype = SymbolTable.Table.GetCsType(CType, true);
 			string res = "";
 			IGeneratable gen = SymbolTable.Table[CType];
 			var is_pointer = false;
@@ -154,8 +155,8 @@ namespace GapiCodegen {
 				if (elem.GetAttributeAsBoolean ("is-padding"))
 					return elem.GetAttributeAsBoolean ("is-padding");
 
-				return (elem.GetAttribute ("access") == "private" && (
-					CName.StartsWith ("dummy") || CName.StartsWith ("padding")));
+				return elem.GetAttribute ("access") == "private" && (
+                           CName.StartsWith ("dummy") || CName.StartsWith ("padding"));
 			}
 		}
 
@@ -201,7 +202,7 @@ namespace GapiCodegen {
 
 			SymbolTable table = SymbolTable.Table;
 
-			string wrapped = table.GetCSType (CType);
+			string wrapped = table.GetCsType (CType);
 
 			string wrapped_name = SymbolTable.Table.MangleName (CName);
 			string name = Name;

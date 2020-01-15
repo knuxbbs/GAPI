@@ -19,6 +19,7 @@
 
 
 using System.Xml;
+using GapiCodegen.Generatables;
 
 namespace GapiCodegen {
 	public abstract class PropertyBase {
@@ -65,7 +66,7 @@ namespace GapiCodegen {
 				else if (Setter != null)
 					return Setter.Signature.Types;
 				else if (cstype == null)
-					cstype = SymbolTable.Table.GetCSType (CType);
+					cstype = SymbolTable.Table.GetCsType (CType);
 				return cstype;
 			}
 		}

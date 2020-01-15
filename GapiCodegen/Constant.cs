@@ -62,7 +62,7 @@ namespace GapiCodegen
         {
             get
             {
-                return (SymbolTable.Table.GetCSType(ctype) == "string");
+                return SymbolTable.Table.GetCsType(ctype) == "string";
             }
         }
 

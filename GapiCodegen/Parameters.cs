@@ -20,10 +20,10 @@
 // Boston, MA 02111-1307, USA.
 
 
-using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Xml;
+using GapiCodegen.Generatables;
 
 namespace GapiCodegen {
 	public class Parameters : IEnumerable<Parameter> {
@@ -103,13 +103,13 @@ namespace GapiCodegen {
 							return true;
 					}
 				} else {
-					if (p.IsUserData && (idx == Count - 1))
+					if (p.IsUserData && idx == Count - 1)
 						return true;
-					if (p.IsUserData && (idx == Count - 2) && this [Count - 1] is ErrorParameter)
+					if (p.IsUserData && idx == Count - 2 && this [Count - 1] is ErrorParameter)
 						return true;
 					if (p.IsUserData && idx > 0 && this [idx - 1].Generatable is CallbackGen)
 						return true;
-					if (p.IsDestroyNotify && (idx == Count - 1) && this [idx - 1].IsUserData)
+					if (p.IsDestroyNotify && idx == Count - 1 && this [idx - 1].IsUserData)
 						return true;
 				}
 			}
@@ -198,8 +198,8 @@ namespace GapiCodegen {
 					return false;
 				}
 
-				if ((p.CSType == "") || (p.Name == "") || 
-				    (p.MarshalType == "") || (SymbolTable.Table.CallByName(p.CType, p.Name) == "")) {
+				if (p.CSType == "" || p.Name == "" || 
+				    p.MarshalType == "" || SymbolTable.Table.CallByName(p.CType, p.Name) == "") {
 					log.Warn ("Unknown type {1} on parameter {0}", p.Name, p.CType);
 					Clear ();
 					return false;

@@ -28,7 +28,7 @@ using System.IO;
 using System.Text;
 using System.Xml;
 
-namespace GapiCodegen {
+namespace GapiCodegen.Generatables {
 	public abstract class StructBase : ClassBase, IManualMarshaler {
 	
 		IList<StructField> fields = new List<StructField> ();

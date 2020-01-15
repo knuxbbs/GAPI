@@ -1,7 +1,8 @@
-// GtkSharp.Generation.MarshalGen.cs - Simple marshaling Generatable.
+// GtkSharp.Generation.ManualGen.cs - Ungenerated handle type Generatable.
 //
 // Author: Mike Kestner <mkestner@novell.com>
 //
+// Copyright (c) 2003 Mike Kestner
 // Copyright (c) 2004 Novell, Inc.
 //
 // This program is free software; you can redistribute it and/or
@@ -19,38 +20,28 @@
 // Boston, MA 02111-1307, USA.
 
 
-using System;
-
-namespace GapiCodegen {
-	public class MarshalGen : SimpleBase {
+namespace GapiCodegen.Generatables {
+	public class OwnableGen : SimpleBase, IOwnable {
 		
-		string mtype;
-		string call_fmt;
-		string from_fmt;
-
-		public MarshalGen (string ctype, string type, string mtype, string call_fmt, string from_fmt, string default_value) : base (ctype, type, default_value)
-		{
-			this.mtype = mtype;
-			this.call_fmt = call_fmt;
-			this.from_fmt = from_fmt;
-		}
-		
-		public MarshalGen (string ctype, string type, string mtype, string call_fmt, string from_fmt) : this (ctype, type, mtype, call_fmt, from_fmt, "null") { }
+		public OwnableGen (string ctype, string type) : base (ctype, type, "null") {}
 
 		public override string MarshalType {
-			get {
-				return mtype;
-			}
+			get { return "IntPtr"; }
 		}
 
-		public override string CallByName (string var)
+		public override string CallByName (string var_name)
 		{
-			return string.Format (call_fmt, var);
+			return var_name + " == null ? IntPtr.Zero : " + var_name + ".Handle";
 		}
 		
 		public override string FromNative (string var)
 		{
-			return string.Format (from_fmt, var);
+			return string.Format ("new {0} ({1})", QualifiedName, var);
+		}
+		
+		public string FromNative (string var, bool owned)
+		{
+			return string.Format ("new {0} ({1}, {2})", QualifiedName, var, owned ? "true" : "false");
 		}
 	}
 }

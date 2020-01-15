@@ -27,7 +27,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Xml;
 
-namespace GapiCodegen
+namespace GapiCodegen.Generatables
 {
     public class InterfaceGen : ObjectBase
     {
@@ -426,7 +426,7 @@ namespace GapiCodegen
             sw.WriteLine("}");
             sw.Close();
             gen_info.Writer = null;
-            Statistics.IFaceCount++;
+            Statistics.InterfaceCount++;
         }
     }
 }

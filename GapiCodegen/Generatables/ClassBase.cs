@@ -28,7 +28,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Xml;
 
-namespace GapiCodegen {
+namespace GapiCodegen.Generatables {
 	public abstract class ClassBase : GenBase {
 		private IDictionary<string, Property> props = new Dictionary<string, Property> ();
 		private IDictionary<string, ObjectField> fields = new Dictionary<string, ObjectField> ();
@@ -90,8 +90,7 @@ namespace GapiCodegen {
 					// marking it as pointer, somehow risky but good enough for now.)
 					if (num_abi_fields != 1 ||
 							parent_type == "" ||
-							(member.GetAttribute("type").Replace("*", "") != parent_type
-							 )) {
+							member.GetAttribute("type").Replace("*", "") != parent_type) {
 						abi_field = new StructABIField (member, this, "abi_info");
 						abi_fields.Add (abi_field);
 					}
@@ -153,7 +152,7 @@ namespace GapiCodegen {
 		}
 
 		public virtual bool CanGenerateABIStruct(LogWriter log) {
-			return (abi_fields_valid);
+			return abi_fields_valid;
 		}
 
 		bool CheckABIStructParent(LogWriter log, out string cs_parent_struct) {
@@ -163,7 +162,7 @@ namespace GapiCodegen {
 				return false;
 
 			var parent = SymbolTable.Table[Elem.GetAttribute("parent")];
-			string cs_parent = SymbolTable.Table.GetCSType(Elem.GetAttribute("parent"));
+			string cs_parent = SymbolTable.Table.GetCsType(Elem.GetAttribute("parent"));
 			var parent_can_generate = true;
 
 			cs_parent_struct = null;
@@ -432,9 +431,9 @@ namespace GapiCodegen {
 				return true;
 
 			string mname = method.Name;
-			return ((method.IsSetter || (method.IsGetter && mname.StartsWith("Get"))) &&
-				((props != null) && props.ContainsKey(mname.Substring(3)) ||
-				 (fields != null) && fields.ContainsKey(mname.Substring(3))));
+			return (method.IsSetter || method.IsGetter && mname.StartsWith("Get")) &&
+                   (props != null && props.ContainsKey(mname.Substring(3)) ||
+                    fields != null && fields.ContainsKey(mname.Substring(3)));
 		}
 
 		public void GenMethods (GenerationInfo gen_info, IDictionary<string, bool> collisions, ClassBase implementor)

@@ -22,6 +22,7 @@
 using System;
 using System.IO;
 using System.Xml;
+using GapiCodegen.Generatables;
 
 namespace GapiCodegen
 {
@@ -69,7 +70,7 @@ namespace GapiCodegen
 
         protected virtual bool CanGenerate(GenerationInfo gen_info, ObjectBase implementor)
         {
-            if (implementor != null || CName.Length == 0 || CodeType == VMCodeType.None || (CodeType == VMCodeType.Glue && !gen_info.GlueEnabled))
+            if (implementor != null || CName.Length == 0 || CodeType == VMCodeType.None || CodeType == VMCodeType.Glue && !gen_info.GlueEnabled)
                 return false;
             else
                 return true;

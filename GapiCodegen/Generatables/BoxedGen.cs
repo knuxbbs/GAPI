@@ -22,7 +22,7 @@
 using System.IO;
 using System.Xml;
 
-namespace GapiCodegen {
+namespace GapiCodegen.Generatables {
 	public class BoxedGen : StructBase {
 		
 		public BoxedGen (XmlElement ns, XmlElement elem) : base (ns, elem) {}

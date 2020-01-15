@@ -22,6 +22,7 @@
 
 using System.IO;
 using System.Xml;
+using GapiCodegen.Generatables;
 
 namespace GapiCodegen {
 	public class Property : PropertyBase {
@@ -78,7 +79,7 @@ namespace GapiCodegen {
 
 		public void GenerateDecl (StreamWriter sw, string indent)
 		{
-			if (Hidden || (!Readable && !Writable))
+			if (Hidden || !Readable && !Writable)
 				return;
 
 			string name = Name;
@@ -100,12 +101,12 @@ namespace GapiCodegen {
 			SymbolTable table = SymbolTable.Table;
 			StreamWriter sw = gen_info.Writer;
 
-			if (Hidden || (!Readable && !Writable))
+			if (Hidden || !Readable && !Writable)
 				return;
 
 			string modifiers = "";
 
-			if (IsNew || (container_type.Parent != null && container_type.Parent.GetPropertyRecursively (Name) != null))
+			if (IsNew || container_type.Parent != null && container_type.Parent.GetPropertyRecursively (Name) != null)
 				modifiers = "new ";
 			else if (implementor != null && implementor.Parent != null && implementor.Parent.GetPropertyRecursively (Name) != null)
 				modifiers = "new ";
@@ -128,8 +129,8 @@ namespace GapiCodegen {
 			GenerateImports (gen_info, indent);
 
 			if (IsDeprecated ||
-			    (Getter != null && Getter.IsDeprecated) ||
-			    (Setter != null && Setter.IsDeprecated))
+			    Getter != null && Getter.IsDeprecated ||
+			    Setter != null && Setter.IsDeprecated)
 				sw.WriteLine (indent + "[Obsolete]");
 			sw.WriteLine (indent + PropertyAttribute (qpname));
 			sw.WriteLine (indent + "public " + modifiers + CSType + " " + name + " {");

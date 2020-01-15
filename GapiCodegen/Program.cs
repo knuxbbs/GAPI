@@ -23,12 +23,13 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using GapiCodegen.Generatables;
 
 namespace GapiCodegen
 {
     public class Program
     {
-        static readonly LogWriter log = new LogWriter("CodeGenerator");
+        private static readonly LogWriter Log = new LogWriter("CodeGenerator");
 
         public static int Main(string[] args)
         {
@@ -44,7 +45,7 @@ namespace GapiCodegen
             var gluelib_name = "";
             var schema_name = "";
 
-            SymbolTable table = SymbolTable.Table;
+            var table = SymbolTable.Table;
             var gens = new List<IGeneratable>();
 
             var filenames = new List<string>();
@@ -147,19 +148,19 @@ namespace GapiCodegen
                 schema_name = null;
             }
 
-            var p = new Parser();
+            var parser = new Parser();
 
             foreach (var include in includes)
             {
-                log.Info($"Parsing included gapi: {include}");
-                IGeneratable[] curr_gens = p.Parse(include, schema_name, gapidir);
+                Log.Info($"Parsing included gapi: {include}");
+                IGeneratable[] curr_gens = parser.Parse(include, schema_name, gapidir);
                 table.AddTypes(curr_gens);
             }
 
             foreach (var filename in filenames)
             {
-                log.Info($"Parsing included gapi: {filename}");
-                IGeneratable[] curr_gens = p.Parse(filename, schema_name, gapidir);
+                Log.Info($"Parsing included gapi: {filename}");
+                IGeneratable[] curr_gens = parser.Parse(filename, schema_name, gapidir);
                 table.AddTypes(curr_gens);
                 gens.AddRange(curr_gens);
             }
@@ -171,29 +172,29 @@ namespace GapiCodegen
             foreach (var gen in invalids)
                 gens.Remove(gen);
 
-            GenerationInfo gen_info = null;
+            GenerationInfo generationInfo = null;
 
             if (dir != "" || assembly_name != "" || glue_filename != "" || glue_includes != "" || gluelib_name != "")
-                gen_info = new GenerationInfo(dir, assembly_name, glue_filename, glue_includes, gluelib_name,
+                generationInfo = new GenerationInfo(dir, assembly_name, glue_filename, glue_includes, gluelib_name,
                     abi_c_file, abi_cs_file, abi_cs_usings);
 
             foreach (var gen in gens)
             {
-                if (gen_info == null)
+                if (generationInfo == null)
                     gen.Generate();
                 else
-                    gen.Generate(gen_info);
+                    gen.Generate(generationInfo);
             }
 
             ObjectGen.GenerateMappers();
 
-            gen_info?.CloseWriters();
+            generationInfo?.CloseWriters();
 
             Statistics.Report();
             return 0;
         }
 
-        static void ShowHelp(OptionSet p)
+        private static void ShowHelp(OptionSet p)
         {
             Console.WriteLine("Usage: gapi-codegen [OPTIONS]+");
             Console.WriteLine();

@@ -19,6 +19,7 @@
 // Boston, MA 02111-1307, USA.
 
 using System.Collections.Generic;
+using GapiCodegen.Generatables;
 
 namespace GapiCodegen
 {
@@ -36,7 +37,7 @@ namespace GapiCodegen
                 if (i > 0 && p.IsLength && parms[i - 1].IsString)
                     continue;
 
-                if (p.IsCount && ((i > 0 && parms[i - 1].IsArray) || (i < parms.Count - 1 && parms[i + 1].IsArray)))
+                if (p.IsCount && (i > 0 && parms[i - 1].IsArray || i < parms.Count - 1 && parms[i + 1].IsArray))
                     continue;
 
                 has_cb = has_cb || p.Generatable is CallbackGen;

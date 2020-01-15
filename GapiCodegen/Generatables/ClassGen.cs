@@ -19,11 +19,10 @@
 // Boston, MA 02111-1307, USA.
 
 
-using System;
 using System.IO;
 using System.Xml;
 
-namespace GapiCodegen {
+namespace GapiCodegen.Generatables {
 	public class ClassGen : ClassBase  {
 
 		public ClassGen (XmlElement ns, XmlElement elem) : base (ns, elem) {}

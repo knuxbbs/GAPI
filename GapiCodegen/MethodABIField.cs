@@ -1,4 +1,5 @@
 using System.Xml;
+using GapiCodegen.Generatables;
 
 namespace GapiCodegen
 {

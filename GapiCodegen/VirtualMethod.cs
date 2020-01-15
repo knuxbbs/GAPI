@@ -22,6 +22,7 @@
 
 using System.IO;
 using System.Xml;
+using GapiCodegen.Generatables;
 
 namespace GapiCodegen {
 	public abstract class VirtualMethod : MethodBase  {

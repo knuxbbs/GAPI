@@ -17,13 +17,12 @@
 // Free Software Foundation, Inc., 59 Temple Place - Suite 330,
 // Boston, MA 02111-1307, USA.
 
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Xml;
 
-namespace GapiCodegen
+namespace GapiCodegen.Generatables
 {
 	public class NativeStructGen : HandleBase
 	{
@@ -98,7 +97,7 @@ namespace GapiCodegen
 			if (IsDeprecated)
 				sw.WriteLine ("\t[Obsolete]");
 			string access = IsInternal ? "internal" : "public";
-			sw.WriteLine ("\t" + access + " partial class {0} : {1} IEquatable<{0}> {{", Name, Parent == null ? "GLib.IWrapper," : (Parent.QualifiedName + ","));
+			sw.WriteLine ("\t" + access + " partial class {0} : {1} IEquatable<{0}> {{", Name, Parent == null ? "GLib.IWrapper," : Parent.QualifiedName + ",");
 			sw.WriteLine ();
 
 			GenNativeStruct (gen_info);
@@ -175,7 +174,7 @@ namespace GapiCodegen
 			foreach (StructField field in fields) {
 				if (!field.Visible)
 					continue;
-				sw.WriteLine ("\t\tpublic {0} {1} {{", SymbolTable.Table.GetCSType (field.CType), field.StudlyName);
+				sw.WriteLine ("\t\tpublic {0} {1} {{", SymbolTable.Table.GetCsType (field.CType), field.StudlyName);
 				sw.WriteLine ("\t\t\tget {{ return Native.{0}; }}", field.StudlyName);
 				if (!(SymbolTable.Table [field.CType] is CallbackGen))
 					sw.WriteLine ("\t\t\tset {{ NativeStruct native = Native; native.{0} = value;  Marshal.StructureToPtr (native, this.Handle, false); }}", field.StudlyName);

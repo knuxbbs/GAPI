@@ -18,9 +18,8 @@
 // Free Software Foundation, Inc., 59 Temple Place - Suite 330,
 // Boston, MA 02111-1307, USA.
 
-
-using System;
 using System.Xml;
+using GapiCodegen.Generatables;
 
 namespace GapiCodegen {
 	public class ReturnValue  {
@@ -97,7 +96,7 @@ namespace GapiCodegen {
 		string ElementType {
 			get {
 				if (element_ctype.Length > 0)
-					return SymbolTable.Table.GetCSType (element_ctype);
+					return SymbolTable.Table.GetCsType (element_ctype);
 
 				return string.Empty;
 			}

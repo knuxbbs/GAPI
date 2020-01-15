@@ -19,13 +19,12 @@
 // Boston, MA 02111-1307, USA.
 
 
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
 using System.Xml;
 
-namespace GapiCodegen {
+namespace GapiCodegen.Generatables {
 	public class EnumGen : GenBase {
 		
 		string enum_type = string.Empty;

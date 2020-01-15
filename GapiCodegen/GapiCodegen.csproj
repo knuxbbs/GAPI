@@ -5,4 +5,7 @@
         <OutputPath>..\..\..\BuildOutput\Tools</OutputPath>
         <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     </PropertyGroup>
+    <ItemGroup>
+      <None Remove="README.asc" />
+    </ItemGroup>
 </Project>

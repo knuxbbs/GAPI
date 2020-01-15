@@ -20,8 +20,8 @@
 // Boston, MA 02111-1307, USA.
 
 
-using System;
 using System.Xml;
+using GapiCodegen.Generatables;
 
 namespace GapiCodegen {
 	public class Parameter {
@@ -57,7 +57,7 @@ namespace GapiCodegen {
 
 		public string CSType {
 			get {
-				string cstype = SymbolTable.Table.GetCSType( elem.GetAttribute("type"));
+				string cstype = SymbolTable.Table.GetCsType( elem.GetAttribute("type"));
 				if (cstype == "void")
 					cstype = "System.IntPtr";
 				if (IsArray) {
@@ -155,7 +155,7 @@ namespace GapiCodegen {
 
 		public bool IsString {
 			get {
-				return (CSType == "string");
+				return CSType == "string";
 			}
 		}
 
@@ -357,7 +357,7 @@ namespace GapiCodegen {
 				foreach (string s in segs) {
 					if (s.Trim () == "")
 						continue;
-					studly += (s.Substring(0,1).ToUpper() + s.Substring(1));
+					studly += s.Substring(0,1).ToUpper() + s.Substring(1);
 				}
 				return studly;
 				

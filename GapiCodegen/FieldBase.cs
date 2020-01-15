@@ -19,6 +19,7 @@
 
 using System.IO;
 using System.Xml;
+using GapiCodegen.Generatables;
 
 namespace GapiCodegen
 {
@@ -100,7 +101,7 @@ namespace GapiCodegen
                     return true;
                 if (IsArray)
                     return true;
-                if (Access == "private" && (Getter == null) && (Setter == null))
+                if (Access == "private" && Getter == null && Setter == null)
                     return true;
                 return false;
             }
@@ -111,8 +112,8 @@ namespace GapiCodegen
             if (!container_type.CanGenerateABIStruct(new LogWriter(container_type.CName)))
                 return false;
 
-            return (abi_field != null && abi_field.getOffsetName != null &&
-                    gen_info.GlueWriter == null);
+            return abi_field != null && abi_field.getOffsetName != null &&
+                   gen_info.GlueWriter == null;
         }
 
         void CheckGlue(GenerationInfo gen_info)
@@ -145,7 +146,7 @@ namespace GapiCodegen
             }
             else
             {
-                if ((Readable && Getter == null) || (Writable && Setter == null))
+                if (Readable && Getter == null || Writable && Setter == null)
                 {
                     offsetName = CName + "_offset";
                     getOffsetName = prefix + "_get_" + offsetName;
@@ -254,7 +255,7 @@ namespace GapiCodegen
                 sw.WriteLine(indent + "\t}");
             }
 
-            string to_native = (gen is IManualMarshaler)
+            string to_native = gen is IManualMarshaler
                 ? (gen as IManualMarshaler).AllocNative("value")
                 : gen.CallByName("value");
 

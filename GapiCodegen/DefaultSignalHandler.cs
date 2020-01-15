@@ -22,6 +22,7 @@
 using System;
 using System.IO;
 using System.Xml;
+using GapiCodegen.Generatables;
 
 namespace GapiCodegen {
 	public class DefaultSignalHandler : GObjectVirtualMethod {

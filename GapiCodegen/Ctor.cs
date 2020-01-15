@@ -20,10 +20,10 @@
 // Boston, MA 02111-1307, USA.
 
 
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Xml;
+using GapiCodegen.Generatables;
 
 namespace GapiCodegen {
 	public class Ctor : MethodBase  {

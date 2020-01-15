@@ -6,6 +6,9 @@ MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GapiFixup", "GapiFixup\GapiFixup.csproj", "{41717ADC-753E-4979-9DD3-9860DCE4BFA0}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GapiCodegen", "GapiCodegen\GapiCodegen.csproj", "{10B5EB77-32AB-4927-A389-D312F5268121}"
+	ProjectSection(ProjectDependencies) = postProject
+		{41717ADC-753E-4979-9DD3-9860DCE4BFA0} = {41717ADC-753E-4979-9DD3-9860DCE4BFA0}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -19,31 +19,22 @@
 // Free Software Foundation, Inc., 59 Temple Place - Suite 330,
 // Boston, MA 02111-1307, USA.
 
-using System;
 using System.Collections.Generic;
+using GapiCodegen.Generatables;
 
 namespace GapiCodegen
 {
     /// <summary>
-    /// The Symbol Table Class.
+    /// Keeps track of the type hierarchy and the mappings between C types and IGeneratable classes.
     /// </summary>
     public class SymbolTable
     {
-        static SymbolTable table = null;
-        static LogWriter log = new LogWriter("SymbolTable");
+        private static readonly LogWriter Log = new LogWriter("SymbolTable");
+        private readonly IDictionary<string, IGeneratable> _types = new Dictionary<string, IGeneratable>();
 
-        IDictionary<string, IGeneratable> types = new Dictionary<string, IGeneratable>();
+        private static SymbolTable _table;
 
-        public static SymbolTable Table
-        {
-            get
-            {
-                if (table == null)
-                    table = new SymbolTable();
-
-                return table;
-            }
-        }
+        public static SymbolTable Table => _table ?? (_table = new SymbolTable());
 
         public SymbolTable()
         {
@@ -135,6 +126,7 @@ namespace GapiCodegen
             AddType(new ManualGen("GVariant", "GLib.Variant"));
             AddType(new ManualGen("GVariantType", "GLib.VariantType"));
             AddType(new ManualGen("GValueArray", "GLib.ValueArray"));
+
             AddType(new ManualGen("GMutex", "GLib.Mutex",
                 "new GLib.Mutex({0})",
                 "GLib.Mutex.ABI"));
@@ -143,31 +135,40 @@ namespace GapiCodegen
                 "GLib.RecMutex",
                 "new GLib.RecMutex({0})",
                 "GLib.RecMutex.ABI"));
+
             AddType(new ManualGen("GCond", "GLib.Cond",
                 "new GLib.Cond({0})",
                 "GLib.Cond.ABI"));
+
             AddType(new ManualGen("GDateTime", "GLib.DateTime"));
             AddType(new ManualGen("GDate", "GLib.Date"));
             AddType(new ManualGen("GSource", "GLib.Source"));
             AddType(new ManualGen("GMainContext", "GLib.MainContext"));
             AddType(new SimpleGen("GPollFD", "GLib.PollFD", "GLib.PollFD.Zero"));
+
             AddType(new MarshalGen("gunichar", "char", "uint", "GLib.Marshaller.CharToGUnichar ({0})",
                 "GLib.Marshaller.GUnicharToChar ({0})"));
+
             AddType(new MarshalGen("time_t", "System.DateTime", "IntPtr", "GLib.Marshaller.DateTimeTotime_t ({0})",
                 "GLib.Marshaller.time_tToDateTime ({0})"));
+
             AddType(new MarshalGen("GString", "string", "IntPtr", "new GLib.GString ({0}).Handle",
                 "GLib.GString.PtrToString ({0})"));
+
             AddType(
                 new MarshalGen("GType", "GLib.GType", "IntPtr", "{0}.Val", "new GLib.GType({0})", "GLib.GType.None"));
+
             AddType(new ByRefGen("GValue", "GLib.Value"));
+
             AddType(new SimpleGen("GDestroyNotify", "GLib.DestroyNotify", "null",
                 "(uint) Marshal.SizeOf(typeof(IntPtr))"));
+
             AddType(new SimpleGen("GThread", "GLib.Thread", "null"));
             AddType(new ManualGen("GBytes", "GLib.Bytes"));
             AddType(new SimpleGen("GHookList", "GLib.HookList", "null",
                 "GLib.HookList.abi_info.Size"));
 
-            // FIXME: These ought to be handled properly.
+            //TODO: FIXME: These ought to be handled properly.
             AddType(new SimpleGen("GC", "IntPtr", "IntPtr.Zero"));
             AddType(new SimpleGen("GError", "IntPtr", "IntPtr.Zero"));
             AddType(new SimpleGen("GMemChunk", "IntPtr", "IntPtr.Zero"));
@@ -189,215 +190,90 @@ namespace GapiCodegen
 
         public void AddType(IGeneratable gen)
         {
-            log.Info("Adding " + gen.CName + " = " + gen);
-            types[gen.CName] = gen;
+            Log.Info($"Adding {gen.CName} = {gen}");
+
+            _types[gen.CName] = gen;
         }
 
         public void AddTypes(IGeneratable[] gens)
         {
-            foreach (IGeneratable gen in gens)
+            foreach (var gen in gens)
                 AddType(gen);
         }
 
-        public int Count
+        public IGeneratable this[string ctype] => DeAlias(ctype);
+
+        public string FromNative(string cType, string val)
         {
-            get { return types.Count; }
+            var generatable = this[cType];
+
+            return generatable != null ? generatable.FromNative(val) : string.Empty;
         }
 
-        public IEnumerable<IGeneratable> Generatables
+        public string GetCsType(string cType, bool isDefaultPointer)
         {
-            get { return types.Values; }
+            var generatable = this[cType];
+
+            if (generatable != null) return generatable.QualifiedName;
+
+            if (cType.EndsWith("*") && isDefaultPointer)
+                return "IntPtr";
+
+            return string.Empty;
         }
 
-        public IGeneratable this[string ctype]
+        public string GetCsType(string cType)
         {
-            get { return DeAlias(ctype); }
+            return GetCsType(cType, false);
         }
 
-        private bool IsConstString(string type)
+        public string GetMarshalType(string cType)
         {
-            switch (type)
-            {
-                case "const-gchar":
-                case "const-char":
-                case "const-xmlChar":
-                case "const-gfilename":
-                    return true;
-                default:
-                    return false;
-            }
+            var generatable = this[cType];
+
+            return generatable != null ? generatable.MarshalType : string.Empty;
         }
 
-        private string Trim(string type)
+        public ClassBase GetClassGen(string cType)
         {
-            // HACK: If we don't detect this here, there is no
-            // way of indicating it in the symbol table
-            if (type == "void*" || type == "const-void*") return "gpointer";
-
-            string trim_type = type.TrimEnd('*');
-
-            if (IsConstString(trim_type))
-                return trim_type;
-
-            if (trim_type.StartsWith("const-")) return trim_type.Substring(6);
-            return trim_type;
+            return this[cType] as ClassBase;
         }
 
-        private IGeneratable DeAlias(string type)
+        public InterfaceGen GetInterfaceGen(string cType)
         {
-            type = Trim(type);
-            IGeneratable cur_type = null;
-            while (types.TryGetValue(type, out cur_type) && cur_type is AliasGen)
-            {
-                IGeneratable igen = cur_type as AliasGen;
-
-                IGeneratable new_type;
-                if (!types.TryGetValue(igen.Name, out new_type))
-                    new_type = null;
-
-                types[type] = new_type;
-                type = igen.Name;
-            }
-
-            return cur_type;
+            return this[cType] as InterfaceGen;
         }
 
-        public string FromNative(string c_type, string val)
+        public string CallByName(string cType, string varName)
         {
-            IGeneratable gen = this[c_type];
-            if (gen == null)
-                return "";
-            return gen.FromNative(val);
+            var generatable = this[cType];
+
+            return generatable != null ? generatable.CallByName(varName) : string.Empty;
         }
 
-        public string GetCSType(string c_type, bool default_pointer)
+        public bool IsOpaque(string cType)
         {
-            IGeneratable gen = this[c_type];
-            if (gen == null)
-            {
-                if (c_type.EndsWith("*") && default_pointer)
-                    return "IntPtr";
-
-                return "";
-            }
-
-            return gen.QualifiedName;
+            return this[cType] is OpaqueGen;
         }
 
-        public string GetCSType(string c_type)
+        public bool IsBoxed(string cType)
         {
-            return GetCSType(c_type, false);
+            return this[cType] is BoxedGen;
         }
 
-        public string GetName(string c_type)
+        public bool IsEnum(string cType)
         {
-            IGeneratable gen = this[c_type];
-            if (gen == null)
-                return "";
-            return gen.Name;
+            return this[cType] is EnumGen;
         }
 
-        public string GetMarshalType(string c_type)
+        public bool IsInterface(string cType)
         {
-            IGeneratable gen = this[c_type];
-            if (gen == null)
-                return "";
-            return gen.MarshalType;
+            return this[cType] is InterfaceGen;
         }
 
-        public string CallByName(string c_type, string var_name)
+        public bool IsObject(string cType)
         {
-            IGeneratable gen = this[c_type];
-            if (gen == null)
-                return "";
-            return gen.CallByName(var_name);
-        }
-
-        public bool IsOpaque(string c_type)
-        {
-            if (this[c_type] is OpaqueGen)
-                return true;
-
-            return false;
-        }
-
-        public bool IsBoxed(string c_type)
-        {
-            if (this[c_type] is BoxedGen)
-                return true;
-
-            return false;
-        }
-
-        public bool IsStruct(string c_type)
-        {
-            if (this[c_type] is StructGen)
-                return true;
-
-            return false;
-        }
-
-        public bool IsUnion(string c_type)
-        {
-            if (this[c_type] is UnionGen)
-                return true;
-            return false;
-        }
-
-        public bool IsEnum(string c_type)
-        {
-            if (this[c_type] is EnumGen)
-                return true;
-
-            return false;
-        }
-
-        public bool IsEnumFlags(string c_type)
-        {
-            EnumGen gen = this[c_type] as EnumGen;
-            return (gen != null && gen.Elem.GetAttribute("type") == "flags");
-        }
-
-        public bool IsInterface(string c_type)
-        {
-            if (this[c_type] is InterfaceGen)
-                return true;
-
-            return false;
-        }
-
-        public ClassBase GetClassGen(string c_type)
-        {
-            return this[c_type] as ClassBase;
-        }
-
-        public InterfaceGen GetInterfaceGen(string c_type)
-        {
-            return this[c_type] as InterfaceGen;
-        }
-
-        public bool IsObject(string c_type)
-        {
-            if (this[c_type] is ObjectGen)
-                return true;
-
-            return false;
-        }
-
-        public bool IsCallback(string c_type)
-        {
-            if (this[c_type] is CallbackGen)
-                return true;
-
-            return false;
-        }
-
-        public bool IsManuallyWrapped(string c_type)
-        {
-            if (this[c_type] is ManualGen)
-                return true;
-
-            return false;
+            return this[cType] is ObjectGen;
         }
 
         public string MangleName(string name)
@@ -444,11 +320,58 @@ namespace GapiCodegen
                     return "for_each";
                 case "remove":
                     return "_remove";
-                default:
-                    break;
             }
 
             return name;
+        }
+
+        private IGeneratable DeAlias(string type)
+        {
+            IGeneratable currentType;
+
+            type = Trim(type);
+
+            while (_types.TryGetValue(type, out currentType) && currentType is AliasGen aliasGen)
+            {
+                if (_types.TryGetValue(aliasGen.Name, out var newType))
+                {
+                    _types[type] = newType;
+                }
+
+                type = aliasGen.Name;
+            }
+
+            return currentType;
+        }
+
+        private static string Trim(string type)
+        {
+            // HACK: If we don't detect this here, there is no
+            // way of indicating it in the symbol table
+            if (type == "void*" || type == "const-void*") return "gpointer";
+
+            var trimmedType = type.TrimEnd('*');
+
+            if (IsStringConstant(trimmedType))
+                return trimmedType;
+
+            return trimmedType.StartsWith("const-")
+                ? trimmedType.Substring(6)
+                : trimmedType;
+        }
+
+        private static bool IsStringConstant(string type)
+        {
+            switch (type)
+            {
+                case "const-gchar":
+                case "const-char":
+                case "const-xmlChar":
+                case "const-gfilename":
+                    return true;
+                default:
+                    return false;
+            }
         }
     }
 }

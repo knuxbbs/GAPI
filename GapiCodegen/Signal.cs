@@ -21,10 +21,10 @@
 // Boston, MA 02111-1307, USA.
 
 
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Xml;
+using GapiCodegen.Generatables;
 
 namespace GapiCodegen {
 	public class Signal {
@@ -75,7 +75,7 @@ namespace GapiCodegen {
 
  		public void GenerateDecl (StreamWriter sw)
  		{
-			if (elem.GetAttributeAsBoolean ("new_flag") || (container_type != null && container_type.GetSignalRecursively (Name) != null))
+			if (elem.GetAttributeAsBoolean ("new_flag") || container_type != null && container_type.GetSignalRecursively (Name) != null)
 				sw.Write("new ");
 
  			sw.WriteLine ("\t\tevent " + EventHandlerQualifiedName + " " + Name + ";");
@@ -97,7 +97,7 @@ namespace GapiCodegen {
 					Parameter p = parms [i];
 					if (p.PassAs != "" && !(p.Generatable is StructBase))
 						result += p.PassAs + " ";
-					result += (p.MarshalType + " arg" + i);
+					result += p.MarshalType + " arg" + i;
 				}
 
 				return result;
@@ -266,8 +266,8 @@ namespace GapiCodegen {
 		private bool NeedNew (ObjectBase implementor)
 		{
 			return elem.GetAttributeAsBoolean ("new_flag") ||
-				(container_type != null && container_type.GetSignalRecursively (Name) != null) ||
-				(implementor != null && implementor.GetSignalRecursively (Name) != null);
+				container_type != null && container_type.GetSignalRecursively (Name) != null ||
+				implementor != null && implementor.GetSignalRecursively (Name) != null;
 		}
 
 		public void GenEventHandler (GenerationInfo gen_info)

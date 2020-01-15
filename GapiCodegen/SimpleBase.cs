@@ -19,8 +19,6 @@
 // Boston, MA 02111-1307, USA.
 
 
-using System;
-
 namespace GapiCodegen {
 	public abstract class SimpleBase : IGeneratable  {
 		

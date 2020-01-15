@@ -22,7 +22,7 @@
 using System.IO;
 using System.Xml;
 
-namespace GapiCodegen {
+namespace GapiCodegen.Generatables {
 	public abstract class HandleBase : ClassBase, IPropertyAccessor, IOwnable {
 
 		protected HandleBase (XmlElement ns, XmlElement elem) : base (ns, elem) {}

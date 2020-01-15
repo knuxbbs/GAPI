@@ -20,11 +20,10 @@
 // Boston, MA 02111-1307, USA.
 
 
-using System;
 using System.IO;
 using System.Xml;
 
-namespace GapiCodegen {
+namespace GapiCodegen.Generatables {
 	public class CallbackGen : GenBase, IPropertyAccessor {
 
 		private Parameters parms;
@@ -240,7 +239,7 @@ namespace GapiCodegen {
 			/* If the function expects one or more "out" parameters(error parameters are excluded) or has a return value different from void and bool, exceptions
 			*  thrown in the managed function have to be considered fatal meaning that an exception is to be thrown and the function call cannot not return
 			*/
-			bool fatal = (retval.MarshalType != "void" && retval.MarshalType != "bool") || call.HasOutParam;
+			bool fatal = retval.MarshalType != "void" && retval.MarshalType != "bool" || call.HasOutParam;
 			sw.WriteLine ("\t\t\t} catch (Exception e) {");
 			sw.WriteLine ("\t\t\t\tGLib.ExceptionManager.RaiseUnhandledException (e, " + (fatal ? "true" : "false") + ");");
 			if (fatal) {
@@ -308,7 +307,7 @@ namespace GapiCodegen {
 			
 			GenWrapper (gen_info);
 
-			Statistics.CBCount++;
+			Statistics.CallbackCount++;
 		}
 	}
 }

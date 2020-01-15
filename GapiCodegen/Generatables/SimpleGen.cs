@@ -1,4 +1,4 @@
-// GtkSharp.Generation.AliasGen.cs - The Alias type Generatable.
+// GtkSharp.Generation.SimpleGen.cs - The Simple type Generatable.
 //
 // Author: Mike Kestner <mkestner@speakeasy.net>
 //
@@ -18,13 +18,19 @@
 // Free Software Foundation, Inc., 59 Temple Place - Suite 330,
 // Boston, MA 02111-1307, USA.
 
-using System;
 
-namespace GapiCodegen
-{
-    public class AliasGen : SimpleBase
-    {
-        public AliasGen(string ctype, string type) : base(ctype, type, string.Empty) { }
-    }
+namespace GapiCodegen.Generatables {
+	public class SimpleGen : SimpleBase {
+		string size_of;
+
+		public SimpleGen (string ctype, string type, string default_value) : base (ctype, type, default_value) {}
+		public SimpleGen (string ctype, string type, string default_value, string size_of) : base (ctype, type, default_value) {
+			this.size_of = size_of;
+		}
+
+		public override string GenerateGetSizeOf () {
+			return size_of;
+		}
+	}
 }
 

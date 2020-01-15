@@ -25,6 +25,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Xml;
+using GapiCodegen.Generatables;
 
 namespace GapiCodegen {
 	public abstract class ObjectBase : HandleBase {
@@ -236,7 +237,7 @@ namespace GapiCodegen {
 			foreach (object member in class_members) {
 				if (member is VirtualMethod) {
 					VirtualMethod vm = member as VirtualMethod;
-					if (hidden_vms.Contains (vm) || (is_interface && vm is DefaultSignalHandler))
+					if (hidden_vms.Contains (vm) || is_interface && vm is DefaultSignalHandler)
 						sw.WriteLine ("\t\t\tIntPtr {0};", vm.Name);
 					else
 						sw.WriteLine ("\t\t\tpublic {0}NativeDelegate {0};", vm.Name);

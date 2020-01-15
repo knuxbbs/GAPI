@@ -20,9 +20,7 @@
 // Boston, MA 02111-1307, USA.
 
 
-using System;
-
-namespace GapiCodegen {
+namespace GapiCodegen.Generatables {
 	public class ManualGen : SimpleBase {
 		
 		string from_fmt;
