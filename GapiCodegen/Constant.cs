@@ -17,71 +17,80 @@
 // Free Software Foundation, Inc., 59 Temple Place - Suite 330,
 // Boston, MA 02111-1307, USA.
 
-using System;
 using System.IO;
 using System.Xml;
 
 namespace GapiCodegen
 {
-	public class Constant
-	{
-		private readonly string name;
-		private readonly string value;
-		private readonly string ctype;
+    public class Constant
+    {
+        private readonly string name;
+        private readonly string value;
+        private readonly string ctype;
 
-		public Constant (XmlElement elem)
-		{
-			name = elem.GetAttribute ("name");
-			value = elem.GetAttribute ("value");
-			ctype = elem.GetAttribute ("ctype");
-		}
+        public Constant(XmlElement elem)
+        {
+            name = elem.GetAttribute("name");
+            value = elem.GetAttribute("value");
+            ctype = elem.GetAttribute("ctype");
+        }
 
-		public string Name {
-			get {
-				return name;
-			}
-		}
-		public string ConstType {
-			get {
-				if (IsString)
-					return "string";
+        public string Name
+        {
+            get
+            {
+                return name;
+            }
+        }
+        public string ConstType
+        {
+            get
+            {
+                if (IsString)
+                    return "string";
+                
 				// gir registers all integer values as gint even for numbers which do not fit into a gint
-				// if the number is too big for an int, try to fit it into a long
-				if (SymbolTable.Table.GetMarshalType (ctype) == "int" && value.Length < 20 && long.Parse (value) > int.MaxValue)
-					return "long";
-				return SymbolTable.Table.GetMarshalType (ctype);
-			}
-		}
+                // if the number is too big for an int, try to fit it into a long
+                if (SymbolTable.Table.GetMarshalType(ctype) == "int" && value.Length < 20 && long.Parse(value) > int.MaxValue)
+                    return "long";
 
-		public bool IsString {
-			get {
-				return (SymbolTable.Table.GetCSType (ctype) == "string");
-			}
-		}
+                return SymbolTable.Table.GetMarshalType(ctype);
+            }
+        }
 
-		public virtual bool Validate (LogWriter log)
-		{
-			if (ConstType == string.Empty) {
-				log.Warn ("{0} type is missing or wrong", Name);
-				return false;
-			}
-			if (SymbolTable.Table.GetMarshalType (ctype) == "int" && value.Length >= 20) {
-				return false;
-			}
-			return true;
-		}
+        public bool IsString
+        {
+            get
+            {
+                return (SymbolTable.Table.GetCSType(ctype) == "string");
+            }
+        }
 
-		public virtual void Generate (GenerationInfo gen_info, string indent)
-		{
-			StreamWriter sw = gen_info.Writer;
+        public virtual bool Validate(LogWriter log)
+        {
+            if (ConstType == string.Empty)
+            {
+                log.Warn("{0} type is missing or wrong", Name);
+                return false;
+            }
+            if (SymbolTable.Table.GetMarshalType(ctype) == "int" && value.Length >= 20)
+            {
+                return false;
+            }
+            return true;
+        }
 
-			sw.WriteLine ("{0}public const {1} {2} = {3}{4}{5};",
-			              indent,
-			              ConstType,
-			              Name,
-			              IsString ? "@\"": string.Empty,
-			              value,
-			              IsString ? "\"": string.Empty);
-		}
-	}
+        public virtual void Generate(GenerationInfo gen_info, string indent)
+        {
+            StreamWriter sw = gen_info.Writer;
+
+            sw.WriteLine("{0}public const {1} {2} = {3}{4}{5};",
+                          indent,
+                          ConstType,
+                          Name,
+                          IsString ? "@\"" : string.Empty,
+                          value,
+                          IsString ? "\"" : string.Empty);
+        }
+    }
 }

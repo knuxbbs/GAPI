@@ -24,17 +24,17 @@
         <e p="DefaultSignalHandler.cs" t="Include" />
         <e p="EnumGen.cs" t="Include" />
         <e p="FieldBase.cs" t="Include" />
-        <e p="GObjectVM.cs" t="Include" />
-        <e p="Gapi.Codegen.csproj" t="IncludeRecursive" />
+        <e p="GObjectVirtualMethod.cs" t="Include" />
+        <e p="GapiCodegen.csproj" t="IncludeRecursive" />
         <e p="GenBase.cs" t="Include" />
         <e p="GenerationInfo.cs" t="Include" />
         <e p="HandleBase.cs" t="Include" />
-        <e p="IAccessor.cs" t="Include" />
         <e p="IGeneratable.cs" t="Include" />
         <e p="IManualMarshaler.cs" t="Include" />
         <e p="IOwnable.cs" t="Include" />
+        <e p="IPropertyAccessor.cs" t="Include" />
         <e p="InterfaceGen.cs" t="Include" />
-        <e p="InterfaceVM.cs" t="Include" />
+        <e p="InterfaceVirtualMethod.cs" t="Include" />
         <e p="LPGen.cs" t="Include" />
         <e p="LPUGen.cs" t="Include" />
         <e p="LogWriter.cs" t="Include" />
@@ -71,21 +71,21 @@
         <e p="SymbolTable.cs" t="Include" />
         <e p="UnionABIField.cs" t="Include" />
         <e p="UnionGen.cs" t="Include" />
-        <e p="VMSignature.cs" t="Include" />
         <e p="VirtualMethod.cs" t="Include" />
+        <e p="VirtualMethodSignature.cs" t="Include" />
         <e p="XmlElementExtensions.cs" t="Include" />
         <e p="obj" t="ExcludeRecursive">
           <e p="Debug" t="Include">
-            <e p="Gapi.Codegen.AssemblyInfo.cs" t="Include" />
+            <e p="GapiCodegen.AssemblyInfo.cs" t="Include" />
           </e>
         </e>
       </e>
       <e p="GapiFixup" t="IncludeRecursive">
-        <e p="Gapi.Fixup.csproj" t="IncludeRecursive" />
+        <e p="GapiFixup.csproj" t="IncludeRecursive" />
         <e p="Program.cs" t="Include" />
         <e p="obj" t="ExcludeRecursive">
           <e p="Debug" t="Include">
-            <e p="Gapi.Fixup.AssemblyInfo.cs" t="Include" />
+            <e p="GapiFixup.AssemblyInfo.cs" t="Include" />
           </e>
         </e>
       </e>
