@@ -25,13 +25,14 @@ using System.IO;
 using System.Xml;
 using GapiCodegen.Generatables;
 using GapiCodegen.Interfaces;
+using GapiCodegen.Util;
 
 namespace GapiCodegen {
 	public class StructField : FieldBase {
 
 		public static int bitfields;
 
-		public StructField (XmlElement elem, ClassBase container_type) : base (elem, container_type) {}
+		public StructField (XmlElement element, ClassBase container_type) : base (element, container_type) {}
 
 		protected override string DefaultAccess {
 			get {
@@ -49,11 +50,11 @@ namespace GapiCodegen {
 				
 				int result;
 				try {
-					result = int.Parse (elem.GetAttribute("array_len"));
+					result = int.Parse (Element.GetAttribute("array_len"));
 				} catch (Exception) {
 					LogWriter log = new LogWriter (container_type.Name + "." + Name);
 
-					log.Warn("Non-numeric array_len: \"" + elem.GetAttribute("array_len") +
+					log.Warn("Non-numeric array_len: \"" + Element.GetAttribute("array_len") +
 							 "\" incorrectly generated");
 					result = 0;
 				}
@@ -62,7 +63,7 @@ namespace GapiCodegen {
 		}
 
 		public bool IsNullTermArray {
-			get { return elem.GetAttributeAsBoolean ("null_term_array"); }
+			get { return Element.GetAttributeAsBoolean ("null_term_array"); }
 		}
 
 		public new string CSType {
@@ -115,7 +116,7 @@ namespace GapiCodegen {
                    gen is CallbackGen ||
                    cstype == "string" ||
                    CType == "guint8" && IsArray && IsNullTermArray ||
-                   elem.GetAttributeAsBoolean("is_callback");
+                   Element.GetAttributeAsBoolean("is_callback");
 
 		}
 
@@ -153,10 +154,10 @@ namespace GapiCodegen {
 
 		public bool IsPadding {
 			get {
-				if (elem.GetAttributeAsBoolean ("is-padding"))
-					return elem.GetAttributeAsBoolean ("is-padding");
+				if (Element.GetAttributeAsBoolean ("is-padding"))
+					return Element.GetAttributeAsBoolean ("is-padding");
 
-				return elem.GetAttribute ("access") == "private" && (
+				return Element.GetAttribute ("access") == "private" && (
                            CName.StartsWith ("dummy") || CName.StartsWith ("padding"));
 			}
 		}

@@ -22,7 +22,7 @@ namespace GapiCodegen.Generatables
 {
     public class AliasGen : SimpleBase
     {
-        public AliasGen(string ctype, string type) : base(ctype, type, string.Empty) { }
+        public AliasGen(string cType, string type) : base(cType, type, string.Empty) { }
     }
 }
 

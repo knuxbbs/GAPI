@@ -85,8 +85,8 @@ namespace GapiCodegen {
 						if (p.PassAs == "ref")
 							sw.WriteLine ("\t\t\tvals [" + (i + 1) + "] = new GLib.Value (" + p.Name + ");");
 						else
-							sw.WriteLine ("\t\t\tvals [" + (i + 1) + "] = new GLib.Value ((GLib.GType)typeof (" + p.CSType + "));");
-						cleanup += "\t\t\t" + p.Name + " = (" + p.CSType + ") vals [" + i + "];\n";
+							sw.WriteLine ("\t\t\tvals [" + (i + 1) + "] = new GLib.Value ((GLib.GType)typeof (" + p.CsType + "));");
+						cleanup += "\t\t\t" + p.Name + " = (" + p.CsType + ") vals [" + i + "];\n";
 					} else {
 						if (p.PassAs == "ref")
 							sw.WriteLine ("\t\t\tIntPtr " + p.Name + "_ptr = GLib.Marshaller.StructureToPtrAlloc (" + p.Generatable.CallByName (p.Name) + ");");

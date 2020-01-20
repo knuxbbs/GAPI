@@ -38,21 +38,21 @@ namespace GapiFixup
                 return 0;
             }
 
-            var api_filename = string.Empty;
-            XmlDocument api_doc = new XmlDocument();
-            XmlDocument meta_doc = new XmlDocument();
-            XmlDocument symbol_doc = new XmlDocument();
+            var apiFilename = string.Empty;
+            var apiDoc = new XmlDocument();
+            var metaDoc = new XmlDocument();
+            var symbolDoc = new XmlDocument();
 
             foreach (var arg in args)
             {
                 if (arg.StartsWith("--metadata="))
                 {
-                    var meta_filename = arg.Substring("--metadata=".Length);
+                    var metaFilename = arg.Substring("--metadata=".Length);
 
                     try
                     {
-                        Stream stream = File.OpenRead(meta_filename);
-                        meta_doc.Load(stream);
+                        Stream stream = File.OpenRead(metaFilename);
+                        metaDoc.Load(stream);
                         stream.Close();
                     }
                     catch (XmlException e)
@@ -64,12 +64,12 @@ namespace GapiFixup
                 }
                 else if (arg.StartsWith("--api="))
                 {
-                    api_filename = arg.Substring("--api=".Length);
+                    apiFilename = arg.Substring("--api=".Length);
 
                     try
                     {
-                        Stream stream = File.OpenRead(api_filename);
-                        api_doc.Load(stream);
+                        Stream stream = File.OpenRead(apiFilename);
+                        apiDoc.Load(stream);
                         stream.Close();
                     }
                     catch (XmlException e)
@@ -81,12 +81,12 @@ namespace GapiFixup
                 }
                 else if (arg.StartsWith("--symbols="))
                 {
-                    var symbol_filename = arg.Substring("--symbols=".Length);
+                    var symbolFilename = arg.Substring("--symbols=".Length);
 
                     try
                     {
-                        Stream stream = File.OpenRead(symbol_filename);
-                        symbol_doc.Load(stream);
+                        Stream stream = File.OpenRead(symbolFilename);
+                        symbolDoc.Load(stream);
                         stream.Close();
                     }
                     catch (XmlException e)
@@ -103,17 +103,17 @@ namespace GapiFixup
                 }
             }
 
-            XPathNavigator meta_nav = meta_doc.CreateNavigator();
-            XPathNavigator api_nav = api_doc.CreateNavigator();
+            XPathNavigator metaNavigator = metaDoc.CreateNavigator();
+            XPathNavigator apiNavigator = apiDoc.CreateNavigator();
 
-            XPathNodeIterator copy_iter = meta_nav.Select("/metadata/copy-node");
+            XPathNodeIterator copyNodeIterator = metaNavigator.Select("/metadata/copy-node");
 
-            while (copy_iter.MoveNext())
+            while (copyNodeIterator.MoveNext())
             {
-                var path = copy_iter.Current.GetAttribute("path", string.Empty);
-                XPathExpression expr = api_nav.Compile(path);
-                var parent = copy_iter.Current.Value;
-                XPathNodeIterator parent_iter = api_nav.Select(parent);
+                var path = copyNodeIterator.Current.GetAttribute("path", string.Empty);
+                XPathExpression expr = apiNavigator.Compile(path);
+                var parent = copyNodeIterator.Current.Value;
+                XPathNodeIterator parent_iter = apiNavigator.Select(parent);
                 var matched = false;
 
                 while (parent_iter.MoveNext())
@@ -134,12 +134,12 @@ namespace GapiFixup
                     Console.WriteLine($"Warning: <copy-node path=\"{path}\"/> matched no nodes");
             }
 
-            XPathNodeIterator rmv_iter = meta_nav.Select("/metadata/remove-node");
+            XPathNodeIterator removeNodeIterator = metaNavigator.Select("/metadata/remove-node");
 
-            while (rmv_iter.MoveNext())
+            while (removeNodeIterator.MoveNext())
             {
-                var path = rmv_iter.Current.GetAttribute("path", "");
-                XPathNodeIterator api_iter = api_nav.Select(path);
+                var path = removeNodeIterator.Current.GetAttribute("path", "");
+                XPathNodeIterator api_iter = apiNavigator.Select(path);
                 var matched = false;
 
                 while (api_iter.MoveNext())
@@ -153,20 +153,20 @@ namespace GapiFixup
                     Console.WriteLine($"Warning: <remove-node path=\"{path}\"/> matched no nodes");
             }
 
-            XPathNodeIterator add_iter = meta_nav.Select("/metadata/add-node");
+            XPathNodeIterator addNodeIterator = metaNavigator.Select("/metadata/add-node");
 
-            while (add_iter.MoveNext())
+            while (addNodeIterator.MoveNext())
             {
-                var path = add_iter.Current.GetAttribute("path", "");
-                XPathNodeIterator api_iter = api_nav.Select(path);
+                var path = addNodeIterator.Current.GetAttribute("path", "");
+                XPathNodeIterator api_iter = apiNavigator.Select(path);
                 var matched = false;
 
                 while (api_iter.MoveNext())
                 {
                     var api_node = ((IHasXmlNode)api_iter.Current).GetNode() as XmlElement;
 
-                    foreach (XmlNode child in ((IHasXmlNode)add_iter.Current).GetNode().ChildNodes)
-                        api_node.AppendChild(api_doc.ImportNode(child, true));
+                    foreach (XmlNode child in ((IHasXmlNode)addNodeIterator.Current).GetNode().ChildNodes)
+                        api_node.AppendChild(apiDoc.ImportNode(child, true));
 
                     matched = true;
                 }
@@ -175,19 +175,19 @@ namespace GapiFixup
                     Console.WriteLine($"Warning: <add-node path=\"{path}\"/> matched no nodes");
             }
 
-            XPathNodeIterator change_node_type_iter = meta_nav.Select("/metadata/change-node-type");
+            XPathNodeIterator changeNodeTypeIterator = metaNavigator.Select("/metadata/change-node-type");
 
-            while (change_node_type_iter.MoveNext())
+            while (changeNodeTypeIterator.MoveNext())
             {
-                var path = change_node_type_iter.Current.GetAttribute("path", "");
-                XPathNodeIterator api_iter = api_nav.Select(path);
+                var path = changeNodeTypeIterator.Current.GetAttribute("path", "");
+                XPathNodeIterator api_iter = apiNavigator.Select(path);
                 var matched = false;
 
                 while (api_iter.MoveNext())
                 {
                     var node = ((IHasXmlNode)api_iter.Current).GetNode() as XmlElement;
                     var parent = node.ParentNode as XmlElement;
-                    XmlElement new_node = api_doc.CreateElement(change_node_type_iter.Current.Value);
+                    XmlElement new_node = apiDoc.CreateElement(changeNodeTypeIterator.Current.Value);
 
                     foreach (XmlNode child in node.ChildNodes)
                         new_node.AppendChild(child.Clone());
@@ -203,19 +203,19 @@ namespace GapiFixup
                     Console.WriteLine($"Warning: <change-node-type path=\"{path}\"/> matched no nodes");
             }
 
-            XPathNodeIterator attr_iter = meta_nav.Select("/metadata/attr");
+            XPathNodeIterator attrIterator = metaNavigator.Select("/metadata/attr");
 
-            while (attr_iter.MoveNext())
+            while (attrIterator.MoveNext())
             {
-                var path = attr_iter.Current.GetAttribute("path", "");
-                var attr_name = attr_iter.Current.GetAttribute("name", "");
-                XPathNodeIterator api_iter = api_nav.Select(path);
+                var path = attrIterator.Current.GetAttribute("path", "");
+                var attr_name = attrIterator.Current.GetAttribute("name", "");
+                XPathNodeIterator api_iter = apiNavigator.Select(path);
                 var matched = false;
 
                 while (api_iter.MoveNext())
                 {
                     var node = ((IHasXmlNode)api_iter.Current).GetNode() as XmlElement;
-                    node.SetAttribute(attr_name, attr_iter.Current.Value);
+                    node.SetAttribute(attr_name, attrIterator.Current.Value);
                     matched = true;
                 }
 
@@ -223,14 +223,14 @@ namespace GapiFixup
                     Console.WriteLine($"Warning: <attr path=\"{path}\"/> matched no nodes");
             }
 
-            XPathNodeIterator move_iter = meta_nav.Select("/metadata/move-node");
+            XPathNodeIterator moveNodeIterator = metaNavigator.Select("/metadata/move-node");
 
-            while (move_iter.MoveNext())
+            while (moveNodeIterator.MoveNext())
             {
-                var path = move_iter.Current.GetAttribute("path", "");
-                XPathExpression expr = api_nav.Compile(path);
-                var parent = move_iter.Current.Value;
-                XPathNodeIterator parent_iter = api_nav.Select(parent);
+                var path = moveNodeIterator.Current.GetAttribute("path", "");
+                XPathExpression expr = apiNavigator.Compile(path);
+                var parent = moveNodeIterator.Current.Value;
+                XPathNodeIterator parent_iter = apiNavigator.Select(parent);
                 var matched = false;
 
                 while (parent_iter.MoveNext())
@@ -252,13 +252,13 @@ namespace GapiFixup
                     Console.WriteLine($"Warning: <move-node path=\"{path}\"/> matched no nodes");
             }
 
-            XPathNodeIterator remove_attr_iter = meta_nav.Select("/metadata/remove-attr");
+            XPathNodeIterator removeAttrIterator = metaNavigator.Select("/metadata/remove-attr");
 
-            while (remove_attr_iter.MoveNext())
+            while (removeAttrIterator.MoveNext())
             {
-                var path = remove_attr_iter.Current.GetAttribute("path", "");
-                var name = remove_attr_iter.Current.GetAttribute("name", "");
-                XPathNodeIterator api_iter = api_nav.Select(path);
+                var path = removeAttrIterator.Current.GetAttribute("path", "");
+                var name = removeAttrIterator.Current.GetAttribute("name", "");
+                XPathNodeIterator api_iter = apiNavigator.Select(path);
                 var matched = false;
 
                 while (api_iter.MoveNext())
@@ -273,21 +273,21 @@ namespace GapiFixup
                     Console.WriteLine($"Warning: <remove-attr path=\"{path}\"/> matched no nodes");
             }
 
-            XPathNavigator symbol_nav = symbol_doc.CreateNavigator();
-            XPathNodeIterator iter = symbol_nav.Select("/api/*");
+            XPathNavigator symbolNavigator = symbolDoc.CreateNavigator();
+            XPathNodeIterator iterator = symbolNavigator.Select("/api/*");
 
-            while (iter.MoveNext())
+            while (iterator.MoveNext())
             {
-                XmlNode sym_node = ((IHasXmlNode)iter.Current).GetNode();
-                XPathNodeIterator parent_iter = api_nav.Select("/api");
+                XmlNode sym_node = ((IHasXmlNode)iterator.Current).GetNode();
+                XPathNodeIterator parent_iter = apiNavigator.Select("/api");
 
                 if (!parent_iter.MoveNext()) continue;
 
                 XmlNode parent_node = ((IHasXmlNode)parent_iter.Current).GetNode();
-                parent_node.AppendChild(api_doc.ImportNode(sym_node, true));
+                parent_node.AppendChild(apiDoc.ImportNode(sym_node, true));
             }
 
-            api_doc.Save(api_filename);
+            apiDoc.Save(apiFilename);
             return 0;
         }
     }

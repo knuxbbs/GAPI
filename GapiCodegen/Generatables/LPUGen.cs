@@ -25,7 +25,7 @@ namespace GapiCodegen.Generatables
 {
     public class LPUGen : SimpleGen, IPropertyAccessor
     {
-        public LPUGen(string ctype) : base(ctype, "ulong", "0") { }
+        public LPUGen(string cType) : base(cType, "ulong", "0") { }
 
         public override string MarshalType
         {
@@ -35,9 +35,9 @@ namespace GapiCodegen.Generatables
             }
         }
 
-        public override string CallByName(string var_name)
+        public override string CallByName(string varName)
         {
-            return "new UIntPtr (" + var_name + ")";
+            return "new UIntPtr (" + varName + ")";
         }
 
         public override string FromNative(string var)
@@ -45,13 +45,13 @@ namespace GapiCodegen.Generatables
             return "(ulong) " + var;
         }
 
-        public void WriteAccessors(TextWriter sw, string indent, string var)
+        public void WriteAccessors(TextWriter sw, string indent, string fieldName)
         {
             sw.WriteLine(indent + "get {");
-            sw.WriteLine(indent + "\treturn " + FromNative(var) + ";");
+            sw.WriteLine(indent + "\treturn " + FromNative(fieldName) + ";");
             sw.WriteLine(indent + "}");
             sw.WriteLine(indent + "set {");
-            sw.WriteLine(indent + "\t" + var + " = " + CallByName("value") + ";");
+            sw.WriteLine(indent + "\t" + fieldName + " = " + CallByName("value") + ";");
             sw.WriteLine(indent + "}");
         }
     }

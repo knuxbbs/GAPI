@@ -21,6 +21,7 @@
 using System.Xml;
 using GapiCodegen.Generatables;
 using GapiCodegen.Interfaces;
+using GapiCodegen.Util;
 
 namespace GapiCodegen {
 	public class ReturnValue  {
@@ -154,7 +155,7 @@ namespace GapiCodegen {
 			else if (is_null_term)
 				return string.Format ("GLib.Marshaller.NullTermPtrToStringArray ({0}, {1})", var, owned ? "true" : "false");
 			else if (is_array)
-				return string.Format ("({0}) GLib.Marshaller.ArrayPtrToArray ({1}, typeof ({2}), (int){3}native_{4}, true)", CSType, var, IGen.QualifiedName, CountParameter.CSType == "int" ? string.Empty : "(" + CountParameter.CSType + ")", CountParameter.Name);
+				return string.Format ("({0}) GLib.Marshaller.ArrayPtrToArray ({1}, typeof ({2}), (int){3}native_{4}, true)", CSType, var, IGen.QualifiedName, CountParameter.CsType == "int" ? string.Empty : "(" + CountParameter.CsType + ")", CountParameter.Name);
 			else
 				return IGen.FromNative (var);
 		}

@@ -22,8 +22,8 @@ namespace GapiCodegen.Interfaces
 {
     public interface IManualMarshaler
     {
-        string AllocNative(string managed_var);
+        string AllocNative(string managedVar);
 
-        string ReleaseNative(string native_var);
+        string ReleaseNative(string nativeVar);
     }
 }

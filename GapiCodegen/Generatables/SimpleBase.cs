@@ -18,89 +18,74 @@
 // Free Software Foundation, Inc., 59 Temple Place - Suite 330,
 // Boston, MA 02111-1307, USA.
 
-
 using GapiCodegen.Interfaces;
 
-namespace GapiCodegen.Generatables {
-	public abstract class SimpleBase : IGeneratable  {
-		
-		string type;
-		string ctype;
-		string ns = string.Empty;
-		string default_value = string.Empty;
+namespace GapiCodegen.Generatables
+{
+    public abstract class SimpleBase : IGeneratable
+    {
+        private readonly string _namespace = string.Empty;
 
-		public SimpleBase (string ctype, string type, string default_value)
-		{
-			string[] toks = type.Split('.');
-			this.ctype = ctype;
-			this.type = toks[toks.Length - 1];
-			if (toks.Length > 2)
-				ns = string.Join (".", toks, 0, toks.Length - 1);
-			else if (toks.Length == 2)
-				ns = toks[0];
-			this.default_value = default_value;
-		}
-		
-		public string CName {
-			get {
-				return ctype;
-			}
-		}
+        protected SimpleBase(string cType, string type, string defaultValue)
+        {
+            CName = cType;
+            DefaultValue = defaultValue;
 
-		public string Name {
-			get {
-				return type;
-			}
-		}
+            var toks = type.Split('.');
+            Name = toks[toks.Length - 1];
 
-		public string QualifiedName {
-			get {
-				return ns == string.Empty ? type : ns + "." + type;
-			}
-		}
+            if (toks.Length > 2)
+                _namespace = string.Join(".", toks, 0, toks.Length - 1);
+            else if (toks.Length == 2)
+                _namespace = toks[0];
+        }
 
-		public virtual string MarshalType {
-			get {
-				return QualifiedName;
-			}
-		}
+        public string CName { get; }
 
-		public virtual string DefaultValue {
-			get {
-				return default_value;
-			}
-		}
+        public virtual string DefaultValue { get; }
 
-		public virtual string CallByName (string var)
-		{
-			return var;
-		}
-		
-		public virtual string FromNative(string var)
-		{
-			return var;
-		}
+        public string Name { get; }
 
-		public bool Validate ()
-		{
-			return true;
-		}
+        public string QualifiedName => _namespace == string.Empty ? Name : $"{_namespace}.{Name}";
 
-		public void Generate ()
-		{
-		}
-		
-		public void Generate (GenerationInfo gen_info)
-		{
-		}
+        public virtual string MarshalType => QualifiedName;
 
-		public virtual string GenerateGetSizeOf () {
-			return null;
-		}
+        public virtual string CallByName(string var)
+        {
+            return var;
+        }
 
-		public virtual string GenerateAlign () {
-			return null;
-		}
-	}
+        public virtual string FromNative(string var)
+        {
+            return var;
+        }
+
+        public bool Validate()
+        {
+            return true;
+        }
+
+        public void Generate()
+        {
+            //TODO: Remove
+        }
+
+        public void Generate(GenerationInfo generationInfo)
+        {
+            //TODO: Remove
+        }
+
+        public virtual string GenerateGetSizeOf()
+        {
+            //TODO: Remove
+            return null;
+        }
+
+        public virtual string GenerateAlign()
+        {
+            //TODO: Remove
+            return null;
+        }
+    }
 }
 

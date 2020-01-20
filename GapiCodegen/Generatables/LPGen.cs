@@ -25,7 +25,7 @@ namespace GapiCodegen.Generatables
 {
     public class LPGen : SimpleGen, IPropertyAccessor
     {
-        public LPGen(string ctype) : base(ctype, "long", "0L") { }
+        public LPGen(string cType) : base(cType, "long", "0L") { }
 
         public override string MarshalType
         {
@@ -35,9 +35,9 @@ namespace GapiCodegen.Generatables
             }
         }
 
-        public override string CallByName(string var_name)
+        public override string CallByName(string varName)
         {
-            return "new IntPtr (" + var_name + ")";
+            return "new IntPtr (" + varName + ")";
         }
 
         public override string FromNative(string var)
@@ -45,13 +45,13 @@ namespace GapiCodegen.Generatables
             return "(long) " + var;
         }
 
-        public void WriteAccessors(TextWriter sw, string indent, string var)
+        public void WriteAccessors(TextWriter sw, string indent, string fieldName)
         {
             sw.WriteLine(indent + "get {");
-            sw.WriteLine(indent + "\treturn " + FromNative(var) + ";");
+            sw.WriteLine(indent + "\treturn " + FromNative(fieldName) + ";");
             sw.WriteLine(indent + "}");
             sw.WriteLine(indent + "set {");
-            sw.WriteLine(indent + "\t" + var + " = " + CallByName("value") + ";");
+            sw.WriteLine(indent + "\t" + fieldName + " = " + CallByName("value") + ";");
             sw.WriteLine(indent + "}");
         }
     }

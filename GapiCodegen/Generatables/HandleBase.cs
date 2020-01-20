@@ -66,13 +66,13 @@ namespace GapiCodegen.Generatables {
 			return FromNative (var, false);
 		}
 
-		public void WriteAccessors (TextWriter sw, string indent, string var)
+		public void WriteAccessors (TextWriter sw, string indent, string fieldName)
 		{
 			sw.WriteLine (indent + "get {");
-			sw.WriteLine (indent + "\treturn " + FromNative (var, false) + ";");
+			sw.WriteLine (indent + "\treturn " + FromNative (fieldName, false) + ";");
 			sw.WriteLine (indent + "}");
 			sw.WriteLine (indent + "set {");
-			sw.WriteLine (indent + "\t" + var + " = " + CallByName ("value") + ";");
+			sw.WriteLine (indent + "\t" + fieldName + " = " + CallByName ("value") + ";");
 			sw.WriteLine (indent + "}");
 		}
 	}

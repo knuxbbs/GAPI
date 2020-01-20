@@ -25,15 +25,15 @@ using GapiCodegen.Interfaces;
 namespace GapiCodegen.Generatables {
 	public class OwnableGen : SimpleBase, IOwnable {
 		
-		public OwnableGen (string ctype, string type) : base (ctype, type, "null") {}
+		public OwnableGen (string cType, string type) : base (cType, type, "null") {}
 
 		public override string MarshalType {
 			get { return "IntPtr"; }
 		}
 
-		public override string CallByName (string var_name)
+		public override string CallByName (string varName)
 		{
-			return var_name + " == null ? IntPtr.Zero : " + var_name + ".Handle";
+			return varName + " == null ? IntPtr.Zero : " + varName + ".Handle";
 		}
 		
 		public override string FromNative (string var)

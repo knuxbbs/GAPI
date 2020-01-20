@@ -19,408 +19,422 @@
 // Free Software Foundation, Inc., 59 Temple Place - Suite 330,
 // Boston, MA 02111-1307, USA.
 
-
 using System.Xml;
 using GapiCodegen.Generatables;
 using GapiCodegen.Interfaces;
 
-namespace GapiCodegen {
-	public class Parameter {
+namespace GapiCodegen
+{
+    public class Parameter
+    {
+        private readonly XmlElement _element;
 
-		private XmlElement elem;
+        public Parameter(XmlElement element)
+        {
+            _element = element;
+        }
 
-		public Parameter (XmlElement e)
-		{
-			elem = e;
-		}
+        private string _callName;
 
-		string call_name;
-		public string CallName {
-			get {
-				if (call_name == null)
-					return Name;
-				else
-					return call_name;
-			}
-			set {
-				call_name = value;
-			}
-		}
+        public string CallName
+        {
+            get => _callName ?? Name;
+            set => _callName = value;
+        }
 
-		public string CType {
-			get {
-				string type = elem.GetAttribute("type");
-				if (type == "void*")
-					type = "gpointer";
-				return type;
-			}
-		}
+        public string CType
+        {
+            get
+            {
+                var type = _element.GetAttribute("type");
 
-		public string CSType {
-			get {
-				string cstype = SymbolTable.Table.GetCsType( elem.GetAttribute("type"));
-				if (cstype == "void")
-					cstype = "System.IntPtr";
-				if (IsArray) {
-					if (IsParams)
-						cstype = "params " + cstype;
-					cstype += "[]";
-					cstype = cstype.Replace ("ref ", "");
-				}
-				return cstype;
-			}
-		}
+                if (type == "void*")
+                    type = "gpointer";
 
-		public IGeneratable Generatable {
-			get {
-				return SymbolTable.Table[CType];
-			}
-		}
+                return type;
+            }
+        }
 
-		public bool IsArray {
-			get {
-				return elem.GetAttributeAsBoolean ("array") || elem.GetAttributeAsBoolean ("null_term_array");
-			}
-		}
+        public string CsType
+        {
+            get
+            {
+                var csType = SymbolTable.Table.GetCsType(_element.GetAttribute("type"));
 
-		public bool IsEllipsis {
-			get {
-				return elem.GetAttributeAsBoolean ("ellipsis");
-			}
-		}
+                if (csType == "void")
+                    csType = "System.IntPtr";
 
-		internal bool IsOptional {
-			get {
-				return elem.GetAttributeAsBoolean ("allow-none");
-			}
-		}
+                if (!IsArray) return csType;
 
-		bool is_count;
-		bool is_count_set;
-		public bool IsCount {
-			get {
-				if (is_count_set)
-					return is_count;
-				
-				if (Name.StartsWith("n_"))
-					switch (CSType) {
-					case "int":
-					case "uint":
-					case "long":
-					case "ulong":
-					case "short":
-					case "ushort":
-						return true;
-					default:
-						return false;
-					}
-				else
-					return false;
-			}
-			set {
-				is_count_set = true;
-				is_count = value;
-			}
-		}
+                if (IsParams)
+                    csType = $"params {csType}";
 
-		public bool IsDestroyNotify {
-			get {
-				return CType == "GDestroyNotify";
-			}
-		}
+                csType += "[]";
+                csType = csType.Replace("ref ", "");
 
-		public bool IsLength {
-			get {
-				if (Name.EndsWith("len") || Name.EndsWith("length"))
-					switch (CSType) {
-					case "int":
-					case "uint":
-					case "long":
-					case "ulong":
-					case "short":
-					case "ushort":
-						return true;
-					default:
-						return false;
-					}
-				else
-					return false;
-			}
-		}
+                return csType;
+            }
+        }
 
-		public bool IsParams {
-			get {
-				return elem.HasAttribute("params");
-			}
-		}
+        public IGeneratable Generatable => SymbolTable.Table[CType];
 
-		public bool IsString {
-			get {
-				return CSType == "string";
-			}
-		}
+        public bool IsArray => _element.GetAttributeAsBoolean("array") || _element.GetAttributeAsBoolean("null_term_array");
 
-		public bool IsUserData {
-			get {
-				return CSType == "IntPtr" && (Name.EndsWith ("data") || Name.EndsWith ("data_or_owner"));
-			}
-		}
+        public bool IsEllipsis => _element.GetAttributeAsBoolean("ellipsis");
 
-		public virtual string MarshalType {
-			get {
-				string type = SymbolTable.Table.GetMarshalType( elem.GetAttribute("type"));
-				if (type == "void" || Generatable is IManualMarshaler)
-					type = "IntPtr";
-				if (IsArray) {
-					type += "[]";
-					type = type.Replace ("ref ", "");
-				}
-				return type;
-			}
-		}
+        internal bool IsOptional => _element.GetAttributeAsBoolean("allow-none");
 
-		public string Name {
-			get {
-				return SymbolTable.Table.MangleName (elem.GetAttribute("name"));
-			}
-		}
+        private bool _isCount;
+        private bool _isCountSet;
 
-		public bool IsOwnable {
-			get {
-				return Generatable is OwnableGen;
-			}
-		}
+        public bool IsCount
+        {
+            get
+            {
+                if (_isCountSet)
+                    return _isCount;
 
-		public bool Owned {
-			get {
-				return elem.GetAttribute ("owned") == "true";
-			}
-		}
+                if (!Name.StartsWith("n_")) return false;
 
-		public virtual string NativeSignature {
-			get {
-				string sig = MarshalType + " " + Name;
-				if (PassAs != string.Empty)
-					sig = PassAs + " " + sig;
-				return sig;
-			}
-		}
+                switch (CsType)
+                {
+                    case "int":
+                    case "uint":
+                    case "long":
+                    case "ulong":
+                    case "short":
+                    case "ushort":
+                        return true;
+                    default:
+                        return false;
+                }
+            }
+            set
+            {
+                _isCountSet = true;
+                _isCount = value;
+            }
+        }
 
-		public string PropertyName {
-			get {
-				return elem.GetAttribute("property_name");
-			}
-		}
+        public bool IsDestroyNotify => CType == "GDestroyNotify";
 
-		string pass_as;
+        public bool IsLength
+        {
+            get
+            {
+                if (!Name.EndsWith("len") && !Name.EndsWith("length")) return false;
 
-		public string PassAs {
-			get {
-				if (pass_as != null)
-					return pass_as;
+                switch (CsType)
+                {
+                    case "int":
+                    case "uint":
+                    case "long":
+                    case "ulong":
+                    case "short":
+                    case "ushort":
+                        return true;
+                    default:
+                        return false;
+                }
+            }
+        }
 
-				if (elem.HasAttribute ("pass_as"))
-					return elem.GetAttribute ("pass_as");
+        public bool IsParams => _element.HasAttribute("params");
 
-				if (IsArray || CSType.EndsWith ("IntPtr"))
-					return "";
+        public bool IsString => CsType == "string";
 
-				if (CType.EndsWith ("*") && (Generatable is SimpleGen || Generatable is EnumGen))
-					return "out";
+        public bool IsUserData => CsType == "IntPtr" && (Name.EndsWith("data") || Name.EndsWith("data_or_owner"));
 
-				return "";
-			}
-			set {
-				pass_as = value;
-			}
-		}
+        public virtual string MarshalType
+        {
+            get
+            {
+                var type = SymbolTable.Table.GetMarshalType(_element.GetAttribute("type"));
 
-		string scope;
-		public string Scope {
-			get {
-				if (scope == null)
-					scope = elem.GetAttribute ("scope");
-				return scope;
-			}
-			set {
-				scope = value;
-			}
-		}
+                if (type == "void" || Generatable is IManualMarshaler)
+                    type = "IntPtr";
 
-		int closure = -1;
-		public int Closure {
-			get {
-				if(closure == -1 && elem.HasAttribute ("closure"))
-					closure = int.Parse(elem.GetAttribute ("closure"));
-				return closure;
-			}
-			set {
-				closure = value;
-			}
-		}
+                if (!IsArray) return type;
 
-		int destroynotify = -1;
-		public int DestroyNotify {
-			get {
-				if (destroynotify == -1 && elem.HasAttribute ("destroy"))
-					destroynotify = int.Parse (elem.GetAttribute ("destroy"));
-				return destroynotify;
-			}
-			set {
-				destroynotify = value;
-			}
-		}
+                type += "[]";
+                type = type.Replace("ref ", "");
 
-		public bool IsHidden {
-			get {
-				return elem.GetAttributeAsBoolean ("hidden");
-			}
-		}
+                return type;
+            }
+        }
 
-		public virtual string[] Prepare {
-			get {
-				IGeneratable gen = Generatable;
-				if (gen is IManualMarshaler) {
-					string result = "IntPtr native_" + CallName;
-					if (PassAs != "out")
-						result += " = " + (gen as IManualMarshaler).AllocNative (CallName);
-					return new string [] { result + ";" };
-				} else if (PassAs == "out" && CSType != MarshalType) {
-					return new string [] { gen.MarshalType + " native_" + CallName + ";" };
-				} else if (PassAs == "ref" && CSType != MarshalType) {
-					return new string [] { gen.MarshalType + " native_" + CallName + " = (" + gen.MarshalType + ") " + CallName + ";" };
-				} else if (gen is OpaqueGen && Owned) {
-					return new string [] { CallName + ".Owned = false;" };
-				}
+        public string Name => SymbolTable.Table.MangleName(_element.GetAttribute("name"));
 
-				return new string [0];
-			}
-		}
+        public bool IsOwnable => Generatable is OwnableGen;
 
-		public virtual string CallString {
-			get {
-				string call_parm;
+        public bool Owned => _element.GetAttribute("owned") == "true";
 
-				IGeneratable gen = Generatable;
-				if (gen is CallbackGen)
-					return SymbolTable.Table.CallByName (CType, CallName + "_wrapper");
-				else if (PassAs != string.Empty) {
-					call_parm = PassAs + " ";
-					if (CSType != MarshalType)
-						call_parm += "native_";
-					call_parm += CallName;
-				} else if (gen is IManualMarshaler)
-					call_parm = "native_" + CallName;
-				else if (gen is ObjectBase)
-					call_parm = (gen as ObjectBase).CallByName (CallName, Owned);
-				else
-					call_parm = gen.CallByName (CallName);
-			
-				return call_parm;
-			}
-		}
+        public virtual string NativeSignature
+        {
+            get
+            {
+                var signature = $"{MarshalType} {Name}";
 
-		public virtual string[] Finish {
-			get {
-				IGeneratable gen = Generatable;
-				if (gen is IManualMarshaler) {
-					string[] result = new string [PassAs == "ref" ? 2 : 1];
-					int i = 0;
-					if (PassAs != string.Empty)
-						result [i++] = CallName + " = " + Generatable.FromNative ("native_" + CallName) + ";";
-					if (PassAs != "out")
-						result [i] = (gen as IManualMarshaler).ReleaseNative ("native_" + CallName) + ";";
-					return result;
-				} else if (PassAs != string.Empty && MarshalType != CSType)
-					if (gen is IOwnable)
-						return new string [] { CallName + " = " + (gen as IOwnable).FromNative ("native_" + CallName, Owned) + ";" };
-					else
-						return new string [] { CallName + " = " + gen.FromNative ("native_" + CallName) + ";" };
-				return new string [0];
-			}
-		}
+                if (!string.IsNullOrEmpty(PassAs))
+                    signature = $"{PassAs} {signature}";
 
-		public string FromNative (string var)
-		{
-			if (Generatable == null)
-				return string.Empty;
-			else if (Generatable is IOwnable)
-				return ((IOwnable)Generatable).FromNative (var, Owned);
-			else
-				return Generatable.FromNative (var);
-		}
+                return signature;
+            }
+        }
 
-		public string StudlyName {
-			get {
-				string name = elem.GetAttribute("name");
-				string[] segs = name.Split('_');
-				string studly = "";
-				foreach (string s in segs) {
-					if (s.Trim () == "")
-						continue;
-					studly += s.Substring(0,1).ToUpper() + s.Substring(1);
-				}
-				return studly;
-				
-			}
-		}
-	}
+        public string PropertyName => _element.GetAttribute("property_name");
 
-	public class ErrorParameter : Parameter {
+        private string _passAs;
 
-		public ErrorParameter (XmlElement elem) : base (elem)
-		{
-			PassAs = "out";
-		}
+        public string PassAs
+        {
+            get
+            {
+                if (!string.IsNullOrEmpty(_passAs))
+                    return _passAs;
 
-		public override string CallString {
-			get {
-				return "out error";
-			}
-		}
-	}
+                if (_element.HasAttribute("pass_as"))
+                    return _element.GetAttribute("pass_as");
 
-	public class StructParameter : Parameter {
+                if (IsArray || CsType.EndsWith("IntPtr"))
+                    return "";
 
-		public StructParameter (XmlElement elem) : base (elem) {}
+                if (CType.EndsWith("*") && (Generatable is SimpleGen || Generatable is EnumGen))
+                    return "out";
 
-		public override string MarshalType {
-			get {
-				return "IntPtr";
-			}
-		}
+                return "";
+            }
+            set => _passAs = value;
+        }
 
-		public override string[] Prepare {
-			get {
-				if (PassAs == "out")
-					return new string [] { "IntPtr native_" + CallName + " = Marshal.AllocHGlobal (Marshal.SizeOf (typeof (" + Generatable.QualifiedName + ")));"};
-				else
-					return new string [] { "IntPtr native_" + CallName + " = " + (Generatable as IManualMarshaler).AllocNative (CallName) + ";"};
-			}
-		}
+        private string _scope;
 
-		public override string CallString {
-			get {
-				return "native_" + CallName;
-			}
-		}
+        public string Scope
+        {
+            get => _scope ?? (_scope = _element.GetAttribute("scope"));
+            set => _scope = value;
+        }
 
-		public override string[] Finish {
-			get {
-				string[] result = new string [PassAs == string.Empty ? 1 : 2];
-				int i = 0;
-				if (PassAs != string.Empty) {
-					result [i++] = CallName + " = " + FromNative ("native_" + CallName) + ";";
-				}
-				result [i++] = (Generatable as IManualMarshaler).ReleaseNative ("native_" + CallName) + ";";
-				return result;
-			}
-		}
+        private int _closure = -1;
 
-		public override string NativeSignature {
-			get {
-				return "IntPtr " + CallName;
-			}
-		}
-	}
+        public int Closure
+        {
+            get
+            {
+                if (_closure == -1 && _element.HasAttribute("closure"))
+                {
+                    _closure = int.Parse(_element.GetAttribute("closure"));
+                }
+
+                return _closure;
+            }
+            set => _closure = value;
+        }
+
+        private int _destroyNotify = -1;
+
+        public int DestroyNotify
+        {
+            get
+            {
+                if (_destroyNotify == -1 && _element.HasAttribute("destroy"))
+                {
+                    _destroyNotify = int.Parse(_element.GetAttribute("destroy"));
+                }
+
+                return _destroyNotify;
+            }
+            set => _destroyNotify = value;
+        }
+
+        public bool IsHidden => _element.GetAttributeAsBoolean("hidden");
+
+        public virtual string[] Prepare
+        {
+            get
+            {
+                if (Generatable is IManualMarshaler marshaler)
+                {
+                    var result = $"IntPtr native_{CallName}";
+
+                    if (PassAs != "out")
+                        result += $" = {marshaler.AllocNative(CallName)}";
+
+                    return new[] { $"{result};" };
+                }
+
+                switch (PassAs)
+                {
+                    case "out" when CsType != MarshalType:
+                        return new[] { $"{Generatable.MarshalType} native_{CallName};" };
+                    case "ref" when CsType != MarshalType:
+                        return new[] { $"{Generatable.MarshalType} native_{CallName} = ({Generatable.MarshalType}) {CallName};" };
+                    default:
+                        {
+                            if (Generatable is OpaqueGen && Owned)
+                            {
+                                return new[] { $"{CallName}.Owned = false;" };
+                            }
+
+                            break;
+                        }
+                }
+
+                return new string[0];
+            }
+        }
+
+        public virtual string CallString
+        {
+            get
+            {
+                if (Generatable is CallbackGen)
+                    return SymbolTable.Table.CallByName(CType, $"{CallName}_wrapper");
+
+                string callParam;
+
+                if (!string.IsNullOrEmpty(PassAs))
+                {
+                    callParam = $"{PassAs} ";
+
+                    if (CsType != MarshalType)
+                        callParam += "native_";
+
+                    callParam += CallName;
+                }
+                else switch (Generatable)
+                    {
+                        case IManualMarshaler _:
+                            callParam = $"native_{CallName}";
+                            break;
+                        case ObjectBase objectBase:
+                            callParam = objectBase.CallByName(CallName, Owned);
+                            break;
+                        default:
+                            callParam = Generatable.CallByName(CallName);
+                            break;
+                    }
+
+                return callParam;
+            }
+        }
+
+        public virtual string[] Finish
+        {
+            get
+            {
+                if (Generatable is IManualMarshaler marshaler)
+                {
+                    var result = new string[PassAs == "ref" ? 2 : 1];
+                    var i = 0;
+
+                    if (!string.IsNullOrEmpty(PassAs))
+                    {
+                        result[i++] = $"{CallName} = {Generatable.FromNative($"native_{CallName}")};";
+                    }
+
+                    if (PassAs != "out")
+                        result[i] = $"{marshaler.ReleaseNative($"native_{CallName}")};";
+
+                    return result;
+                }
+
+                if (string.IsNullOrEmpty(PassAs) || MarshalType == CsType) return new string[0];
+
+                if (Generatable is IOwnable ownable)
+                {
+                    return new[] { $"{CallName} = {ownable.FromNative($"native_{CallName}", Owned)};" };
+                }
+
+                return new[] { $"{CallName} = {Generatable.FromNative($"native_{CallName}")};" };
+            }
+        }
+
+        public string FromNative(string var)
+        {
+            switch (Generatable)
+            {
+                case null:
+                    return string.Empty;
+                case IOwnable ownable:
+                    return ownable.FromNative(var, Owned);
+                default:
+                    return Generatable.FromNative(var);
+            }
+        }
+
+        public string StudlyName
+        {
+            get
+            {
+                var name = _element.GetAttribute("name");
+                var segments = name.Split('_');
+                var studly = "";
+
+                foreach (var segment in segments)
+                {
+                    if (segment.Trim() == "")
+                        continue;
+
+                    studly += segment.Substring(0, 1).ToUpper() + segment.Substring(1);
+                }
+
+                return studly;
+            }
+        }
+    }
+
+    public class ErrorParameter : Parameter
+    {
+        public ErrorParameter(XmlElement element) : base(element)
+        {
+            PassAs = "out";
+        }
+
+        public override string CallString => "out error";
+    }
+
+    public class StructParameter : Parameter
+    {
+        public StructParameter(XmlElement element) : base(element) { }
+
+        public override string MarshalType => "IntPtr";
+
+        public override string[] Prepare
+        {
+            get
+            {
+                return PassAs == "out"
+                    ? new[]
+                    {
+                        $"IntPtr native_{CallName} = Marshal.AllocHGlobal (Marshal.SizeOf (typeof ({Generatable.QualifiedName})));"
+                    }
+                    : new[]
+                    {
+                        $"IntPtr native_{CallName} = {(Generatable as IManualMarshaler)?.AllocNative(CallName)};"
+                    };
+            }
+        }
+
+        public override string CallString => $"native_{CallName}";
+
+        public override string[] Finish
+        {
+            get
+            {
+                var result = new string[PassAs == string.Empty ? 1 : 2];
+                var i = 0;
+
+                if (PassAs != string.Empty)
+                {
+                    result[i++] = $"{CallName} = {FromNative($"native_{CallName}")};";
+                }
+
+                result[i] = $"{(Generatable as IManualMarshaler)?.ReleaseNative($"native_{CallName}")};";
+                return result;
+            }
+        }
+
+        public override string NativeSignature => $"IntPtr {CallName}";
+    }
 }

@@ -82,7 +82,7 @@ namespace GapiCodegen
             foreach (Parameter p in parms)
             {
                 result[i] = p.PassAs != "" ? p.PassAs + " " : "";
-                result[i++] += p.CSType + " " + p.Name;
+                result[i++] += p.CsType + " " + p.Name;
             }
 
             return string.Join(", ", result);

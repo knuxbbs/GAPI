@@ -19,6 +19,7 @@
 
 using System.IO;
 using System.Xml;
+using GapiCodegen.Util;
 
 namespace GapiCodegen
 {

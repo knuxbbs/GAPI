@@ -25,7 +25,7 @@ using GapiCodegen.Interfaces;
 namespace GapiCodegen.Generatables {
 	public class ByRefGen : SimpleBase, IManualMarshaler {
 		
-		public ByRefGen (string ctype, string type) : base (ctype, type, type + ".Empty") {}
+		public ByRefGen (string cType, string type) : base (cType, type, type + ".Empty") {}
 		
 		public override string MarshalType {
 			get {
@@ -33,9 +33,9 @@ namespace GapiCodegen.Generatables {
 			}
 		}
 
-		public override string CallByName (string var_name)
+		public override string CallByName (string varName)
 		{
-			return "native_" + var_name;
+			return "native_" + varName;
 		}
 		
 		public string AllocNative ()

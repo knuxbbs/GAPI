@@ -21,42 +21,69 @@
 
 namespace GapiCodegen.Interfaces
 {
+    /// <summary>
+    /// Interface to generate code for a type.
+    /// </summary>
     public interface IGeneratable
     {
-        // The C name of the generatable
+        /// <summary>
+        /// The C name of the generatable.
+        /// </summary>
         string CName { get; }
 
-        // The (short) C# name of the generatable
+        /// <summary>
+        /// The (short) C# name of the generatable.
+        /// </summary>
         string Name { get; }
 
-        // The fully-qualified C# name of the generatable
+        /// <summary>
+        /// The fully-qualified C# name of the generatable.
+        /// </summary>
         string QualifiedName { get; }
 
-        // The type (possibly including "ref" or "out") to use in the import
-        // signature when passing this generatable to unmanaged code
+        /// <summary>
+        /// The type (possibly including "ref" or "out") to use in the import
+        /// signature when passing this generatable to unmanaged code.
+        /// </summary>
         string MarshalType { get; }
 
-        // The value returned by callbacks that are interrupted prematurely
-        // by managed exceptions or other conditions where an appropriate
-        // value can't be otherwise obtained.
+        /// <summary>
+        /// The value returned by callbacks that are interrupted prematurely
+        /// by managed exceptions or other conditions where an appropriate
+        /// value can't be otherwise obtained.
+        /// </summary>
         string DefaultValue { get; }
 
-        // Generates an expression to convert var_name to MarshalType
-        string CallByName(string var_name);
+        /// <summary>
+        /// Generates an expression to convert varName to MarshalType.
+        /// </summary>
+        /// <param name="varName"></param>
+        /// <returns></returns>
+        string CallByName(string varName);
 
-        // Generates an expression to convert var from MarshalType
+        /// <summary>
+        /// Generates an expression to convert var from MarshalType.
+        /// </summary>
+        /// <param name="var"></param>
+        /// <returns></returns>
         string FromNative(string var);
 
-        // Generates code to get size of the type
+        /// <summary>
+        /// Generates code to get size of the type.
+        /// </summary>
+        /// <returns></returns>
         string GenerateGetSizeOf();
 
-        // Generates code to get size of the type
+        /// <summary>
+        /// Generates code to get size of the type.
+        /// </summary>
+        /// <returns></returns>
         string GenerateAlign();
 
         bool Validate();
 
         void Generate();
 
-        void Generate(GenerationInfo gen_info);
+        void Generate(GenerationInfo generationInfo);
     }
 }

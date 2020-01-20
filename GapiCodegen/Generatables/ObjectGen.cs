@@ -23,6 +23,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Xml;
+using GapiCodegen.Util;
 
 namespace GapiCodegen.Generatables
 {
@@ -140,14 +141,14 @@ namespace GapiCodegen.Generatables
             return result;
         }
 
-        public override void Generate(GenerationInfo gen_info)
+        public override void Generate(GenerationInfo generationInfo)
         {
-            gen_info.CurrentType = QualifiedName;
+            generationInfo.CurrentType = QualifiedName;
 
-            string asm_name = gen_info.AssemblyName.Length == 0 ? NS.ToLower() + "-sharp" : gen_info.AssemblyName;
-            DirectoryInfo di = GetDirectoryInfo(gen_info.Dir, asm_name);
+            string asm_name = generationInfo.AssemblyName.Length == 0 ? NS.ToLower() + "-sharp" : generationInfo.AssemblyName;
+            DirectoryInfo di = GetDirectoryInfo(generationInfo.Dir, asm_name);
 
-            StreamWriter sw = gen_info.Writer = gen_info.OpenStream(Name, NS);
+            StreamWriter sw = generationInfo.Writer = generationInfo.OpenStream(Name, NS);
 
             sw.WriteLine("namespace " + NS + " {");
             sw.WriteLine();
@@ -190,10 +191,10 @@ namespace GapiCodegen.Generatables
             sw.WriteLine(" {");
             sw.WriteLine();
 
-            GenCtors(gen_info);
-            GenProperties(gen_info, null);
-            GenFields(gen_info);
-            GenChildProperties(gen_info);
+            GenCtors(generationInfo);
+            GenProperties(generationInfo, null);
+            GenFields(generationInfo);
+            GenChildProperties(generationInfo);
 
             bool has_sigs = sigs != null && sigs.Count > 0;
             if (!has_sigs)
@@ -211,12 +212,12 @@ namespace GapiCodegen.Generatables
 
             if (has_sigs && Elem.HasAttribute("parent"))
             {
-                GenSignals(gen_info, null);
+                GenSignals(generationInfo, null);
             }
 
-            GenConstants(gen_info);
-            GenClassMembers(gen_info, cs_parent);
-            GenMethods(gen_info, null, null);
+            GenConstants(generationInfo);
+            GenClassMembers(generationInfo, cs_parent);
+            GenMethods(generationInfo, null, null);
 
             if (interfaces.Count != 0)
             {
@@ -255,10 +256,10 @@ namespace GapiCodegen.Generatables
                     if (Parent != null && Parent.Implements(iface))
                         continue;
                     InterfaceGen igen = table.GetClassGen(iface) as InterfaceGen;
-                    igen.GenMethods(gen_info, collisions, this);
-                    igen.GenProperties(gen_info, this);
-                    igen.GenSignals(gen_info, this);
-                    igen.GenVirtualMethods(gen_info, this);
+                    igen.GenMethods(generationInfo, collisions, this);
+                    igen.GenProperties(generationInfo, this);
+                    igen.GenSignals(generationInfo, this);
+                    igen.GenVirtualMethods(generationInfo, this);
                 }
             }
 
@@ -277,14 +278,14 @@ namespace GapiCodegen.Generatables
                 sw.WriteLine("\t\t}");
             }
 
-            GenerateStructureABI(gen_info);
+            GenerateStructureABI(generationInfo);
             sw.WriteLine("#endregion");
 
             sw.WriteLine("\t}");
             sw.WriteLine("}");
 
             sw.Close();
-            gen_info.Writer = null;
+            generationInfo.Writer = null;
             Statistics.ObjectCount++;
         }
 

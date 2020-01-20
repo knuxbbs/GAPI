@@ -21,6 +21,7 @@
 
 using System.IO;
 using System.Xml;
+using GapiCodegen.Util;
 
 namespace GapiCodegen.Generatables {
 	public class OpaqueGen : HandleBase {
@@ -38,11 +39,11 @@ namespace GapiCodegen.Generatables {
 			}
 		}
 
-		public override void Generate (GenerationInfo gen_info)
+		public override void Generate (GenerationInfo generationInfo)
 		{
-			gen_info.CurrentType = QualifiedName;
+			generationInfo.CurrentType = QualifiedName;
 
-			StreamWriter sw = gen_info.Writer = gen_info.OpenStream (Name, NS);
+			StreamWriter sw = generationInfo.Writer = generationInfo.OpenStream (Name, NS);
 
 			sw.WriteLine ("namespace " + NS + " {");
 			sw.WriteLine ();
@@ -77,10 +78,10 @@ namespace GapiCodegen.Generatables {
 			sw.WriteLine (" {");
 			sw.WriteLine ();
 
-			GenConstants (gen_info);
-			GenFields (gen_info);
-			GenMethods (gen_info, null, null);
-			GenCtors (gen_info);
+			GenConstants (generationInfo);
+			GenFields (generationInfo);
+			GenMethods (generationInfo, null, null);
+			GenCtors (generationInfo);
 
 			if (ref_ != null) {
 				ref_.GenerateImport (sw);
@@ -192,14 +193,14 @@ namespace GapiCodegen.Generatables {
 				sw.WriteLine ();
 			}
 
-			GenerateStructureABI(gen_info);
+			GenerateStructureABI(generationInfo);
 			sw.WriteLine ("#endregion");
 
 			sw.WriteLine ("\t}");
 			sw.WriteLine ("}");
 
 			sw.Close ();
-			gen_info.Writer = null;
+			generationInfo.Writer = null;
 			Statistics.OpaqueCount++;
 		}
 

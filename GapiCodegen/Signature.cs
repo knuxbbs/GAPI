@@ -44,7 +44,7 @@ namespace GapiCodegen {
 
 			foreach (Parameter p in parms) {
 				result [i] = p.PassAs != "" ? p.PassAs + " " : "";
-				result [i++] += p.CSType + " " + p.Name;
+				result [i++] += p.CsType + " " + p.Name;
 			}
 
 			return string.Join (", ", result);
@@ -59,7 +59,7 @@ namespace GapiCodegen {
 				int i = 0;
 
 				foreach (Parameter p in parms)
-					result [i++] = p.CSType;
+					result [i++] = p.CsType;
 
 				return string.Join (":", result);
 			}
@@ -83,7 +83,7 @@ namespace GapiCodegen {
 			get {
 				foreach (Parameter p in parms)
 					if (p.PassAs == "out")
-						return p.CSType;
+						return p.CsType;
 				
 				return null;
 			}
@@ -109,7 +109,7 @@ namespace GapiCodegen {
 						continue;
 
 					result [i] = p.PassAs != "" ? p.PassAs + " " : "";
-					result [i++] += p.CSType + " " + p.Name;
+					result [i++] += p.CsType + " " + p.Name;
 				}
 				
 				return string.Join (", ", result);
@@ -128,7 +128,7 @@ namespace GapiCodegen {
 				if (p.IsOptional && p.PassAs == string.Empty)
 					continue;
 				result [i] = p.PassAs != string.Empty ? p.PassAs + " " : string.Empty;
-				result [i++] += p.CSType + " " + p.Name;
+				result [i++] += p.CsType + " " + p.Name;
 			}
 
 			return string.Join (", ", result, 0, i);

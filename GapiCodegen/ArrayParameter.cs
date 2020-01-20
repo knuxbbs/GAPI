@@ -19,159 +19,125 @@
 // Free Software Foundation, Inc., 59 Temple Place - Suite 330,
 // Boston, MA 02111-1307, USA.
 
-
 using System.Collections.Generic;
 using System.Xml;
 using GapiCodegen.Generatables;
 using GapiCodegen.Interfaces;
 
-namespace GapiCodegen {
-	public class ArrayParameter : Parameter {
+namespace GapiCodegen
+{
+    public class ArrayParameter : Parameter
+    {
+        public ArrayParameter(XmlElement element) : base(element)
+        {
+            NullTerminated = element.GetAttributeAsBoolean("null_term_array");
 
-		bool null_terminated;
+            if (element.HasAttribute("array_len"))
+                FixedArrayLength = int.Parse(element.GetAttribute("array_len"));
+        }
 
-		public ArrayParameter (XmlElement elem) : base (elem)
-		{
-			null_terminated = elem.GetAttributeAsBoolean ("null_term_array");
-			if (elem.HasAttribute ("array_len"))
-				FixedArrayLength = int.Parse (elem.GetAttribute ("array_len"));
-		}
+        public int? FixedArrayLength { get; }
 
-		public override string MarshalType {
-			get {
-				if (Generatable is StructBase)
-					return CSType;
-				else
-					return base.MarshalType;
-			}
-		}
+        public override string MarshalType => Generatable is StructBase ? CsType : base.MarshalType;
 
-		bool NullTerminated {
-			get {
-				return null_terminated;
-			}
-		}
+        public override string[] Prepare
+        {
+            get
+            {
+                if (CsType == MarshalType && !FixedArrayLength.HasValue)
+                    return new string[0];
 
-		public int? FixedArrayLength { get; private set; }
+                var result = new List<string>();
 
-		public override string[] Prepare {
-			get {
-				if (CSType == MarshalType && !FixedArrayLength.HasValue)
-					return new string [0];
+                if (FixedArrayLength.HasValue)
+                {
+                    result.Add($"{Name} = new {MarshalType.TrimEnd('[', ']')}[{FixedArrayLength}];");
+                    return result.ToArray();
+                }
 
-				var result = new List<string> ();
+                result.Add($"int cnt_{CallName} = {CallName} == null ? 0 : {CallName}.Length;");
+                result.Add(string.Format("{0}[] native_{1} = new {0} [cnt_{1}{2}];",
+                    MarshalType.TrimEnd('[', ']'), CallName, NullTerminated ? " + 1" : ""));
+                result.Add($"for (int i = 0; i < cnt_{CallName}; i++)");
 
-				if (FixedArrayLength.HasValue) {
-					result.Add (string.Format ("{0} = new {1}[{2}];", Name, MarshalType.TrimEnd ('[', ']'), FixedArrayLength));
-					return result.ToArray ();
-				}
-				result.Add (string.Format ("int cnt_{0} = {0} == null ? 0 : {0}.Length;", CallName));
-				result.Add (string.Format ("{0}[] native_{1} = new {0} [cnt_{1}" + (NullTerminated ? " + 1" : "") + "];", MarshalType.TrimEnd('[', ']'), CallName));
-				result.Add (string.Format ("for (int i = 0; i < cnt_{0}; i++)", CallName));
-				IGeneratable gen = Generatable;
-				if (gen is IManualMarshaler)
-					result.Add (string.Format ("\tnative_{0} [i] = {1};", CallName, (gen as IManualMarshaler).AllocNative (CallName + "[i]")));
-				else
-					result.Add (string.Format ("\tnative_{0} [i] = {1};", CallName, gen.CallByName (CallName + "[i]")));
+                if (Generatable is IManualMarshaler marshaler)
+                    result.Add($"\tnative_{CallName} [i] = {marshaler.AllocNative(CallName + "[i]")};");
+                else
+                    result.Add($"\tnative_{CallName} [i] = {Generatable.CallByName(CallName + "[i]")};");
 
-				if (NullTerminated)
-					result.Add (string.Format ("native_{0} [cnt_{0}] = IntPtr.Zero;", CallName));
-				return result.ToArray ();
-			}
-		}
+                if (NullTerminated)
+                    result.Add($"native_{CallName} [cnt_{CallName}] = IntPtr.Zero;");
 
-		public override string CallString {
-			get {
-				if (CSType != MarshalType)
-					return "native_" + CallName;
-				else if (FixedArrayLength.HasValue)
-					return base.CallString;
-				else
-					return CallName;
-			}
-		}
+                return result.ToArray();
+            }
+        }
 
-		public override string[] Finish {
-			get {
-				if (CSType == MarshalType)
-					return new string [0];
+        public override string CallString
+        {
+            get
+            {
+                if (CsType != MarshalType)
+                    return $"native_{CallName}";
 
-				IGeneratable gen = Generatable;
-				if (gen is IManualMarshaler) {
-					string [] result = new string [4];
-					result [0] = "for (int i = 0; i < native_" + CallName + ".Length" + (NullTerminated ? " - 1" : "") + "; i++) {";
-					result [1] = "\t" + CallName + " [i] = " + Generatable.FromNative ("native_" + CallName + "[i]") + ";";
-					result [2] = "\t" + (gen as IManualMarshaler).ReleaseNative ("native_" + CallName + "[i]") + ";";
-					result [3] = "}";
-					return result;
-				}
+                return FixedArrayLength.HasValue ? base.CallString : CallName;
+            }
+        }
 
-				return new string [0];
-			}
-		}
-	}
+        public override string[] Finish
+        {
+            get
+            {
+                if (CsType == MarshalType)
+                    return new string[0];
 
-	public class ArrayCountPair : ArrayParameter {
+                if (!(Generatable is IManualMarshaler marshaler)) return new string[0];
 
-		XmlElement count_elem;
-		bool invert;
+                var result = new string[4];
 
-		public ArrayCountPair (XmlElement array_elem, XmlElement count_elem, bool invert) : base (array_elem)
-		{
-			this.count_elem = count_elem;
-			this.invert = invert;
-		}
+                result[0] = $"for (int i = 0; i < native_{CallName}.Length{(NullTerminated ? " - 1" : "")}; i++) {{";
+                result[1] = $"\t{CallName} [i] = {Generatable.FromNative("native_" + CallName + "[i]")};";
+                result[2] = $"\t{marshaler.ReleaseNative("native_" + CallName + "[i]")};";
+                result[3] = "}";
 
-		string CountNativeType {
-			get {
-				return SymbolTable.Table.GetMarshalType(count_elem.GetAttribute("type"));
-			}
-		}
+                return result;
+            }
+        }
 
-		string CountType {
-			get {
-				return SymbolTable.Table.GetCsType(count_elem.GetAttribute("type"));
-			}
-		}
+        private bool NullTerminated { get; }
+    }
 
-		string CountCast {
-			get {
-				if (CountType == "int")
-					return string.Empty;
-				else
-					return "(" + CountType + ") ";
-			}
-		}
+    public class ArrayCountPair : ArrayParameter
+    {
+        private readonly XmlElement _countElement;
+        private readonly bool _invert;
 
-		string CountName {
-			get {
-				return SymbolTable.Table.MangleName (count_elem.GetAttribute("name"));
-			}
-		}
+        public ArrayCountPair(XmlElement arrayElement, XmlElement countElement, bool invert) : base(arrayElement)
+        {
+            _countElement = countElement;
+            _invert = invert;
+        }
 
-		string CallCount (string name)
-		{
-			string result = CountCast + "(" + name + " == null ? 0 : " + name + ".Length)";
-			IGeneratable gen = SymbolTable.Table[count_elem.GetAttribute("type")];
-			return gen.CallByName (result);
-		}
+        public override string CallString => _invert
+            ? $"{CallCount(CallName)}, {base.CallString}"
+            : $"{base.CallString}, {CallCount(CallName)}";
 
-		public override string CallString {
-			get {
-				if (invert)
-					return CallCount (CallName) + ", " + base.CallString;
-				else
-					return base.CallString + ", " + CallCount (CallName);
-			}
-		}
+        public override string NativeSignature => _invert
+            ? $"{CountNativeType} {CountName}, {MarshalType} {Name}"
+            : $"{MarshalType} {Name}, {CountNativeType} {CountName}";
 
-		public override string NativeSignature {
-			get {
-				if (invert)
-					return CountNativeType + " " + CountName + ", " + MarshalType + " " + Name;
-				else
-					return MarshalType + " " + Name + ", " + CountNativeType + " " + CountName;
-			}
-		}
-	}
+        private string CountNativeType => SymbolTable.Table.GetMarshalType(_countElement.GetAttribute("type"));
+
+        private string CountType => SymbolTable.Table.GetCsType(_countElement.GetAttribute("type"));
+
+        private string CountCast => CountType == "int" ? string.Empty : $"({CountType}) ";
+
+        private string CountName => SymbolTable.Table.MangleName(_countElement.GetAttribute("name"));
+
+        private string CallCount(string name)
+        {
+            var result = $"{CountCast}({name} == null ? 0 : {name}.Length)";
+            var generatable = SymbolTable.Table[_countElement.GetAttribute("type")];
+            return generatable.CallByName(result);
+        }
+    }
 }

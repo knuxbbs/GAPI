@@ -23,7 +23,7 @@ using GapiCodegen.Generatables;
 namespace GapiCodegen {
 	public class ChildProperty : Property {
 
-		public ChildProperty (XmlElement elem, ClassBase container_type) : base (elem, container_type) {}
+		public ChildProperty (XmlElement element, ClassBase container_type) : base (element, container_type) {}
 
 		protected override string PropertyAttribute (string qpname) {
 			return "[Gtk.ChildProperty (" + qpname + ")]";

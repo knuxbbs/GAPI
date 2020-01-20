@@ -46,7 +46,7 @@ namespace GapiCodegen
             return Parse(filename, schemaUri, string.Empty);
         }
 
-        public IGeneratable[] Parse(string filename, string schemaUri, string gapidir)
+        public IGeneratable[] Parse(string filename, string schemaUri, string gapiDir)
         {
             var doc = Load(filename, schemaUri);
 
@@ -86,47 +86,48 @@ namespace GapiCodegen
                     "WARNING: The input file {0} was created by a parser that was released after this version of the generator. Consider updating the code generator if you experience problems.",
                     filename);
 
-            var gens = new List<IGeneratable>();
+            var generatables = new List<IGeneratable>();
 
-            foreach (XmlElement elem in root.ChildNodes)
+            foreach (XmlElement element in root.ChildNodes)
             {
-                if (elem == null)
+                if (element == null)
                     continue;
 
-                switch (elem.Name)
+                switch (element.Name)
                 {
                     case "include":
-                        string xmlpath;
+                        string xmlPath;
 
-                        if (File.Exists(Path.Combine(gapidir, elem.GetAttribute("xml"))))
-                            xmlpath = Path.Combine(gapidir, elem.GetAttribute("xml"));
-                        else if (File.Exists(elem.GetAttribute("xml")))
-                            xmlpath = elem.GetAttribute("xml");
+                        if (File.Exists(Path.Combine(gapiDir, element.GetAttribute("xml"))))
+                            xmlPath = Path.Combine(gapiDir, element.GetAttribute("xml"));
+                        else if (File.Exists(element.GetAttribute("xml")))
+                            xmlPath = element.GetAttribute("xml");
                         else
                         {
-                            Console.WriteLine($"Parser: Could not find include {elem.GetAttribute("xml")}");
+                            Console.WriteLine($"Parser: Could not find include {element.GetAttribute("xml")}");
                             break;
                         }
 
-                        IGeneratable[] curr_gens = Parse(xmlpath);
-                        SymbolTable.Table.AddTypes(curr_gens);
+                        var includedGeneratables = Parse(xmlPath);
+                        SymbolTable.Table.AddTypes(includedGeneratables);
+
                         break;
 
                     case "namespace":
-                        gens.AddRange(ParseNamespace(elem));
+                        generatables.AddRange(ParseNamespace(element));
                         break;
 
                     case "symbol":
-                        gens.Add(ParseSymbol(elem));
+                        generatables.Add(ParseSymbol(element));
                         break;
 
                     default:
-                        Console.WriteLine($"Parser::Parse - Unexpected child node: {elem.Name}");
+                        Console.WriteLine($"Parser::Parse - Unexpected child node: {element.Name}");
                         break;
                 }
             }
 
-            return gens.ToArray();
+            return generatables.ToArray();
         }
 
         internal static int GetVersion(XmlElement xmlElement)
@@ -173,10 +174,10 @@ namespace GapiCodegen
             switch (e.Severity)
             {
                 case XmlSeverityType.Error:
-                    Console.WriteLine("Error: {0}", e.Message);
+                    Console.WriteLine($"Error: {e.Message}");
                     break;
                 case XmlSeverityType.Warning:
-                    Console.WriteLine("Warning: {0}", e.Message);
+                    Console.WriteLine($"Warning: {e.Message}");
                     break;
                 default:
                     throw new ArgumentOutOfRangeException();
@@ -279,7 +280,7 @@ namespace GapiCodegen
         private static IGeneratable ParseSymbol(XmlElement symbol)
         {
             var type = symbol.GetAttribute("type");
-            var cname = symbol.GetAttribute("cname");
+            var cName = symbol.GetAttribute("cname");
             var name = symbol.GetAttribute("name");
 
             IGeneratable result = null;
@@ -287,24 +288,24 @@ namespace GapiCodegen
             switch (type)
             {
                 case "simple" when symbol.HasAttribute("default_value"):
-                    result = new SimpleGen(cname, name, symbol.GetAttribute("default_value"));
+                    result = new SimpleGen(cName, name, symbol.GetAttribute("default_value"));
                     break;
 
                 case "simple":
-                    Console.WriteLine($"Simple type element {cname} has no specified default value");
-                    result = new SimpleGen(cname, name, string.Empty);
+                    Console.WriteLine($"Simple type element {cName} has no specified default value");
+                    result = new SimpleGen(cName, name, string.Empty);
                     break;
 
                 case "manual":
-                    result = new ManualGen(cname, name);
+                    result = new ManualGen(cName, name);
                     break;
 
                 case "ownable":
-                    result = new OwnableGen(cname, name);
+                    result = new OwnableGen(cName, name);
                     break;
 
                 case "alias":
-                    result = new AliasGen(cname, name);
+                    result = new AliasGen(cName, name);
                     break;
 
                 case "marshal":
@@ -312,7 +313,7 @@ namespace GapiCodegen
                     var call = symbol.GetAttribute("call_fmt");
                     var from = symbol.GetAttribute("from_fmt");
 
-                    result = new MarshalGen(cname, name, mtype, call, @from);
+                    result = new MarshalGen(cName, name, mtype, call, @from);
                     break;
 
                 case "struct":

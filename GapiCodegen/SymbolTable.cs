@@ -22,6 +22,7 @@
 using System.Collections.Generic;
 using GapiCodegen.Generatables;
 using GapiCodegen.Interfaces;
+using GapiCodegen.Util;
 
 namespace GapiCodegen
 {

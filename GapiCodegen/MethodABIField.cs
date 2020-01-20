@@ -3,54 +3,37 @@ using GapiCodegen.Generatables;
 
 namespace GapiCodegen
 {
-    public class MethodABIField : StructABIField
+    public class MethodAbiField : StructAbiField
     {
-        bool is_valid;
-        XmlElement Elem;
-
-
-        public MethodABIField(XmlElement elem, ClassBase container_type, string info_name) :
-            base(elem, container_type, info_name)
+        private XmlElement _element;
+        
+        public MethodAbiField(XmlElement element, ClassBase containerType, string infoName) :
+            base(element, containerType, infoName)
         {
-            Elem = elem;
-            is_valid = true;
+            _element = element;
         }
 
-        public override string CType
-        {
-            get { return "gpointer"; }
-        }
+        public override string CType => "gpointer";
 
-        public override bool IsCPointer()
-        {
-            return true;
-        }
+        public override bool IsCPointer() => true;
 
         public new string Name
         {
             get
             {
-                var name = elem.GetAttribute("vm");
-                if (name == null || name == "")
-                    name = elem.GetAttribute("signal_vm");
+                var name = Element.GetAttribute("vm");
+
+                if (string.IsNullOrEmpty(name))
+                    name = Element.GetAttribute("signal_vm");
 
                 return name;
             }
         }
 
-        public override string StudlyName
-        {
-            get { return Name; }
-        }
+        public override string StudlyName => Name;
 
-        public override string CName
-        {
-            get
-            {
-                if (parent_structure_name != null)
-                    return parent_structure_name + '.' + Name;
-                return Name;
-            }
-        }
+        public override string CName => parent_structure_name != null
+            ? $"{parent_structure_name}{'.'}{Name}"
+            : Name;
     }
 }

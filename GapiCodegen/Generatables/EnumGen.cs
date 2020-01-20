@@ -23,6 +23,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
 using System.Xml;
+using GapiCodegen.Util;
 
 namespace GapiCodegen.Generatables {
 	public class EnumGen : GenBase {
@@ -71,9 +72,9 @@ namespace GapiCodegen.Generatables {
 			}
 		}
 
-		public override string CallByName (string var_name)
+		public override string CallByName (string varName)
 		{
-			return "(int) " + var_name;
+			return "(int) " + varName;
 		}
 		
 		public override string FromNative(string var)
@@ -86,9 +87,9 @@ namespace GapiCodegen.Generatables {
 		}
 
 		
-		public override void Generate (GenerationInfo gen_info)
+		public override void Generate (GenerationInfo generationInfo)
 		{
-			StreamWriter sw = gen_info.OpenStream (Name, NS);
+			StreamWriter sw = generationInfo.OpenStream (Name, NS);
 
 			sw.WriteLine ("namespace " + NS + " {");
 			sw.WriteLine ();

@@ -26,6 +26,7 @@ using System.IO;
 using System.Xml;
 using GapiCodegen.Generatables;
 using GapiCodegen.Interfaces;
+using GapiCodegen.Util;
 
 namespace GapiCodegen {
 	public class Signal {
@@ -184,7 +185,7 @@ namespace GapiCodegen {
 				else if (igen is IManualMarshaler && p.PassAs != "")
 					finish += string.Format ("\t\t\t\targ{0} = {1};\n", idx, (igen as IManualMarshaler).AllocNative ("args.Args[" + idx + "]"));
 				else if (p.PassAs != "")
-					finish += "\t\t\t\targ" + idx + " = " + igen.CallByName ("((" + p.CSType + ")args.Args[" + idx + "])") + ";\n";
+					finish += "\t\t\t\targ" + idx + " = " + igen.CallByName ("((" + p.CsType + ")args.Args[" + idx + "])") + ";\n";
 			}
 			return finish;
 		}
@@ -236,7 +237,7 @@ namespace GapiCodegen {
 			sw.WriteLine("\t\t{");
 			sw.WriteLine("\t\t\t{0} args = new {0} ();", EventArgsQualifiedName);
 			foreach (Parameter p in dispose_params) {
-				sw.WriteLine("\t\t\t{0} {1} = null;", p.CSType, p.Name);
+				sw.WriteLine("\t\t\t{0} {1} = null;", p.CsType, p.Name);
 			}
 			sw.WriteLine("\t\t\ttry {");
 			sw.WriteLine("\t\t\t\tGLib.Signal sig = ((GCHandle) gch).Target as GLib.Signal;");
@@ -289,14 +290,14 @@ namespace GapiCodegen {
 			sw.WriteLine ();
 			sw.WriteLine ("\tpublic class " + EventArgsName + " : GLib.SignalArgs {");
 			for (int i = 0; i < parms.Count; i++) {
-				sw.WriteLine ("\t\tpublic " + parms[i].CSType + " " + parms[i].StudlyName + "{");
+				sw.WriteLine ("\t\tpublic " + parms[i].CsType + " " + parms[i].StudlyName + "{");
 				if (parms[i].PassAs != "out") {
 					sw.WriteLine ("\t\t\tget {");
 					if (SymbolTable.Table.IsInterface (parms [i].CType)) {
 						var igen = SymbolTable.Table.GetInterfaceGen (parms [i].CType);
 						sw.WriteLine ("\t\t\t\treturn {0}.GetObject (Args [{1}] as GLib.Object);", igen.QualifiedAdapterName, i);
 					} else {
-						sw.WriteLine ("\t\t\t\treturn ({0}) Args [{1}];", parms [i].CSType, i);
+						sw.WriteLine ("\t\t\t\treturn ({0}) Args [{1}];", parms [i].CsType, i);
 					}
 					sw.WriteLine ("\t\t\t}");
 				}
@@ -306,7 +307,7 @@ namespace GapiCodegen {
 						var igen = SymbolTable.Table.GetInterfaceGen (parms [i].CType);
 						sw.WriteLine ("\t\t\t\tArgs [{0}] = value is {1} ? (value as {1}).Implementor : value;", i, igen.AdapterName);
 					} else {
-						sw.WriteLine ("\t\t\t\tArgs[" + i + "] = (" + parms [i].CSType + ")value;");
+						sw.WriteLine ("\t\t\t\tArgs[" + i + "] = (" + parms [i].CsType + ")value;");
 					}
 					sw.WriteLine ("\t\t\t}");
 				}

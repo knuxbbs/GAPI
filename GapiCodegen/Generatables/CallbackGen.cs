@@ -23,6 +23,7 @@
 using System.IO;
 using System.Xml;
 using GapiCodegen.Interfaces;
+using GapiCodegen.Util;
 
 namespace GapiCodegen.Generatables {
 	public class CallbackGen : GenBase, IPropertyAccessor {
@@ -86,9 +87,9 @@ namespace GapiCodegen.Generatables {
 			}
 		}
 
-		public override string CallByName (string var_name)
+		public override string CallByName (string varName)
 		{
-			return var_name + ".NativeDelegate";
+			return varName + ".NativeDelegate";
 		}
 
 		public override string FromNative (string var)
@@ -96,10 +97,10 @@ namespace GapiCodegen.Generatables {
 			return NS + "Sharp." + Name + "Wrapper.GetManagedDelegate (" + var + ")";
 		}
 
-		public void WriteAccessors (TextWriter sw, string indent, string var)
+		public void WriteAccessors (TextWriter sw, string indent, string fieldName)
 		{
 			sw.WriteLine (indent + "get {");
-			sw.WriteLine (indent + "\treturn " + FromNative (var) + ";");
+			sw.WriteLine (indent + "\treturn " + FromNative (fieldName) + ";");
 			sw.WriteLine (indent + "}");
 		}
 
@@ -120,7 +121,7 @@ namespace GapiCodegen.Generatables {
 
 					if (i > 0 && parms [i - 1].IsString && p.IsLength) {
 						string string_name = parms [i - 1].Name;
-						result[i] = igen.CallByName (CastFromInt (p.CSType) + "System.Text.Encoding.UTF8.GetByteCount (" +  string_name + ")");
+						result[i] = igen.CallByName (CastFromInt (p.CsType) + "System.Text.Encoding.UTF8.GetByteCount (" +  string_name + ")");
 						continue;
 					}
 
@@ -233,7 +234,7 @@ namespace GapiCodegen.Generatables {
 			sw.WriteLine ("\t\t\t\tif (release_on_call)\n\t\t\t\t\tgch.Free ();");
 			Parameter cnt = retval.CountParameter;
 			if (cnt != null)
-				sw.WriteLine ("\t\t\t\t{0} = {1}{2};", cnt.Name, cnt.CSType == "int" ? string.Empty : "(" + cnt.MarshalType + ")(" + cnt.CSType + ")", "__ret.Length");
+				sw.WriteLine ("\t\t\t\t{0} = {1}{2};", cnt.Name, cnt.CsType == "int" ? string.Empty : "(" + cnt.MarshalType + ")(" + cnt.CsType + ")", "__ret.Length");
 			if (retval.CSType != "void")
 				sw.WriteLine ("\t\t\t\treturn {0};", retval.ToNative ("__ret"));
 
@@ -288,13 +289,13 @@ namespace GapiCodegen.Generatables {
 			return NS + "Sharp." + Name + "Wrapper";
 		}
 		
-		public override void Generate (GenerationInfo gen_info)
+		public override void Generate (GenerationInfo generationInfo)
 		{
-			gen_info.CurrentType = QualifiedName;
+			generationInfo.CurrentType = QualifiedName;
 
 			sig = new Signature (parms);
 
-			StreamWriter sw = gen_info.OpenStream (Name, NS);
+			StreamWriter sw = generationInfo.OpenStream (Name, NS);
 
 			sw.WriteLine ("namespace " + NS + " {");
 			sw.WriteLine ();
@@ -306,7 +307,7 @@ namespace GapiCodegen.Generatables {
 
 			sw.Close ();
 			
-			GenWrapper (gen_info);
+			GenWrapper (generationInfo);
 
 			Statistics.CallbackCount++;
 		}

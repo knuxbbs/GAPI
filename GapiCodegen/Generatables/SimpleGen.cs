@@ -23,8 +23,8 @@ namespace GapiCodegen.Generatables {
 	public class SimpleGen : SimpleBase {
 		string size_of;
 
-		public SimpleGen (string ctype, string type, string default_value) : base (ctype, type, default_value) {}
-		public SimpleGen (string ctype, string type, string default_value, string size_of) : base (ctype, type, default_value) {
+		public SimpleGen (string cType, string type, string default_value) : base (cType, type, default_value) {}
+		public SimpleGen (string cType, string type, string default_value, string size_of) : base (cType, type, default_value) {
 			this.size_of = size_of;
 		}
 

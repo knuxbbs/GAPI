@@ -23,6 +23,7 @@ using System;
 using System.IO;
 using System.Xml;
 using GapiCodegen.Generatables;
+using GapiCodegen.Util;
 
 namespace GapiCodegen
 {
@@ -304,7 +305,7 @@ namespace GapiCodegen
             StreamWriter sw = gen_info.Writer;
 
             string glue_name = string.Format("{0}sharp_{1}_override_{2}", container_type.NS.ToLower().Replace(".", "_"), container_type.Name.ToLower(), CName);
-            sw.WriteLine("\t\t[DllImport (\"{0}\")]", gen_info.GluelibName);
+            sw.WriteLine("\t\t[DllImport (\"{0}\")]", gen_info.GlueLibName);
             sw.WriteLine("\t\tstatic extern void {0} (IntPtr class_struct, {1}NativeDelegate cb);", glue_name, Name);
             sw.WriteLine();
             glue.WriteLine("void {0} ({1} *class_struct, gpointer cb);\n", glue_name, class_struct_name);
@@ -343,7 +344,7 @@ namespace GapiCodegen
             glue.WriteLine();
 
             StreamWriter sw = gen_info.Writer;
-            sw.WriteLine("\t\t[DllImport (\"{0}\")]", gen_info.GluelibName);
+            sw.WriteLine("\t\t[DllImport (\"{0}\")]", gen_info.GlueLibName);
             sw.Write("\t\tstatic extern {0} {1} (IntPtr class_struct", retval.MarshalType, glue_name);
             if (!IsStatic)
                 sw.Write(", IntPtr inst");

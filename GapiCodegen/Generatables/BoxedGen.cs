@@ -21,23 +21,24 @@
 
 using System.IO;
 using System.Xml;
+using GapiCodegen.Util;
 
 namespace GapiCodegen.Generatables {
 	public class BoxedGen : StructBase {
 		
 		public BoxedGen (XmlElement ns, XmlElement elem) : base (ns, elem) {}
 		
-		public override void Generate (GenerationInfo gen_info)
+		public override void Generate (GenerationInfo generationInfo)
 		{
 			Method copy = GetMethod ("Copy");
 			Method free = GetMethod ("Free");
 			Methods.Remove ("Copy");
 			Methods.Remove ("Free");
 
-			gen_info.CurrentType = QualifiedName;
+			generationInfo.CurrentType = QualifiedName;
 
-			StreamWriter sw = gen_info.Writer = gen_info.OpenStream (Name, NS);
-			base.Generate (gen_info);
+			StreamWriter sw = generationInfo.Writer = generationInfo.OpenStream (Name, NS);
+			base.Generate (generationInfo);
 			sw.WriteLine ("\t\tpublic static explicit operator GLib.Value (" + QualifiedName + " boxed)");
 			sw.WriteLine ("\t\t{");
 
@@ -73,7 +74,7 @@ namespace GapiCodegen.Generatables {
 			sw.WriteLine ("\t}");
 			sw.WriteLine ("}");
 			sw.Close ();
-			gen_info.Writer = null;
+			generationInfo.Writer = null;
 			Statistics.BoxedCount++;
 		}
 	}

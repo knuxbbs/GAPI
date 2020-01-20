@@ -24,6 +24,6 @@ namespace GapiCodegen.Interfaces
 {
     public interface IPropertyAccessor
     {
-        void WriteAccessors(TextWriter sw, string indentation, string field_name);
+        void WriteAccessors(TextWriter sw, string indentation, string fieldName);
     }
 }

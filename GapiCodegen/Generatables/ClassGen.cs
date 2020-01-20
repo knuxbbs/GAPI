@@ -54,11 +54,11 @@ namespace GapiCodegen.Generatables {
 			return string.Empty;
 		}
 
-		public override void Generate (GenerationInfo gen_info)
+		public override void Generate (GenerationInfo generationInfo)
 		{
-			gen_info.CurrentType = QualifiedName;
+			generationInfo.CurrentType = QualifiedName;
 
-			StreamWriter sw = gen_info.Writer = gen_info.OpenStream(Name, NS);
+			StreamWriter sw = generationInfo.Writer = generationInfo.OpenStream(Name, NS);
 
 			sw.WriteLine ("namespace " + NS + " {");
 			sw.WriteLine ();
@@ -73,9 +73,9 @@ namespace GapiCodegen.Generatables {
 			sw.WriteLine (" {");
 			sw.WriteLine ();
 
-			GenConstants (gen_info);
-			GenProperties (gen_info, null);
-			GenMethods (gen_info, null, null);
+			GenConstants (generationInfo);
+			GenProperties (generationInfo, null);
+			GenMethods (generationInfo, null, null);
 
 			sw.WriteLine ("#endregion");
 
@@ -83,7 +83,7 @@ namespace GapiCodegen.Generatables {
 			sw.WriteLine ("}");
 
 			sw.Close ();
-			gen_info.Writer = null;
+			generationInfo.Writer = null;
 		}
 	}
 }

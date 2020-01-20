@@ -23,11 +23,12 @@
 using System.IO;
 using System.Xml;
 using GapiCodegen.Generatables;
+using GapiCodegen.Util;
 
 namespace GapiCodegen {
 	public class Property : PropertyBase {
 
-		public Property (XmlElement elem, ClassBase container_type) : base (elem, container_type) {}
+		public Property (XmlElement element, ClassBase container_type) : base (element, container_type) {}
 
 		public bool Validate (LogWriter log)
 		{
@@ -43,21 +44,21 @@ namespace GapiCodegen {
 
 		bool Readable {
 			get {
-				return elem.GetAttributeAsBoolean ("readable");
+				return Element.GetAttributeAsBoolean ("readable");
 			}
 		}
 
 		bool Writable {
 			get {
-				return elem.GetAttributeAsBoolean ("writeable") &&
-					!elem.GetAttributeAsBoolean ("construct-only");
+				return Element.GetAttributeAsBoolean ("writeable") &&
+					!Element.GetAttributeAsBoolean ("construct-only");
 			}
 		}
 
 		bool IsDeprecated {
 			get {
 				return !container_type.IsDeprecated &&
-					elem.GetAttributeAsBoolean ("deprecated");
+					Element.GetAttributeAsBoolean ("deprecated");
 			}
 		}
 

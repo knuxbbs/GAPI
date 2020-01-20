@@ -45,15 +45,15 @@ namespace GapiCodegen
         { }
 
         public GenerationInfo(string dir, string assembly_name, string glue_filename,
-                string glue_includes, string gluelib_name, string abi_c_file,
-                string abi_cs_file, string abi_cs_usings)
+                string glue_includes, string glueLibName, string abi_c_file,
+                string abiCsFile, string abi_cs_usings)
         {
             Dir = dir;
             AssemblyName = assembly_name;
-            GluelibName = gluelib_name;
+            GlueLibName = glueLibName;
             abicfile = abi_c_file;
-            abicsfile = abi_cs_file;
-            InitializeWriters(glue_filename, glue_includes, gluelib_name, abi_cs_usings);
+            abicsfile = abiCsFile;
+            InitializeWriters(glue_filename, glue_includes, glueLibName, abi_cs_usings);
         }
 
         private void InitializeWriters(string glue_filename, string glue_includes, string gluelib_name,
@@ -148,7 +148,7 @@ namespace GapiCodegen
 
         public string Dir { get; }
 
-        public string GluelibName { get; }
+        public string GlueLibName { get; }
 
         public bool GlueEnabled { get; private set; }
 

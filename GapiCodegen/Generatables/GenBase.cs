@@ -108,7 +108,7 @@ namespace GapiCodegen.Generatables {
 			Generate (geninfo);
 		}
 
-		public abstract void Generate (GenerationInfo geninfo);
+		public abstract void Generate (GenerationInfo generationInfo);
 	}
 }
 

@@ -24,7 +24,7 @@ using GapiCodegen.Interfaces;
 namespace GapiCodegen.Generatables {
 	public class ConstFilenameGen : SimpleBase, IManualMarshaler {
 		
-		public ConstFilenameGen (string ctype) : base (ctype, "string", "null") {}
+		public ConstFilenameGen (string cType) : base (cType, "string", "null") {}
 
 		public override string MarshalType {
 			get {
@@ -37,14 +37,14 @@ namespace GapiCodegen.Generatables {
 			return "GLib.Marshaller.FilenamePtrToString (" + var + ")";
 		}
 
-		public string AllocNative (string managed_var)
+		public string AllocNative (string managedVar)
 		{
-			return "GLib.Marshaller.StringToFilenamePtr (" + managed_var + ")";
+			return "GLib.Marshaller.StringToFilenamePtr (" + managedVar + ")";
 		}
 
-		public string ReleaseNative (string native_var)
+		public string ReleaseNative (string nativeVar)
 		{
-			return "GLib.Marshaller.Free (" + native_var + ")";
+			return "GLib.Marshaller.Free (" + nativeVar + ")";
 		}
 	}
 }

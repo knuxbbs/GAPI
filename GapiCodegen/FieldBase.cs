@@ -21,6 +21,7 @@ using System.IO;
 using System.Xml;
 using GapiCodegen.Generatables;
 using GapiCodegen.Interfaces;
+using GapiCodegen.Util;
 
 namespace GapiCodegen
 {
@@ -33,13 +34,8 @@ namespace GapiCodegen
         string getterName, setterName;
         protected string getOffsetName, offsetName;
 
-        public FieldBase(XmlElement elem, ClassBase container_type) : base(elem, container_type)
+        protected FieldBase(XmlElement element, ClassBase container_type) : base(element, container_type)
         {
-        }
-
-        public FieldBase(XmlElement elem, ClassBase container_type, FieldBase abi_field) : base(elem, container_type)
-        {
-            abi_field = abi_field;
         }
 
         public virtual bool Validate(LogWriter log)
@@ -61,9 +57,9 @@ namespace GapiCodegen
         {
             get
             {
-                if (Parser.GetVersion(elem.OwnerDocument.DocumentElement) <= 2)
-                    return elem.GetAttribute("readable") != "false";
-                return elem.HasAttribute("readable") && elem.GetAttributeAsBoolean("readable");
+                if (Parser.GetVersion(Element.OwnerDocument.DocumentElement) <= 2)
+                    return Element.GetAttribute("readable") != "false";
+                return Element.HasAttribute("readable") && Element.GetAttributeAsBoolean("readable");
             }
         }
 
@@ -71,9 +67,9 @@ namespace GapiCodegen
         {
             get
             {
-                if (Parser.GetVersion(elem.OwnerDocument.DocumentElement) <= 2)
-                    return elem.GetAttribute("writeable") != "false";
-                return elem.HasAttribute("writeable") && elem.GetAttributeAsBoolean("writeable");
+                if (Parser.GetVersion(Element.OwnerDocument.DocumentElement) <= 2)
+                    return Element.GetAttribute("writeable") != "false";
+                return Element.HasAttribute("writeable") && Element.GetAttributeAsBoolean("writeable");
             }
         }
 
@@ -81,17 +77,17 @@ namespace GapiCodegen
 
         protected virtual string Access
         {
-            get { return elem.HasAttribute("access") ? elem.GetAttribute("access") : DefaultAccess; }
+            get { return Element.HasAttribute("access") ? Element.GetAttribute("access") : DefaultAccess; }
         }
 
         public bool IsArray
         {
-            get { return elem.HasAttribute("array_len") || elem.GetAttributeAsBoolean("array"); }
+            get { return Element.HasAttribute("array_len") || Element.GetAttributeAsBoolean("array"); }
         }
 
         public bool IsBitfield
         {
-            get { return elem.HasAttribute("bits"); }
+            get { return Element.HasAttribute("bits"); }
         }
 
         public bool Ignored
@@ -126,7 +122,7 @@ namespace GapiCodegen
             if (UseABIStruct(gen_info))
             {
                 getOffsetName = abi_field.getOffsetName;
-                offsetName = ((StructABIField) abi_field).abi_info_name + ".GetFieldOffset(\"" +
+                offsetName = ((StructAbiField) abi_field).abi_info_name + ".GetFieldOffset(\"" +
                              ((StructField) abi_field).CName + "\")";
 
                 return;
@@ -168,7 +164,7 @@ namespace GapiCodegen
 
             if (getterName != null)
             {
-                sw.WriteLine(indent + "[DllImport (\"{0}\")]", gen_info.GluelibName);
+                sw.WriteLine(indent + "[DllImport (\"{0}\")]", gen_info.GlueLibName);
                 sw.WriteLine(indent + "extern static {0} {1} ({2} raw);",
                     table.GetMarshalType(CType), getterName,
                     container_type.MarshalType);
@@ -176,14 +172,14 @@ namespace GapiCodegen
 
             if (setterName != null)
             {
-                sw.WriteLine(indent + "[DllImport (\"{0}\")]", gen_info.GluelibName);
+                sw.WriteLine(indent + "[DllImport (\"{0}\")]", gen_info.GlueLibName);
                 sw.WriteLine(indent + "extern static void {0} ({1} raw, {2} value);",
                     setterName, container_type.MarshalType, table.GetMarshalType(CType));
             }
 
             if (getOffsetName != null)
             {
-                sw.WriteLine(indent + "[DllImport (\"{0}\")]", gen_info.GluelibName);
+                sw.WriteLine(indent + "[DllImport (\"{0}\")]", gen_info.GlueLibName);
                 sw.WriteLine(indent + "extern static uint {0} ();", getOffsetName);
                 sw.WriteLine();
                 sw.WriteLine(indent + "static uint " + offsetName + " = " + getOffsetName + " ();");
@@ -211,7 +207,7 @@ namespace GapiCodegen
             SymbolTable table = SymbolTable.Table;
             IGeneratable gen = table[CType];
             StreamWriter sw = gen_info.Writer;
-            string modifiers = elem.GetAttributeAsBoolean("new_flag") ? "new " : "";
+            string modifiers = Element.GetAttributeAsBoolean("new_flag") ? "new " : "";
 
             sw.WriteLine(indent + "public " + modifiers + CSType + " " + Name + " {");
 

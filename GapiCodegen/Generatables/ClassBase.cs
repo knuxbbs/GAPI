@@ -27,6 +27,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Xml;
+using GapiCodegen.Util;
 
 namespace GapiCodegen.Generatables {
 	public abstract class ClassBase : GenBase {
@@ -38,7 +39,7 @@ namespace GapiCodegen.Generatables {
 		protected IList<string> managed_interfaces = new List<string>();
 		protected IList<Ctor> ctors = new List<Ctor>();
 
-		protected List<StructABIField> abi_fields = new List<StructABIField> ();
+		protected List<StructAbiField> abi_fields = new List<StructAbiField> ();
 		protected bool abi_fields_valid; // false if the instance structure contains a bitfield or fields of unknown types
 
 		private bool ctors_initted = false;
@@ -80,7 +81,7 @@ namespace GapiCodegen.Generatables {
 			foreach (XmlNode node in elem.ChildNodes) {
 				if (!(node is XmlElement)) continue;
 				XmlElement member = (XmlElement) node;
-				StructABIField abi_field = null;
+				StructAbiField abi_field = null;
 
 				// Make sure ABI fields are taken into account, even when hidden.
 				if (node.Name == "field") {
@@ -91,11 +92,11 @@ namespace GapiCodegen.Generatables {
 					if (num_abi_fields != 1 ||
 							parent_type == "" ||
 							member.GetAttribute("type").Replace("*", "") != parent_type) {
-						abi_field = new StructABIField (member, this, "abi_info");
+						abi_field = new StructAbiField (member, this, "abi_info");
 						abi_fields.Add (abi_field);
 					}
 				} else if (node.Name == "union") {
-					abi_field = new UnionABIField (member, this, "abi_info");
+					abi_field = new UnionAbiField (member, this, "abi_info");
 					abi_fields.Add (abi_field);
 				}
 
@@ -198,7 +199,7 @@ namespace GapiCodegen.Generatables {
 			GenerateStructureABI(gen_info, null, "abi_info", CName);
 		}
 
-		protected void GenerateStructureABI (GenerationInfo gen_info, List<StructABIField> _fields,
+		protected void GenerateStructureABI (GenerationInfo gen_info, List<StructAbiField> _fields,
 				string info_name, string structname)
 		{
 			string cs_parent_struct = null;
@@ -242,8 +243,8 @@ namespace GapiCodegen.Generatables {
 				}
 			}
 
-			StructABIField prev = null;
-			StructABIField next = null;
+			StructAbiField prev = null;
+			StructAbiField next = null;
 
 			StringWriter field_alignment_structures_writer = new StringWriter();
 			for(int i=0; i < _fields.Count; i++) {
@@ -252,7 +253,7 @@ namespace GapiCodegen.Generatables {
 
 				prev = field.Generate(gen_info, "\t\t\t\t\t", prev, next, cs_parent_struct,
 						field_alignment_structures_writer);
-				var union = field as UnionABIField;
+				var union = field as UnionAbiField;
 				if (union == null && gen_info.CAbiWriter != null && !field.IsBitfield) {
 					gen_info.AbiWriter.WriteLine("\t\t\tConsole.WriteLine(\"\\\"{0}.{3}\\\": \\\"\" + {1}.{2}." + info_name + ".GetFieldOffset(\"{3}\") + \"\\\"\");", structname, NS, Name, field.CName);
 					gen_info.CAbiWriter.WriteLine("\tg_print(\"\\\"{0}.{1}\\\": \\\"%\" G_GUINT64_FORMAT \"\\\"\\n\", (guint64) G_STRUCT_OFFSET({0}, {1}));", structname, field.CName);
@@ -294,12 +295,12 @@ namespace GapiCodegen.Generatables {
 				}
 			}
 
-			foreach (StructABIField abi_field in abi_fields) {
+			foreach (StructAbiField abi_field in abi_fields) {
 				if (!abi_field.Validate(log))
 					abi_fields_valid = false;
 			}
 			if (abi_fields_valid)
-				foreach (StructABIField abi_field in abi_fields) {
+				foreach (StructAbiField abi_field in abi_fields) {
 					abi_field.SetGetOffseName();
 			}
 

@@ -19,287 +19,268 @@
 // Free Software Foundation, Inc., 59 Temple Place - Suite 330,
 // Boston, MA 02111-1307, USA.
 
-
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Xml;
 using GapiCodegen.Generatables;
-using GapiCodegen.Interfaces;
+using GapiCodegen.Util;
 
-namespace GapiCodegen {
-	public class Parameters : IEnumerable<Parameter> {
-		
-		IList<Parameter> param_list = new List<Parameter> ();
-		XmlElement elem;
-		bool first_is_instance;
+namespace GapiCodegen
+{
+    public class Parameters : IEnumerable<Parameter>
+    {
+        private IList<Parameter> _paramList = new List<Parameter>();
+        private XmlElement _element;
+        private readonly bool _firstIsInstance;
 
-		public Parameters (XmlElement elem) : this (elem, false) { }
+        public Parameters(XmlElement element) : this(element, false) { }
 
-		public Parameters (XmlElement elem, bool first_is_instance)
-		{
-			if (elem == null)
-				valid = true;
-			this.elem = elem;
-			this.first_is_instance = first_is_instance;
-			if (first_is_instance)
-				is_static = false;
-		}
+        public Parameters(XmlElement element, bool firstIsInstance)
+        {
+            if (element == null)
+                _valid = true;
 
-		public int Count {
-			get { return param_list.Count; }
-		}
+            _element = element;
+            _firstIsInstance = firstIsInstance;
 
-		// gapi assumes GError** parameters to be error parameters in version 1 and 2
-		private bool throws = false;
-		public bool Throws {
-			get {
-				if (Parser.GetVersion (elem.OwnerDocument.DocumentElement) <= 2)
-					return true;
-				if (!throws && elem.HasAttribute ("throws"))
-					throws = elem.GetAttributeAsBoolean ("throws");
-				return throws;
-			}
-		}
+            if (firstIsInstance)
+                Static = false;
+        }
 
-		public int VisibleCount {
-			get {
-				int visible = 0;
-				foreach (Parameter p in this) {
-					if (!IsHidden (p))
-						visible++;
-				}
-				return visible;
-			}
-		}
+        public int Count => _paramList.Count;
 
-		public Parameter this [int idx] {
-			get {
-				return param_list [idx];
-			}
-		}
+        // gapi assumes GError** parameters to be error parameters in version 1 and 2
+        private bool _throws;
 
-		public bool IsHidden (Parameter p)
-		{
-			int idx = param_list.IndexOf (p);
+        public bool Throws
+        {
+            get
+            {
+                if (Parser.GetVersion(_element.OwnerDocument.DocumentElement) <= 2)
+                    return true;
 
-			if (idx > 0 && p.IsLength && p.PassAs == string.Empty && this [idx - 1].IsString)
-				return true;
+                if (!_throws && _element.HasAttribute("throws"))
+                    _throws = _element.GetAttributeAsBoolean("throws");
 
-			if (p.IsCount)
-				return true;
+                return _throws;
+            }
+        }
 
-			if (p.IsHidden)
-				return true;
+        public int VisibleCount => this.Count(p => !IsHidden(p));
 
-			if (p.CType == "GError**" && Throws)
-				return true;
+        public Parameter this[int index] => _paramList[index];
 
-			if (HasCB || HideData) {
+        public bool IsHidden(Parameter parameter)
+        {
+            var index = _paramList.IndexOf(parameter);
 
-				if (Parser.GetVersion (elem.OwnerDocument.DocumentElement) >= 3) {
-					foreach (Parameter param in param_list) {
-						if (param.Closure == idx)
-							return true;
-						if (param.DestroyNotify == idx)
-							return true;
-					}
-				} else {
-					if (p.IsUserData && idx == Count - 1)
-						return true;
-					if (p.IsUserData && idx == Count - 2 && this [Count - 1] is ErrorParameter)
-						return true;
-					if (p.IsUserData && idx > 0 && this [idx - 1].Generatable is CallbackGen)
-						return true;
-					if (p.IsDestroyNotify && idx == Count - 1 && this [idx - 1].IsUserData)
-						return true;
-				}
-			}
+            if (index > 0 && parameter.IsLength && parameter.PassAs == string.Empty && this[index - 1].IsString)
+                return true;
 
-			return false;
-		}
+            if (parameter.IsCount)
+                return true;
 
-		bool has_cb;
-		public bool HasCB {
-			get { return has_cb; }
-			set { has_cb = value; }
-		}
+            if (parameter.IsHidden)
+                return true;
 
-		public bool HasOutParam {
-			get {
-				foreach (Parameter p in this)
-					if (p.PassAs == "out")
-						return true;
-				return false;
-			}
-		}
+            if (parameter.CType == "GError**" && Throws)
+                return true;
 
-		bool hide_data;
-		public bool HideData {
-			get { return hide_data; }
-			set { hide_data = value; }
-		}
+            if (!HasCallback && !HideData) return false;
 
-		bool is_static;
-		public bool Static {
-			get { return is_static; }
-			set { is_static = value; }
-		}
+            if (Parser.GetVersion(_element.OwnerDocument.DocumentElement) >= 3)
+            {
+                foreach (var param in _paramList)
+                {
+                    if (param.Closure == index)
+                        return true;
+                    if (param.DestroyNotify == index)
+                        return true;
+                }
+            }
+            else
+            {
+                if (parameter.IsUserData && index == Count - 1)
+                    return true;
+                if (parameter.IsUserData && index == Count - 2 && this[Count - 1] is ErrorParameter)
+                    return true;
+                if (parameter.IsUserData && index > 0 && this[index - 1].Generatable is CallbackGen)
+                    return true;
+                if (parameter.IsDestroyNotify && index == Count - 1 && this[index - 1].IsUserData)
+                    return true;
+            }
 
-		bool has_optional;
-		internal bool HasOptional {
-			get { return has_optional;}
-		}
+            return false;
+        }
 
-		public Parameter GetCountParameter (string param_name)
-		{
-			foreach (Parameter p in this)
-				if (p.Name == param_name) {
-					p.IsCount = true;
-					return p;
-				}
-			return null;
-		}
+        public bool HasCallback { get; set; }
 
-		void Clear ()
-		{
-			elem = null;
-			param_list.Clear ();
-			param_list = null;
-		}
+        public bool HasOutParam => this.Any(p => p.PassAs == "out");
 
-		public IEnumerator<Parameter> GetEnumerator ()
-		{
-			return param_list.GetEnumerator ();
-		}
+        public bool HideData { get; set; }
 
-		IEnumerator IEnumerable.GetEnumerator ()
-		{
-			return GetEnumerator ();
-		}
+        public bool Static { get; set; }
 
-		bool valid = false;
+        internal bool HasOptional { get; private set; }
 
-		public bool Validate (LogWriter log)
-		{
-			if (valid)
-				return true;
+        public Parameter GetCountParameter(string paramName)
+        {
+            foreach (var parameter in this)
+                if (parameter.Name == paramName)
+                {
+                    parameter.IsCount = true;
+                    return parameter;
+                }
 
-			if (elem == null)
-				return false;
+            return null;
+        }
 
-			for (int i = first_is_instance ? 1 : 0; i < elem.ChildNodes.Count; i++) {
-				XmlElement parm = elem.ChildNodes [i] as XmlElement;
-				if (parm == null || parm.Name != "parameter")
-					continue;
-				Parameter p = new Parameter (parm);
-				
-				if (p.IsEllipsis) {
-					log.Warn ("Ellipsis parameter: hide and bind manually if no alternative exists. ");
-					Clear ();
-					return false;
-				}
+        private void Clear()
+        {
+            _element = null;
+            _paramList.Clear();
+            _paramList = null;
+        }
 
-				if (p.CSType == "" || p.Name == "" || 
-				    p.MarshalType == "" || SymbolTable.Table.CallByName(p.CType, p.Name) == "") {
-					log.Warn ("Unknown type {1} on parameter {0}", p.Name, p.CType);
-					Clear ();
-					return false;
-				}
+        public IEnumerator<Parameter> GetEnumerator()
+        {
+            return _paramList.GetEnumerator();
+        }
 
-				if (p.IsOptional && p.PassAs == string.Empty && p.IsUserData == false)
-					has_optional = true;
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
+        }
 
-				IGeneratable gen = p.Generatable;
+        private bool _valid;
 
-				if (p.IsArray) {
-					p = new ArrayParameter (parm);
-					if (i < elem.ChildNodes.Count - 1) {
-						XmlElement next = elem.ChildNodes [i + 1] as XmlElement;
-						if (next != null || next.Name == "parameter") {
-							Parameter c = new Parameter (next);
-							if (c.IsCount) {
-								p = new ArrayCountPair (parm, next, false);
-								i++;
-							}
-						}
-					}
-				} else if (p.IsCount) {
-					p.IsCount = false;
-					if (i < elem.ChildNodes.Count - 1) {
-						XmlElement next = elem.ChildNodes [i + 1] as XmlElement;
-						if (next != null || next.Name == "parameter") {
-							Parameter a = new Parameter (next);
-							if (a.IsArray) {
-								p = new ArrayCountPair (next, parm, true);
-								i++;
-							}
-						}
-					}
-				} else if (p.CType == "GError**" && Throws)
-					p = new ErrorParameter (parm);
-				else if (gen is StructBase || gen is ByRefGen) {
-					p = new StructParameter (parm);
-				} else if (gen is CallbackGen) {
-					has_cb = true;
-				}
-				param_list.Add (p);
-			}
+        public bool Validate(LogWriter log)
+        {
+            if (_valid)
+                return true;
 
-			if (Parser.GetVersion (elem.OwnerDocument.DocumentElement) < 3 &&
-			    has_cb && Count > 2 && this [Count - 3].Generatable is CallbackGen && this [Count - 2].IsUserData && this [Count - 1].IsDestroyNotify)
-				this [Count - 3].Scope = "notified";
+            if (_element == null)
+                return false;
 
-			valid = true;
-			return true;
-		}
+            for (var i = _firstIsInstance ? 1 : 0; i < _element.ChildNodes.Count; i++)
+            {
+                var elementChildNode = _element.ChildNodes[i] as XmlElement;
 
-		public bool IsAccessor {
-			get {
-				return VisibleCount == 1 && AccessorParam.PassAs == "out";
-			}
-		}
+                if (elementChildNode == null || elementChildNode.Name != "parameter")
+                    continue;
 
-		public Parameter AccessorParam {
-			get {
-				foreach (Parameter p in this) {
-					if (!IsHidden (p))
-						return p;
-				}
-				return null;
-			}
-		}
+                var parameter = new Parameter(elementChildNode);
 
-		public string AccessorReturnType {
-			get {
-				Parameter p = AccessorParam;
-				if (p != null)
-					return p.CSType;
-				else
-					return null;
-			}
-		}
+                if (parameter.IsEllipsis)
+                {
+                    log.Warn("Ellipsis parameter: hide and bind manually if no alternative exists.");
+                    Clear();
 
-		public string AccessorName {
-			get {
-				Parameter p = AccessorParam;
-				if (p != null)
-					return p.Name;
-				else
-					return null;
-			}
-		}
+                    return false;
+                }
 
-		public string ImportSignature {
-			get {
-				if (Count == 0)
-					return string.Empty;
+                if (parameter.CsType == "" || parameter.Name == "" ||
+                    parameter.MarshalType == "" || SymbolTable.Table.CallByName(parameter.CType, parameter.Name) == "")
+                {
+                    log.Warn("Unknown type {1} on parameter {0}", parameter.Name, parameter.CType);
+                    Clear();
 
-				string[] result = new string [Count];
-				for (int i = 0; i < Count; i++)
-					result [i] = this [i].NativeSignature;
+                    return false;
+                }
 
-				return string.Join (", ", result);
-			}
-		}
-	}
+                if (parameter.IsOptional && parameter.PassAs == string.Empty && parameter.IsUserData == false)
+                    HasOptional = true;
+
+                var generatable = parameter.Generatable;
+
+                if (parameter.IsArray)
+                {
+                    parameter = new ArrayParameter(elementChildNode);
+
+                    if (i < _element.ChildNodes.Count - 1)
+                    {
+                        if (_element.ChildNodes[i + 1] is XmlElement nextElement && nextElement.Name == "parameter")
+                        {
+                            var nextElementParam = new Parameter(nextElement);
+
+                            if (nextElementParam.IsCount)
+                            {
+                                parameter = new ArrayCountPair(elementChildNode, nextElement, false);
+                                i++;
+                            }
+                        }
+                    }
+                }
+                else if (parameter.IsCount)
+                {
+                    parameter.IsCount = false;
+
+                    if (i < _element.ChildNodes.Count - 1)
+                    {
+                        if (_element.ChildNodes[i + 1] is XmlElement nextElement && nextElement.Name == "parameter")
+                        {
+                            var nextElementParam = new Parameter(nextElement);
+
+                            if (nextElementParam.IsArray)
+                            {
+                                parameter = new ArrayCountPair(nextElement, elementChildNode, true);
+                                i++;
+                            }
+                        }
+                    }
+                }
+                else if (parameter.CType == "GError**" && Throws)
+                {
+                    parameter = new ErrorParameter(elementChildNode);
+                }
+                else switch (generatable)
+                {
+                    case StructBase _:
+                    case ByRefGen _:
+                        parameter = new StructParameter(elementChildNode);
+                        break;
+                    case CallbackGen _:
+                        HasCallback = true;
+                        break;
+                }
+
+                _paramList.Add(parameter);
+            }
+
+            if (Parser.GetVersion(_element.OwnerDocument.DocumentElement) < 3 &&
+                HasCallback && Count > 2 && this[Count - 3].Generatable is CallbackGen &&
+                this[Count - 2].IsUserData && this[Count - 1].IsDestroyNotify)
+            {
+                this[Count - 3].Scope = "notified";
+            }
+
+            _valid = true;
+            return _valid;
+        }
+
+        public bool IsAccessor => VisibleCount == 1 && AccessorParam.PassAs == "out";
+
+        public Parameter AccessorParam => this.FirstOrDefault(parameter => !IsHidden(parameter));
+
+        public string AccessorReturnType => AccessorParam?.CsType;
+
+        public string AccessorName => AccessorParam?.Name;
+
+        public string ImportSignature
+        {
+            get
+            {
+                if (Count == 0)
+                    return string.Empty;
+
+                var result = new string[Count];
+
+                for (var i = 0; i < Count; i++)
+                    result[i] = this[i].NativeSignature;
+
+                return string.Join(", ", result);
+            }
+        }
+    }
 }

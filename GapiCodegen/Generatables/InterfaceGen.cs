@@ -26,6 +26,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Xml;
+using GapiCodegen.Util;
 
 namespace GapiCodegen.Generatables
 {
@@ -390,10 +391,10 @@ namespace GapiCodegen.Generatables
             sw.WriteLine("\t}");
         }
 
-        public override void Generate(GenerationInfo gen_info)
+        public override void Generate(GenerationInfo generationInfo)
         {
-            GenerateAdapter(gen_info);
-            StreamWriter sw = gen_info.Writer = gen_info.OpenStream(Name, NS);
+            GenerateAdapter(generationInfo);
+            StreamWriter sw = generationInfo.Writer = generationInfo.OpenStream(Name, NS);
 
             sw.WriteLine("namespace " + NS + " {");
             sw.WriteLine();
@@ -407,7 +408,7 @@ namespace GapiCodegen.Generatables
             foreach (Signal sig in sigs.Values)
             {
                 sig.GenerateDecl(sw);
-                sig.GenEventHandler(gen_info);
+                sig.GenEventHandler(generationInfo);
             }
 
             foreach (Method method in Methods.Values)
@@ -421,11 +422,11 @@ namespace GapiCodegen.Generatables
                 prop.GenerateDecl(sw, "\t\t");
 
             sw.WriteLine("\t}");
-            GenerateImplementorIface(gen_info);
+            GenerateImplementorIface(generationInfo);
             sw.WriteLine("#endregion");
             sw.WriteLine("}");
             sw.Close();
-            gen_info.Writer = null;
+            generationInfo.Writer = null;
             Statistics.InterfaceCount++;
         }
     }

@@ -21,6 +21,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Xml;
+using GapiCodegen.Util;
 
 namespace GapiCodegen.Generatables
 {
@@ -75,15 +76,15 @@ namespace GapiCodegen.Generatables
 			return "new " + QualifiedName + "( " + var + " )";
 		}
 
-		public override void Generate (GenerationInfo gen_info)
+		public override void Generate (GenerationInfo generationInfo)
 		{
 			bool need_close = false;
-			if (gen_info.Writer == null) {
-				gen_info.Writer = gen_info.OpenStream (Name, NS);
+			if (generationInfo.Writer == null) {
+				generationInfo.Writer = generationInfo.OpenStream (Name, NS);
 				need_close = true;
 			}
 
-			StreamWriter sw = gen_info.Writer;
+			StreamWriter sw = generationInfo.Writer;
 			
 			sw.WriteLine ("namespace " + NS + " {");
 			sw.WriteLine ();
@@ -100,12 +101,12 @@ namespace GapiCodegen.Generatables
 			sw.WriteLine ("\t" + access + " partial class {0} : {1} IEquatable<{0}> {{", Name, Parent == null ? "GLib.IWrapper," : Parent.QualifiedName + ",");
 			sw.WriteLine ();
 
-			GenNativeStruct (gen_info);
-			GenNativeAccessor (gen_info);
-			GenFields (gen_info);
+			GenNativeStruct (generationInfo);
+			GenNativeAccessor (generationInfo);
+			GenFields (generationInfo);
 			sw.WriteLine ();
-			GenCtors (gen_info);
-			GenMethods (gen_info, null, this);
+			GenCtors (generationInfo);
+			GenMethods (generationInfo, null, this);
 			GenEqualsAndHash (sw);
 
 			if (!need_close)
@@ -116,7 +117,7 @@ namespace GapiCodegen.Generatables
 			sw.WriteLine ("\t}");
 			sw.WriteLine ("}");
 			sw.Close ();
-			gen_info.Writer = null;
+			generationInfo.Writer = null;
 		}
 
 		private void GenNativeStruct (GenerationInfo gen_info)

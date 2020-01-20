@@ -24,6 +24,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Xml;
 using GapiCodegen.Generatables;
+using GapiCodegen.Util;
 
 namespace GapiCodegen {
 	public class Ctor : MethodBase  {

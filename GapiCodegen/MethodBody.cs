@@ -23,6 +23,7 @@
 using System.IO;
 using GapiCodegen.Generatables;
 using GapiCodegen.Interfaces;
+using GapiCodegen.Util;
 
 namespace GapiCodegen {
 	public class MethodBody  {
@@ -55,7 +56,7 @@ namespace GapiCodegen {
 
 				if (i > 0 && parameters [i - 1].IsString && p.IsLength && p.PassAs == string.Empty) {
 					string string_name = i == 1 && is_set ? "value" : parameters [i - 1].Name;
-					result[i] = igen.CallByName (CastFromInt (p.CSType) + "System.Text.Encoding.UTF8.GetByteCount (" +  string_name + ")");
+					result[i] = igen.CallByName (CastFromInt (p.CsType) + "System.Text.Encoding.UTF8.GetByteCount (" +  string_name + ")");
 					continue;
 				}
 
@@ -115,13 +116,13 @@ namespace GapiCodegen {
 					case "notified":
 						sw.WriteLine (indent + "\t\t\t{0} {1}_wrapper = new {0} ({1});", wrapper, name);
 						sw.WriteLine (indent + "\t\t\tIntPtr {0};", parameters [closure].Name);
-						sw.WriteLine (indent + "\t\t\t{0} {1};", parameters [destroyNotify].CSType, parameters [destroyNotify].Name);
+						sw.WriteLine (indent + "\t\t\t{0} {1};", parameters [destroyNotify].CsType, parameters [destroyNotify].Name);
 						sw.WriteLine (indent + "\t\t\tif ({0} == null) {{", name);
 						sw.WriteLine (indent + "\t\t\t\t{0} = IntPtr.Zero;", parameters [closure].Name);
 						sw.WriteLine (indent + "\t\t\t\t{0} = null;", parameters [destroyNotify].Name);
 						sw.WriteLine (indent + "\t\t\t} else {");
 						sw.WriteLine (indent + "\t\t\t\t{0} = (IntPtr) GCHandle.Alloc ({1}_wrapper);", parameters [closure].Name, name);
-						sw.WriteLine (indent + "\t\t\t\t{0} = GLib.DestroyHelper.NotifyHandler;", parameters [destroyNotify].Name, parameters [destroyNotify].CSType);
+						sw.WriteLine (indent + "\t\t\t\t{0} = GLib.DestroyHelper.NotifyHandler;", parameters [destroyNotify].Name, parameters [destroyNotify].CsType);
 						sw.WriteLine (indent + "\t\t\t}");
 						break;
 

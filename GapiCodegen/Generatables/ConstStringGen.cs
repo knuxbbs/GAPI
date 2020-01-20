@@ -26,7 +26,7 @@ using GapiCodegen.Interfaces;
 namespace GapiCodegen.Generatables {
 	public class ConstStringGen : SimpleBase, IManualMarshaler {
 		
-		public ConstStringGen (string ctype) : base (ctype, "string", "null") {}
+		public ConstStringGen (string cType) : base (cType, "string", "null") {}
 
 		public override string MarshalType {
 			get {
@@ -39,14 +39,14 @@ namespace GapiCodegen.Generatables {
 			return "GLib.Marshaller.Utf8PtrToString (" + var + ")";
 		}
 
-		public string AllocNative (string managed_var)
+		public string AllocNative (string managedVar)
 		{
-			return "GLib.Marshaller.StringToPtrGStrdup (" + managed_var + ")";
+			return "GLib.Marshaller.StringToPtrGStrdup (" + managedVar + ")";
 		}
 
-		public string ReleaseNative (string native_var)
+		public string ReleaseNative (string nativeVar)
 		{
-			return "GLib.Marshaller.Free (" + native_var + ")";
+			return "GLib.Marshaller.Free (" + nativeVar + ")";
 		}
 	}
 }

@@ -24,24 +24,24 @@ using GapiCodegen.Generatables;
 namespace GapiCodegen {
 	public abstract class PropertyBase {
 
-		protected XmlElement elem;
+		protected XmlElement Element;
 		public ClassBase container_type;
 
-		public PropertyBase (XmlElement elem, ClassBase container_type)
+		public PropertyBase (XmlElement element, ClassBase container_type)
 		{
-			this.elem = elem;
+			this.Element = element;
 			this.container_type = container_type;
 		}
 
 		public string Name {
 			get {
-				return elem.GetAttribute ("name");
+				return Element.GetAttribute ("name");
 			}
 		}
 
 		public virtual string CName {
 			get {
-				return elem.GetAttribute ("cname");
+				return Element.GetAttribute ("cname");
 			}
 		}
 
@@ -49,10 +49,10 @@ namespace GapiCodegen {
 		public virtual string CType {
 			get {
 				if (ctype == null) {
-					if (elem.GetAttribute("bits") == "1")
+					if (Element.GetAttribute("bits") == "1")
 						ctype = "gboolean";
 					else
-						ctype = elem.GetAttribute("type");
+						ctype = Element.GetAttribute("type");
 				}
 				return ctype;
 			}
@@ -73,13 +73,13 @@ namespace GapiCodegen {
 
 		public virtual bool Hidden {
 			get {
-				return elem.GetAttributeAsBoolean ("hidden");
+				return Element.GetAttributeAsBoolean ("hidden");
 			}
 		}
 
 		protected bool IsNew {
 			get {
-				return elem.GetAttributeAsBoolean ("new_flag");
+				return Element.GetAttributeAsBoolean ("new_flag");
 			}
 		}
 

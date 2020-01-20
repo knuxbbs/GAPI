@@ -21,6 +21,7 @@
 using System.IO;
 using System.Xml;
 using GapiCodegen.Generatables;
+using GapiCodegen.Util;
 
 namespace GapiCodegen
 {
@@ -75,8 +76,8 @@ namespace GapiCodegen
             if (IsGetter)
             {
                 string name = Name.StartsWith("Get") ? Name.Substring(3) : Name;
-                string type = retval.IsVoid ? parms[0].CSType : retval.CSType;
-                if (complement != null && complement.parms[0].CSType == type)
+                string type = retval.IsVoid ? parms[0].CsType : retval.CSType;
+                if (complement != null && complement.parms[0].CsType == type)
                     sw.WriteLine("\t\t" + type + " " + name + " { get; set; }");
                 else
                 {
@@ -86,7 +87,7 @@ namespace GapiCodegen
                 }
             }
             else if (IsSetter)
-                sw.WriteLine("\t\t" + parms[0].CSType + " " + Name.Substring(3) + " { set; }");
+                sw.WriteLine("\t\t" + parms[0].CsType + " " + Name.Substring(3) + " { set; }");
             else
                 sw.WriteLine("\t\t" + retval.CSType + " " + Name + " (" + Signature + ");");
         }

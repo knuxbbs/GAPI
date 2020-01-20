@@ -19,12 +19,13 @@
 
 using System.Xml;
 using GapiCodegen.Generatables;
+using GapiCodegen.Util;
 
 namespace GapiCodegen {
 	public class ClassField : StructField {
 		protected new ObjectBase container_type;
 
-		public ClassField (XmlElement elem, ObjectBase container_type) : base (elem, container_type) {
+		public ClassField (XmlElement element, ObjectBase container_type) : base (element, container_type) {
 			this.container_type = container_type;
 		}
 

@@ -22,6 +22,7 @@
 
 using System.Xml;
 using GapiCodegen.Generatables;
+using GapiCodegen.Util;
 
 namespace GapiCodegen {
 	public abstract class MethodBase  {

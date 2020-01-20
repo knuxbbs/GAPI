@@ -84,7 +84,7 @@ namespace GapiCodegen {
 				ret = indent + error_param + " = IntPtr.Zero;\n";
 
 			foreach (Parameter p in dispose_params) {
-				ret += indent + p.CSType + " my" + p.Name + " = null;\n";
+				ret += indent + p.CsType + " my" + p.Name + " = null;\n";
 			}
 			return ret;
 		}

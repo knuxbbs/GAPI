@@ -28,6 +28,7 @@ using System.IO;
 using System.Text;
 using System.Xml;
 using GapiCodegen.Interfaces;
+using GapiCodegen.Util;
 
 namespace GapiCodegen.Generatables {
 	public abstract class StructBase : ClassBase, IManualMarshaler {
@@ -215,16 +216,16 @@ namespace GapiCodegen.Generatables {
 			return false;
 		}
 
-		public override void Generate (GenerationInfo gen_info)
+		public override void Generate (GenerationInfo generationInfo)
 		{
 			bool need_close = false;
 
-			if (gen_info.Writer == null) {
-				gen_info.Writer = gen_info.OpenStream (Name, NS);
+			if (generationInfo.Writer == null) {
+				generationInfo.Writer = generationInfo.OpenStream (Name, NS);
 				need_close = true;
 			}
 
-			StreamWriter sw = gen_info.Writer;
+			StreamWriter sw = generationInfo.Writer;
 			
 			sw.WriteLine ("namespace " + NS + " {");
 			sw.WriteLine ();
@@ -246,10 +247,10 @@ namespace GapiCodegen.Generatables {
 			sw.WriteLine ();
 
 			need_read_native = false;
-			GenFields (gen_info);
+			GenFields (generationInfo);
 			sw.WriteLine ();
-			GenCtors (gen_info);
-			GenMethods (gen_info, null, this);
+			GenCtors (generationInfo);
+			GenMethods (generationInfo, null, this);
 			if (need_read_native)
 				GenReadNative (sw);
 			GenEqualsAndHash (sw);
@@ -262,7 +263,7 @@ namespace GapiCodegen.Generatables {
 			sw.WriteLine ("\t}");
 			sw.WriteLine ("}");
 			sw.Close ();
-			gen_info.Writer = null;
+			generationInfo.Writer = null;
 		}
 		
 		protected override void GenCtors (GenerationInfo gen_info)
