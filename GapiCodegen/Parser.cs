@@ -26,6 +26,7 @@ using System.Xml;
 using System.Xml.Schema;
 using GapiCodegen.Generatables;
 using GapiCodegen.Interfaces;
+using GapiCodegen.Util;
 
 namespace GapiCodegen
 {
