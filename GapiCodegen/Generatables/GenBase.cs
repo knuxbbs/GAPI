@@ -21,6 +21,7 @@
 
 
 using System.Xml;
+using GapiCodegen.Interfaces;
 
 namespace GapiCodegen.Generatables {
 	public abstract class GenBase : IGeneratable {

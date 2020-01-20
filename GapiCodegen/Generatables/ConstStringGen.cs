@@ -21,6 +21,8 @@
 // Boston, MA 02111-1307, USA.
 
 
+using GapiCodegen.Interfaces;
+
 namespace GapiCodegen.Generatables {
 	public class ConstStringGen : SimpleBase, IManualMarshaler {
 		

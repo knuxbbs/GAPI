@@ -24,6 +24,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Xml;
 using GapiCodegen.Generatables;
+using GapiCodegen.Interfaces;
 
 namespace GapiCodegen {
 	public class Parameters : IEnumerable<Parameter> {

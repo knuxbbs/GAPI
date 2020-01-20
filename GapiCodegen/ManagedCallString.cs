@@ -21,6 +21,7 @@
 
 using System.Collections.Generic;
 using GapiCodegen.Generatables;
+using GapiCodegen.Interfaces;
 
 namespace GapiCodegen {
 	public class ManagedCallString {

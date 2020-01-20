@@ -24,6 +24,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using GapiCodegen.Generatables;
+using GapiCodegen.Interfaces;
 
 namespace GapiCodegen
 {

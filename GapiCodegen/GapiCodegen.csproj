@@ -2,10 +2,14 @@
     <PropertyGroup>
         <OutputType>Exe</OutputType>
         <TargetFramework>netcoreapp2.1</TargetFramework>
-        <OutputPath>..\..\..\BuildOutput\Tools</OutputPath>
         <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     </PropertyGroup>
     <ItemGroup>
-      <None Remove="README.asc" />
+        <None Remove="README.asc"/>
+    </ItemGroup>
+    <ItemGroup>
+        <Content Include="Schemas\*.*">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </Content>
     </ItemGroup>
 </Project>

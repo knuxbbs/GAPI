@@ -21,6 +21,7 @@
 
 using System.IO;
 using System.Xml;
+using GapiCodegen.Interfaces;
 
 namespace GapiCodegen.Generatables {
 	public abstract class HandleBase : ClassBase, IPropertyAccessor, IOwnable {

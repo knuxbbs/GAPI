@@ -20,7 +20,7 @@
 
 using System.IO;
 
-namespace GapiCodegen
+namespace GapiCodegen.Interfaces
 {
     public interface IPropertyAccessor
     {
