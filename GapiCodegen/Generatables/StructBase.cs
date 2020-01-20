@@ -28,7 +28,7 @@ using System.IO;
 using System.Text;
 using System.Xml;
 using GapiCodegen.Interfaces;
-using GapiCodegen.Util;
+using GapiCodegen.Utils;
 
 namespace GapiCodegen.Generatables {
 	public abstract class StructBase : ClassBase, IManualMarshaler {

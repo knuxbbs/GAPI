@@ -21,7 +21,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Xml;
-using GapiCodegen.Util;
+using GapiCodegen.Utils;
 
 namespace GapiCodegen.Generatables
 {

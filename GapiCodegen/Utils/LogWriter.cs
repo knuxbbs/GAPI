@@ -21,7 +21,7 @@
 
 using System;
 
-namespace GapiCodegen.Util
+namespace GapiCodegen.Utils
 {
     public class LogWriter
     {

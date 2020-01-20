@@ -21,7 +21,7 @@
 
 using System.IO;
 using System.Xml;
-using GapiCodegen.Util;
+using GapiCodegen.Utils;
 
 namespace GapiCodegen.Generatables {
 	public class OpaqueGen : HandleBase {

@@ -27,7 +27,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Xml;
-using GapiCodegen.Util;
+using GapiCodegen.Utils;
 
 namespace GapiCodegen.Generatables {
 	public abstract class ClassBase : GenBase {

@@ -23,7 +23,7 @@
 using System.IO;
 using System.Xml;
 using GapiCodegen.Interfaces;
-using GapiCodegen.Util;
+using GapiCodegen.Utils;
 
 namespace GapiCodegen.Generatables {
 	public class CallbackGen : GenBase, IPropertyAccessor {

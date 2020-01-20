@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Xml;
 using GapiCodegen.Generatables;
-using GapiCodegen.Util;
+using GapiCodegen.Utils;
 
 namespace GapiCodegen
 {

@@ -21,7 +21,7 @@
 
 using System;
 
-namespace GapiCodegen.Util
+namespace GapiCodegen.Utils
 {
     /// <summary>
     /// Used to keep statistics on generated classes.

@@ -20,7 +20,7 @@
 
 using System.Xml;
 using GapiCodegen.Generatables;
-using GapiCodegen.Util;
+using GapiCodegen.Utils;
 
 namespace GapiCodegen {
 	public abstract class PropertyBase {

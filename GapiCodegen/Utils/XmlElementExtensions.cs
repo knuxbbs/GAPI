@@ -1,6 +1,6 @@
 using System.Xml;
 
-namespace GapiCodegen.Util
+namespace GapiCodegen.Utils
 {
     public static class XmlElementExtensions
     {
