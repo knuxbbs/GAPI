@@ -186,7 +186,7 @@ namespace GapiCodegen
                 if (parameter.CsType == "" || parameter.Name == "" ||
                     parameter.MarshalType == "" || SymbolTable.Table.CallByName(parameter.CType, parameter.Name) == "")
                 {
-                    log.Warn("Unknown type {1} on parameter {0}", parameter.Name, parameter.CType);
+                    log.Warn($"Unknown type {parameter.Name} on parameter {parameter.CType}");
                     Clear();
 
                     return false;
@@ -238,15 +238,15 @@ namespace GapiCodegen
                     parameter = new ErrorParameter(elementChildNode);
                 }
                 else switch (generatable)
-                {
-                    case StructBase _:
-                    case ByRefGen _:
-                        parameter = new StructParameter(elementChildNode);
-                        break;
-                    case CallbackGen _:
-                        HasCallback = true;
-                        break;
-                }
+                    {
+                        case StructBase _:
+                        case ByRefGen _:
+                            parameter = new StructParameter(elementChildNode);
+                            break;
+                        case CallbackGen _:
+                            HasCallback = true;
+                            break;
+                    }
 
                 _paramList.Add(parameter);
             }

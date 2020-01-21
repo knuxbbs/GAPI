@@ -58,10 +58,10 @@ namespace GapiCodegen
             {
                 if (Parser.GetVersion(Element.OwnerDocument.DocumentElement) <= 2)
                 {
-                    return Element.GetAttribute("readable") != "false";
+                    return Element.GetAttribute(Constants.Readable) != "false";
                 }
 
-                return Element.HasAttribute("readable") && Element.GetAttributeAsBoolean("readable");
+                return Element.HasAttribute(Constants.Readable) && Element.GetAttributeAsBoolean(Constants.Readable);
             }
         }
 
@@ -71,22 +71,22 @@ namespace GapiCodegen
             {
                 if (Parser.GetVersion(Element.OwnerDocument.DocumentElement) <= 2)
                 {
-                    return Element.GetAttribute("writeable") != "false";
+                    return Element.GetAttribute(Constants.Writeable) != "false";
                 }
 
-                return Element.HasAttribute("writeable") && Element.GetAttributeAsBoolean("writeable");
+                return Element.HasAttribute(Constants.Writeable) && Element.GetAttributeAsBoolean(Constants.Writeable);
             }
         }
 
         protected abstract string DefaultAccess { get; }
 
-        protected virtual string Access => Element.HasAttribute("access")
-            ? Element.GetAttribute("access")
+        protected virtual string Access => Element.HasAttribute(Constants.Access)
+            ? Element.GetAttribute(Constants.Access)
             : DefaultAccess;
 
-        public bool IsArray => Element.HasAttribute("array_len") || Element.GetAttributeAsBoolean("array");
+        public bool IsArray => Element.HasAttribute(Constants.ArrayLen) || Element.GetAttributeAsBoolean(Constants.Array);
 
-        public bool IsBitfield => Element.HasAttribute("bits");
+        public bool IsBitfield => Element.HasAttribute(Constants.Bits);
 
         public bool Ignored
         {

@@ -19,150 +19,173 @@
 // Free Software Foundation, Inc., 59 Temple Place - Suite 330,
 // Boston, MA 02111-1307, USA.
 
-
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Xml;
 using GapiCodegen.Generatables;
 using GapiCodegen.Utils;
 
-namespace GapiCodegen {
-	public class Ctor : MethodBase  {
+namespace GapiCodegen
+{
+    /// <summary>
+    /// Handles 'constructor' elements.
+    /// </summary>
+    public class Ctor : MethodBase
+    {
+        private readonly string _name;
+        private readonly bool _needsChaining;
 
-		private bool preferred;
-		private string name;
-		private bool needs_chaining = false;
+        public Ctor(XmlElement element, ClassBase containerType) : base(element, containerType)
+        {
+            Preferred = element.GetAttributeAsBoolean(Constants.Preferred);
 
-		public Ctor (XmlElement element, ClassBase implementor) : base (element, implementor)
-		{
-			preferred = element.GetAttributeAsBoolean ("preferred");
-			if (implementor is ObjectGen)
-				needs_chaining = true;
-			name = implementor.Name;
-		}
+            _needsChaining = containerType is ObjectGen;
 
-		public bool Preferred {
-			get { return preferred; }
-			set { preferred = value; }
-		}
+            _name = containerType.Name;
+        }
 
-		public string StaticName {
-			get {
-				if (!IsStatic)
-					return string.Empty;
+        public bool Preferred { get; set; }
 
-				if (Name != null && Name != string.Empty)
-					return Name;
+        public string StaticName
+        {
+            get
+            {
+                if (!IsStatic)
+                    return string.Empty;
 
-				string[] toks = CName.Substring(CName.IndexOf("new")).Split ('_');
-				string result = string.Empty;
+                if (!string.IsNullOrEmpty(Name))
+                    return Name;
 
-				foreach (string tok in toks)
-					result += tok.Substring(0,1).ToUpper() + tok.Substring(1);
-				return result;
-			}
-		}
+                var toks = CName.Substring(CName.IndexOf("new", StringComparison.Ordinal)).Split('_');
+                var result = string.Empty;
 
-		void GenerateImport (StreamWriter sw)
-		{
-            sw.WriteLine("\t\t[UnmanagedFunctionPointer (CallingConvention.Cdecl)]");
-            sw.WriteLine("\t\tdelegate IntPtr d_{0}({1});", CName, Parameters.ImportSignature);
-            sw.WriteLine("\t\tstatic d_{0} {0} = FuncLoader.LoadFunction<d_{0}>(FuncLoader.GetProcAddress(GLibrary.Load({1}), \"{0}\"));", CName, LibraryName);
-            sw.WriteLine();
-		}
+                foreach (var tok in toks)
+                    result += $"{tok.Substring(0, 1).ToUpper()}{tok.Substring(1)}";
 
-		void GenerateStatic (GenerationInfo gen_info)
-		{
-			StreamWriter sw = gen_info.Writer;
-			sw.WriteLine("\t\t" + Protection + " static " + Safety + Modifiers +  name + " " + StaticName + "(" + Signature + ")");
-			sw.WriteLine("\t\t{");
+                return result;
+            }
+        }
 
-			Body.Initialize(gen_info, false, false, "");
+        public void Generate(GenerationInfo generationInfo)
+        {
+            var streamWriter = generationInfo.Writer;
+            generationInfo.CurrentMember = CName;
 
-			sw.Write("\t\t\t" + name + " result = ");
-			if (ContainerType is StructBase)
-				sw.Write ("{0}.New (", name);
-			else
-				sw.Write ("new {0} (", name);
-			sw.WriteLine (CName + "(" + Body.GetCallString (false) + "));");
-			Body.Finish (sw, ""); 
-			Body.HandleException (sw, "");
-			sw.WriteLine ("\t\t\treturn result;");
-		}
+            GenerateImport(streamWriter);
 
-		public void Generate (GenerationInfo gen_info)
-		{
-			StreamWriter sw = gen_info.Writer;
-			gen_info.CurrentMember = CName;
+            if (IsStatic)
+            {
+                GenerateStatic(generationInfo);
+            }
+            else
+            {
+                streamWriter.WriteLine("\t\t{0} {1}{2} ({3}) {4}", Protection, Safety, _name, Signature,
+                    _needsChaining ? ": base (IntPtr.Zero)" : "");
+                streamWriter.WriteLine("\t\t{");
 
-			GenerateImport (sw);
-			
-			if (IsStatic)
-				GenerateStatic (gen_info);
-			else {
-				sw.WriteLine("\t\t{0} {1}{2} ({3}) {4}", Protection, Safety, name, Signature.ToString(), needs_chaining ? ": base (IntPtr.Zero)" : "");
-				sw.WriteLine("\t\t{");
+                if (_needsChaining)
+                {
+                    streamWriter.WriteLine($"\t\t\tif (GetType () != typeof ({_name})) {{");
 
-				if (needs_chaining) {
-					sw.WriteLine ("\t\t\tif (GetType () != typeof (" + name + ")) {");
-					
-					if (Parameters.Count == 0) {
-						sw.WriteLine ("\t\t\t\tCreateNativeObject (new string [0], new GLib.Value[0]);");
-						sw.WriteLine ("\t\t\t\treturn;");
-					} else {
-						var names = new List<string> ();
-						var values = new List<string> ();
-						for (int i = 0; i < Parameters.Count; i++) {
-							Parameter p = Parameters[i];
-							if (ContainerType.GetPropertyRecursively (p.StudlyName) != null) {
-								names.Add (p.Name);
-								values.Add (p.Name);
-							} else if (p.PropertyName != string.Empty) {
-								names.Add (p.PropertyName);
-								values.Add (p.Name);
-							}
-						}
+                    if (Parameters.Count == 0)
+                    {
+                        streamWriter.WriteLine("\t\t\t\tCreateNativeObject (new string [0], new GLib.Value[0]);");
+                        streamWriter.WriteLine("\t\t\t\treturn;");
+                    }
+                    else
+                    {
+                        var names = new List<string>();
+                        var values = new List<string>();
 
-						//if (names.Count == Parameters.Count) {
-							sw.WriteLine ("\t\t\t\tvar vals = new List<GLib.Value> ();");
-							sw.WriteLine ("\t\t\t\tvar names = new List<string> ();");
-							for (int i = 0; i < names.Count; i++) {
-								Parameter p = Parameters [i];
-								string indent = "\t\t\t\t";
-								if (p.Generatable is ClassBase && !(p.Generatable is StructBase)) {
-									sw.WriteLine (indent + "if (" + p.Name + " != null) {");
-									indent += "\t";
-								}
-								sw.WriteLine (indent + "names.Add (\"" + names [i] + "\");");
-								sw.WriteLine (indent + "vals.Add (new GLib.Value (" + values[i] + "));");
+                        foreach (var parameter in Parameters)
+                        {
+                            if (ContainerType.GetPropertyRecursively(parameter.StudlyName) != null)
+                            {
+                                names.Add(parameter.Name);
+                                values.Add(parameter.Name);
+                            }
+                            else if (parameter.PropertyName != string.Empty)
+                            {
+                                names.Add(parameter.PropertyName);
+                                values.Add(parameter.Name);
+                            }
+                        }
 
-								if (p.Generatable is ClassBase && !(p.Generatable is StructBase))
-									sw.WriteLine ("\t\t\t\t}");
-							}
+                        streamWriter.WriteLine("\t\t\t\tvar vals = new List<GLib.Value> ();");
+                        streamWriter.WriteLine("\t\t\t\tvar names = new List<string> ();");
 
-							sw.WriteLine ("\t\t\t\tCreateNativeObject (names.ToArray (), vals.ToArray ());");
-							sw.WriteLine ("\t\t\t\treturn;");
-						//} else
-						//	sw.WriteLine ("\t\t\t\tthrow new InvalidOperationException (\"Can't override this constructor.\");");
-					}
-					
-					sw.WriteLine ("\t\t\t}");
-				}
-	
-				Body.Initialize(gen_info, false, false, "");
-				if (ContainerType is ObjectGen) {
-					sw.WriteLine ("\t\t\towned = true;");
-				}
-				sw.WriteLine("\t\t\t{0} = {1}({2});", ContainerType.AssignToName, CName, Body.GetCallString (false));
-				Body.Finish (sw, "");
-				Body.HandleException (sw, "");
-			}
-			
-			sw.WriteLine("\t\t}");
-			sw.WriteLine();
-			
-			Statistics.CtorCount++;
-		}
-	}
+                        for (var i = 0; i < names.Count; i++)
+                        {
+                            var parameter = Parameters[i];
+                            var indent = "\t\t\t\t";
+
+                            if (parameter.Generatable is ClassBase && !(parameter.Generatable is StructBase))
+                            {
+                                streamWriter.WriteLine($"{indent}if ({parameter.Name} != null) {{");
+                                indent += "\t";
+                            }
+
+                            streamWriter.WriteLine($"{indent}names.Add (\"{names[i]}\");");
+                            streamWriter.WriteLine($"{indent}vals.Add (new GLib.Value ({values[i]}));");
+
+                            if (parameter.Generatable is ClassBase && !(parameter.Generatable is StructBase))
+                                streamWriter.WriteLine("\t\t\t\t}");
+                        }
+
+                        streamWriter.WriteLine("\t\t\t\tCreateNativeObject (names.ToArray (), vals.ToArray ());");
+                        streamWriter.WriteLine("\t\t\t\treturn;");
+                    }
+
+                    streamWriter.WriteLine("\t\t\t}");
+                }
+
+                Body.Initialize(generationInfo, false, false, "");
+
+                if (ContainerType is ObjectGen)
+                {
+                    streamWriter.WriteLine("\t\t\towned = true;");
+                }
+
+                streamWriter.WriteLine("\t\t\t{0} = {1}({2});", ContainerType.AssignToName, CName, Body.GetCallString(false));
+                Body.Finish(streamWriter, "");
+                Body.HandleException(streamWriter, "");
+            }
+
+            streamWriter.WriteLine("\t\t}");
+            streamWriter.WriteLine();
+
+            Statistics.CtorCount++;
+        }
+
+        private void GenerateImport(TextWriter textWriter)
+        {
+            textWriter.WriteLine("\t\t[UnmanagedFunctionPointer (CallingConvention.Cdecl)]");
+            textWriter.WriteLine("\t\tdelegate IntPtr d_{0}({1});", CName, Parameters.ImportSignature);
+            textWriter.WriteLine(
+                "\t\tstatic d_{0} {0} = FuncLoader.LoadFunction<d_{0}>(FuncLoader.GetProcAddress(GLibrary.Load({1}), \"{0}\"));",
+                CName, LibraryName);
+            textWriter.WriteLine();
+        }
+
+        private void GenerateStatic(GenerationInfo generationInfo)
+        {
+            var streamWriter = generationInfo.Writer;
+
+            streamWriter.WriteLine($"\t\t{Protection} static {Safety}{Modifiers}{_name} {StaticName}({Signature})");
+            streamWriter.WriteLine("\t\t{");
+
+            Body.Initialize(generationInfo, false, false, "");
+
+            streamWriter.Write($"\t\t\t{_name} result = ");
+
+            streamWriter.Write(ContainerType is StructBase ? "{0}.New (" : "new {0} (", _name);
+            streamWriter.WriteLine($"{CName}({Body.GetCallString(false)}));");
+
+            Body.Finish(streamWriter, "");
+            Body.HandleException(streamWriter, "");
+
+            streamWriter.WriteLine("\t\t\treturn result;");
+        }
+    }
 }
-

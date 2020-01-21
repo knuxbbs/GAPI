@@ -172,14 +172,14 @@ namespace GapiCodegen.Generatables {
 			sw.WriteLine ("\t\t\t}");
 			sw.WriteLine ("\t\t}");
 			sw.WriteLine ();
-			sw.WriteLine ("\t\t" + retval.CSType + " InvokeNative (" + sig + ")");
+			sw.WriteLine ("\t\t" + retval.CsType + " InvokeNative (" + sig + ")");
 			sw.WriteLine ("\t\t{");
 			body.Initialize (gen_info);
 			string call = "native_cb (" + InvokeString + ")";
 			if (retval.IsVoid)
 				sw.WriteLine ("\t\t\t" + call + ";");
 			else
-				sw.WriteLine ("\t\t\t" + retval.CSType + " __result = " + retval.FromNative (call) + ";");
+				sw.WriteLine ("\t\t\t" + retval.CsType + " __result = " + retval.FromNative (call) + ";");
 			body.Finish (sw, string.Empty);
 			if (!retval.IsVoid)
 				sw.WriteLine ("\t\t\treturn __result;");
@@ -224,10 +224,10 @@ namespace GapiCodegen.Generatables {
 			string call_setup = call.Setup ("\t\t\t\t");
 			if (call_setup.Length > 0)
 				sw.WriteLine (call_setup);
-			if (retval.CSType == "void")
+			if (retval.CsType == "void")
 				sw.WriteLine ("\t\t\t\tmanaged ({0});", call);
 			else
-				sw.WriteLine ("\t\t\t\t{0} __ret = managed ({1});", retval.CSType, call);
+				sw.WriteLine ("\t\t\t\t{0} __ret = managed ({1});", retval.CsType, call);
 			string finish = call.Finish ("\t\t\t\t");
 			if (finish.Length > 0)
 				sw.WriteLine (finish);
@@ -235,7 +235,7 @@ namespace GapiCodegen.Generatables {
 			Parameter cnt = retval.CountParameter;
 			if (cnt != null)
 				sw.WriteLine ("\t\t\t\t{0} = {1}{2};", cnt.Name, cnt.CsType == "int" ? string.Empty : "(" + cnt.MarshalType + ")(" + cnt.CsType + ")", "__ret.Length");
-			if (retval.CSType != "void")
+			if (retval.CsType != "void")
 				sw.WriteLine ("\t\t\t\treturn {0};", retval.ToNative ("__ret"));
 
 			/* If the function expects one or more "out" parameters(error parameters are excluded) or has a return value different from void and bool, exceptions
@@ -301,7 +301,7 @@ namespace GapiCodegen.Generatables {
 			sw.WriteLine ();
 			sw.WriteLine ("\tusing System;");
 			sw.WriteLine ();
-			sw.WriteLine ("\t{0} delegate " + retval.CSType + " " + Name + "(" + sig.ToString() + ");", IsInternal ? "internal" : "public");
+			sw.WriteLine ("\t{0} delegate " + retval.CsType + " " + Name + "(" + sig.ToString() + ");", IsInternal ? "internal" : "public");
 			sw.WriteLine ();
 			sw.WriteLine ("}");
 

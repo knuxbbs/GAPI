@@ -32,7 +32,7 @@ namespace GapiCodegen
         public InterfaceVirtualMethod(XmlElement element, Method target, ObjectBase container_type) : base(element, container_type)
         {
             this.target = target;
-            Params.HideData = true;
+            Parameters.HideData = true;
             Protection = "public";
         }
 
@@ -40,7 +40,7 @@ namespace GapiCodegen
         {
             get
             {
-                return HasGetterName && (!retval.IsVoid && Params.Count == 0 || retval.IsVoid && Params.Count == 1 && Params[0].PassAs == "out");
+                return HasGetterName && (!ReturnValue.IsVoid && Parameters.Count == 0 || ReturnValue.IsVoid && Parameters.Count == 1 && Parameters[0].PassAs == "out");
             }
         }
 
@@ -48,10 +48,10 @@ namespace GapiCodegen
         {
             get
             {
-                if (!HasSetterName || !retval.IsVoid)
+                if (!HasSetterName || !ReturnValue.IsVoid)
                     return false;
 
-                if (Params.Count == 1 || Params.Count == 3 && Params[0].Scope == "notified")
+                if (Parameters.Count == 1 || Parameters.Count == 3 && Parameters[0].Scope == "notified")
                     return true;
                 else
                     return false;
@@ -76,20 +76,20 @@ namespace GapiCodegen
             if (IsGetter)
             {
                 string name = Name.StartsWith("Get") ? Name.Substring(3) : Name;
-                string type = retval.IsVoid ? Params[0].CsType : retval.CSType;
-                if (complement != null && complement.Params[0].CsType == type)
+                string type = ReturnValue.IsVoid ? Parameters[0].CsType : ReturnValue.CsType;
+                if (complement != null && complement.Parameters[0].CsType == type)
                     sw.WriteLine("\t\t" + type + " " + name + " { get; set; }");
                 else
                 {
                     sw.WriteLine("\t\t" + type + " " + name + " { get; }");
                     if (complement != null)
-                        sw.WriteLine("\t\t" + complement.retval.CSType + " " + complement.Name + " (" + complement.Signature + ");");
+                        sw.WriteLine("\t\t" + complement.ReturnValue.CsType + " " + complement.Name + " (" + complement.Signature + ");");
                 }
             }
             else if (IsSetter)
-                sw.WriteLine("\t\t" + Params[0].CsType + " " + Name.Substring(3) + " { set; }");
+                sw.WriteLine("\t\t" + Parameters[0].CsType + " " + Name.Substring(3) + " { set; }");
             else
-                sw.WriteLine("\t\t" + retval.CSType + " " + Name + " (" + Signature + ");");
+                sw.WriteLine("\t\t" + ReturnValue.CsType + " " + Name + " (" + Signature + ");");
         }
 
         public override bool Validate(LogWriter logWriter)

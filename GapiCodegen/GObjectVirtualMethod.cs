@@ -34,7 +34,7 @@ namespace GapiCodegen
 
         public GObjectVirtualMethod(XmlElement element, ObjectBase container_type) : base(element, container_type)
         {
-            Params.HideData = false;
+            Parameters.HideData = false;
             Protection = "protected";
             class_struct_name = container_type.ClassStructName;
         }
@@ -69,9 +69,9 @@ namespace GapiCodegen
                 GenerateUnmanagedInvocation(gen_info, implementor);
         }
 
-        protected virtual bool CanGenerate(GenerationInfo gen_info, ObjectBase implementor)
+        protected virtual bool CanGenerate(GenerationInfo generationInfo, ObjectBase implementor)
         {
-            if (implementor != null || CName.Length == 0 || CodeType == VMCodeType.None || CodeType == VMCodeType.Glue && !gen_info.GlueEnabled)
+            if (implementor != null || CName.Length == 0 || CodeType == VMCodeType.None || CodeType == VMCodeType.Glue && !generationInfo.GlueEnabled)
                 return false;
             else
                 return true;
@@ -137,20 +137,20 @@ namespace GapiCodegen
             }
         }
 
-        protected virtual void GenerateOverride(GenerationInfo gen_info, ObjectBase implementor)
+        protected virtual void GenerateOverride(GenerationInfo generationInfo, ObjectBase implementor)
         {
             if (CodeType == VMCodeType.Glue)
-                GenerateOverride_glue(gen_info);
+                GenerateOverride_glue(generationInfo);
             else
-                GenerateOverride_managed(gen_info.Writer);
+                GenerateOverride_managed(generationInfo.Writer);
         }
 
-        protected virtual void GenerateUnmanagedInvocation(GenerationInfo gen_info, ObjectBase implementor)
+        protected virtual void GenerateUnmanagedInvocation(GenerationInfo generationInfo, ObjectBase implementor)
         {
             if (CodeType == VMCodeType.Glue)
-                GenerateUnmanagedInvocation_glue(gen_info);
+                GenerateUnmanagedInvocation_glue(generationInfo);
             else
-                GenerateUnmanagedInvocation_managed(gen_info);
+                GenerateUnmanagedInvocation_managed(generationInfo);
         }
 
         protected void GenerateOverrideBody(StreamWriter sw)
@@ -166,7 +166,7 @@ namespace GapiCodegen
             sw.WriteLine();
             if (IsStatic)
             {
-                sw.WriteLine("\t\tpublic delegate {0} {1}Delegate ({2});", retval.CSType, Name, Signature.ToString());
+                sw.WriteLine("\t\tpublic delegate {0} {1}Delegate ({2});", ReturnValue.CsType, Name, Signature.ToString());
                 sw.WriteLine("\t\tstatic {0}Delegate {1}_handler;", Name, CName);
                 sw.WriteLine();
                 sw.WriteLine("\t\tpublic static " + Name + "Delegate " + Name + "Handler {");
@@ -206,13 +206,13 @@ namespace GapiCodegen
             sw.Write("\t\t{0} ", Protection);
             if (modifiers != "")
                 sw.Write("{0} ", modifiers);
-            sw.WriteLine("virtual {0} On{1} ({2})", retval.CSType, Name, Signature.ToString());
+            sw.WriteLine("virtual {0} On{1} ({2})", ReturnValue.CsType, Name, Signature.ToString());
             sw.WriteLine("\t\t{");
-            sw.WriteLine("\t\t\t{0}Internal{1} ({2});", retval.IsVoid ? "" : "return ", Name, Signature.GetCallString(false));
+            sw.WriteLine("\t\t\t{0}Internal{1} ({2});", ReturnValue.IsVoid ? "" : "return ", Name, Signature.GetCallString(false));
             sw.WriteLine("\t\t}");
             sw.WriteLine();
             // This method is to be invoked from existing VM implementations in the custom code
-            sw.WriteLine("\t\tprivate {0} Internal{1} ({2})", retval.CSType, Name, Signature.ToString());
+            sw.WriteLine("\t\tprivate {0} Internal{1} ({2})", ReturnValue.CsType, Name, Signature.ToString());
             sw.WriteLine("\t\t{");
         }
 
@@ -220,7 +220,7 @@ namespace GapiCodegen
         {
             StreamWriter sw = gen_info.Writer;
             string native_call = "this.Handle";
-            if (Params.Count > 0)
+            if (Parameters.Count > 0)
                 native_call += ", " + Body.GetCallString(false);
 
             GenerateMethodBody(sw, null);
@@ -231,21 +231,21 @@ namespace GapiCodegen
             sw.WriteLine("\t\t\t\tunmanaged = ({0}NativeDelegate) Marshal.GetDelegateForFunctionPointer(*raw_ptr, typeof({0}NativeDelegate));", Name);
             sw.WriteLine("\t\t\t}");
             sw.Write("\t\t\tif (unmanaged == null) ");
-            if (Params.HasOutParam)
+            if (Parameters.HasOutParam)
                 sw.WriteLine("throw new InvalidOperationException (\"No base method to invoke\");");
-            else if (retval.IsVoid)
+            else if (ReturnValue.IsVoid)
                 sw.WriteLine("return;");
             else
-                sw.WriteLine("return {0};", retval.DefaultValue);
+                sw.WriteLine("return {0};", ReturnValue.DefaultValue);
             sw.WriteLine();
             Body.Initialize(gen_info);
             sw.Write("\t\t\t");
-            if (!retval.IsVoid)
-                sw.Write("{0} __result = ", retval.MarshalType);
+            if (!ReturnValue.IsVoid)
+                sw.Write("{0} __result = ", ReturnValue.MarshalType);
             sw.WriteLine("unmanaged ({0});", native_call);
             Body.Finish(gen_info.Writer, "");
-            if (!retval.IsVoid)
-                sw.WriteLine("\t\t\treturn {0};", retval.FromNative("__result"));
+            if (!ReturnValue.IsVoid)
+                sw.WriteLine("\t\t\treturn {0};", ReturnValue.FromNative("__result"));
             sw.WriteLine("\t\t}");
             sw.WriteLine();
         }
@@ -265,13 +265,13 @@ namespace GapiCodegen
         {
             get
             {
-                string[] glue_params = new string[IsStatic ? Params.Count + 1 : Params.Count + 2];
-                glue_params[0] = class_struct_name + " *class_struct";
+                string[] glue_Parameters = new string[IsStatic ? Parameters.Count + 1 : Parameters.Count + 2];
+                glue_Parameters[0] = class_struct_name + " *class_struct";
                 if (!IsStatic)
-                    glue_params[1] = ContainerType.CName + "* inst";
-                for (int i = 0; i < Params.Count; i++)
-                    glue_params[i + (IsStatic ? 1 : 2)] = Params[i].CType.Replace("const-", "const ") + " " + Params[i].Name;
-                return string.Join(", ", glue_params);
+                    glue_Parameters[1] = ContainerType.CName + "* inst";
+                for (int i = 0; i < Parameters.Count; i++)
+                    glue_Parameters[i + (IsStatic ? 1 : 2)] = Parameters[i].CType.Replace("const-", "const ") + " " + Parameters[i].Name;
+                return string.Join(", ", glue_Parameters);
             }
         }
 
@@ -279,10 +279,10 @@ namespace GapiCodegen
         {
             get
             {
-                if (retval.IGen is EnumGen)
-                    return string.Format("({0}) 0", retval.CType);
+                if (ReturnValue.IGen is EnumGen)
+                    return string.Format("({0}) 0", ReturnValue.CType);
 
-                string val = retval.DefaultValue;
+                string val = ReturnValue.DefaultValue;
                 switch (val)
                 {
                     case "null":
@@ -326,30 +326,30 @@ namespace GapiCodegen
             StreamWriter glue = gen_info.GlueWriter;
             string glue_name = string.Format("{0}sharp_{1}_invoke_{2}", ContainerType.Namespace.ToLower().Replace(".", "_"), ContainerType.Name.ToLower(), CName);
 
-            glue.WriteLine("{0} {1} ({2});\n", retval.CType.Replace("const-", "const "), glue_name, GlueSignature);
-            glue.WriteLine("{0}\n{1} ({2})", retval.CType.Replace("const-", "const "), glue_name, GlueSignature);
+            glue.WriteLine("{0} {1} ({2});\n", ReturnValue.CType.Replace("const-", "const "), glue_name, GlueSignature);
+            glue.WriteLine("{0}\n{1} ({2})", ReturnValue.CType.Replace("const-", "const "), glue_name, GlueSignature);
             glue.WriteLine("{");
             glue.Write("\tif (class_struct->{0})\n\t\t", CName);
-            if (!retval.IsVoid)
+            if (!ReturnValue.IsVoid)
                 glue.Write("return ");
-            string[] call_args = new string[IsStatic ? Params.Count : Params.Count + 1];
+            string[] call_args = new string[IsStatic ? Parameters.Count : Parameters.Count + 1];
             if (!IsStatic)
                 call_args[0] = "inst";
-            for (int i = 0; i < Params.Count; i++)
-                call_args[IsStatic ? i : i + 1] = Params[i].Name;
+            for (int i = 0; i < Parameters.Count; i++)
+                call_args[IsStatic ? i : i + 1] = Parameters[i].Name;
             glue.WriteLine("(* class_struct->{0}) ({1});", CName, string.Join(", ", call_args));
-            if (!retval.IsVoid)
+            if (!ReturnValue.IsVoid)
                 glue.WriteLine("\treturn " + DefaultGlueValue + ";");
             glue.WriteLine("}");
             glue.WriteLine();
 
             StreamWriter sw = gen_info.Writer;
             sw.WriteLine("\t\t[DllImport (\"{0}\")]", gen_info.GlueLibName);
-            sw.Write("\t\tstatic extern {0} {1} (IntPtr class_struct", retval.MarshalType, glue_name);
+            sw.Write("\t\tstatic extern {0} {1} (IntPtr class_struct", ReturnValue.MarshalType, glue_name);
             if (!IsStatic)
                 sw.Write(", IntPtr inst");
-            if (Params.Count > 0)
-                sw.Write(", {0}", Params.ImportSignature);
+            if (Parameters.Count > 0)
+                sw.Write(", {0}", Parameters.ImportSignature);
             sw.WriteLine(");");
             sw.WriteLine();
 
@@ -358,16 +358,16 @@ namespace GapiCodegen
             string glue_call_string = "this.LookupGType ().GetThresholdType ().GetClassPtr ()";
             if (!IsStatic)
                 glue_call_string += ", Handle";
-            if (Params.Count > 0)
+            if (Parameters.Count > 0)
                 glue_call_string += ", " + Body.GetCallString(false);
 
             sw.Write("\t\t\t");
-            if (!retval.IsVoid)
-                sw.Write("{0} __result = ", retval.MarshalType);
+            if (!ReturnValue.IsVoid)
+                sw.Write("{0} __result = ", ReturnValue.MarshalType);
             sw.WriteLine("{0} ({1});", glue_name, glue_call_string);
             Body.Finish(gen_info.Writer, "");
-            if (!retval.IsVoid)
-                sw.WriteLine("\t\t\treturn {0};", retval.FromNative("__result"));
+            if (!ReturnValue.IsVoid)
+                sw.WriteLine("\t\t\treturn {0};", ReturnValue.FromNative("__result"));
             sw.WriteLine("\t\t}");
             sw.WriteLine();
         }

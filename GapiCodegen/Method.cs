@@ -19,305 +19,307 @@
 // Free Software Foundation, Inc., 59 Temple Place - Suite 330,
 // Boston, MA 02111-1307, USA.
 
-
 using System.IO;
 using System.Xml;
 using GapiCodegen.Generatables;
 using GapiCodegen.Utils;
 
-namespace GapiCodegen {
-	public class Method : MethodBase  {
-		
-		private ReturnValue retval;
+namespace GapiCodegen
+{
+    /// <summary>
+    /// Handles 'method' elements.
+    /// </summary>
+    public class Method : MethodBase
+    {
+        private readonly ReturnValue _returnValue;
+        private string _call;
 
-		private string call;
-		private bool is_get, is_set;
-		private bool deprecated = false;
+        public Method(XmlElement element, ClassBase containerType) : base(element, containerType)
+        {
+            _returnValue = new ReturnValue(element[Constants.ReturnType]);
 
-		public Method (XmlElement element, ClassBase container_type) : base (element, container_type)
-		{
-			retval = new ReturnValue (element["return-type"]);
-			
-			if (!container_type.IsDeprecated) {
-				deprecated = element.GetAttributeAsBoolean ("deprecated");
-			}
-			
-			if (Name == "GetType")
-				Name = "GetGType";
-		}
+            if (!containerType.IsDeprecated)
+            {
+                IsDeprecated = element.GetAttributeAsBoolean(Constants.Deprecated);
+            }
 
-		public bool IsDeprecated {
-			get {
-				return deprecated;
-			}
-		}
+            if (Name == "GetType")
+                Name = "GetGType";
+        }
 
-		public bool IsGetter {
-			get {
-				return is_get;
-			}
-		}
+        public bool IsDeprecated { get; }
 
-		public bool IsSetter {
-			get {
-				return is_set;
-			}
-		}
+        public bool IsGetter { get; private set; }
 
-		public string ReturnType {
-			get {
-				return retval.CSType;
-			}
-		}
+        public bool IsSetter { get; private set; }
 
-		public override bool Validate (LogWriter logWriter)
-		{
-			logWriter.Member = Name;
-			if (!retval.Validate (logWriter) || !base.Validate (logWriter))
-				return false;
+        public string ReturnType => _returnValue.CsType;
 
-			if (Name == string.Empty || CName == string.Empty) {
-				logWriter.Warn ("Method has no name or cname.");
-				return false;
-			}
+        public override bool Validate(LogWriter logWriter)
+        {
+            logWriter.Member = Name;
 
-			Parameters parms = Parameters;
-			is_get = (parms.IsAccessor && retval.IsVoid || parms.Count == 0 && !retval.IsVoid) && HasGetterName;
-			is_set = (parms.IsAccessor || parms.VisibleCount == 1 && retval.IsVoid) && HasSetterName;
+            if (!_returnValue.Validate(logWriter) || !base.Validate(logWriter))
+                return false;
 
-			call = "(" + (IsStatic ? "" : ContainerType.CallByName () + (parms.Count > 0 ? ", " : "")) + Body.GetCallString (is_set) + ")";
+            if (Name == string.Empty || CName == string.Empty)
+            {
+                logWriter.Warn("Method has no name or cname.");
+                return false;
+            }
 
-			return true;
-		}
-		
-		private Method GetComplement ()
-		{
-			char complement;
-			if (is_get)
-				complement = 'S';
-			else
-				complement = 'G';
-			
-			return ContainerType.GetMethod (complement + BaseName.Substring (1));
-		}
-		
-		public string Declaration {
-			get {
-				return retval.CSType + " " + Name + " (" + (Signature != null ? Signature.ToString() : "") + ");";
-			}
-		}
+            var parameters = Parameters;
+            IsGetter = (parameters.IsAccessor && _returnValue.IsVoid || parameters.Count == 0 && !_returnValue.IsVoid) && HasGetterName;
+            IsSetter = (parameters.IsAccessor || parameters.VisibleCount == 1 && _returnValue.IsVoid) && HasSetterName;
 
-		private void GenerateDeclCommon (StreamWriter sw, ClassBase implementor)
-		{
-			if (IsStatic)
-				sw.Write("static ");
-			sw.Write (Safety);
-			Method dup = null;
-			if (ContainerType != null)
-				dup = ContainerType.GetMethodRecursively (Name);
-			if (implementor != null)
-				dup = implementor.GetMethodRecursively (Name);
+            _call =
+                $"({(IsStatic ? "" : $"{ContainerType.CallByName()}{(parameters.Count > 0 ? ", " : "")}")}{Body.GetCallString(IsSetter)})";
 
-			if (Name == "ToString" && Parameters.Count == 0 && (!(ContainerType is InterfaceGen)|| implementor != null))
-				sw.Write("override ");
-			else if (Name == "GetGType" && (ContainerType is ObjectGen || ContainerType.Parent != null && ContainerType.Parent.Methods.ContainsKey ("GetType")))
-				sw.Write("new ");
-			else if (Modifiers == "new " || dup != null && (dup.Signature != null && Signature != null && dup.Signature.ToString() == Signature.ToString() || dup.Signature == null && Signature == null))
-				sw.Write("new ");
+            return true;
+        }
 
-			if (Name.StartsWith (ContainerType.Name))
-				Name = Name.Substring (ContainerType.Name.Length);
+        private Method GetComplement()
+        {
+            var complement = IsGetter ? 'S' : 'G';
 
-			if (is_get || is_set) {
-				if (retval.IsVoid)
-					sw.Write (Parameters.AccessorReturnType);
-				else
-					sw.Write(retval.CSType);
-				sw.Write(" ");
-				if (Name.StartsWith ("Get") || Name.StartsWith ("Set"))
-					sw.Write (Name.Substring (3));
-				else {
-					int dot = Name.LastIndexOf ('.');
-					if (dot != -1 && (Name.Substring (dot + 1, 3) == "Get" || Name.Substring (dot + 1, 3) == "Set"))
-						sw.Write (Name.Substring (0, dot + 1) + Name.Substring (dot + 4));
-					else
-						sw.Write (Name);
-				}
-				sw.WriteLine(" { ");
-			} else if (IsAccessor) {
-				sw.Write (Signature.AccessorType + " " + Name + "(" + Signature.AsAccessor + ")");
-			} else {
-				sw.Write(retval.CSType + " " + Name + "(" + (Signature != null ? Signature.ToString() : "") + ")");
-			}
-		}
+            return ContainerType.GetMethod($"{complement}{BaseName.Substring(1)}");
+        }
 
-		public void GenerateDecl (StreamWriter sw)
-		{
-			if (IsStatic)
-				return;
+        private void GenerateDeclCommon(TextWriter textWriter, ClassBase implementor)
+        {
+            if (IsStatic)
+            {
+                textWriter.Write("static ");
+            }
 
-			if (is_get || is_set)
-			{
-				Method comp = GetComplement ();
-				if (comp != null && is_set)
-					return;
-			
-				sw.Write("\t\t");
-				GenerateDeclCommon (sw, null);
+            textWriter.Write(Safety);
 
-				sw.Write("\t\t\t");
-				sw.Write (is_get ? "get;" : "set;");
+            Method dup = null;
 
-				if (comp != null && comp.is_set)
-					sw.WriteLine (" set;");
-				else
-					sw.WriteLine ();
+            if (ContainerType != null)
+                dup = ContainerType.GetMethodRecursively(Name);
 
-				sw.WriteLine ("\t\t}");
-			}
-			else
-			{
-				sw.Write("\t\t");
-				GenerateDeclCommon (sw, null);
-				sw.WriteLine (";");
-			}
+            if (implementor != null)
+                dup = implementor.GetMethodRecursively(Name);
 
-			Statistics.MethodCount++;
-		}
+            switch (Name)
+            {
+                case "ToString" when Parameters.Count == 0 && (!(ContainerType is InterfaceGen) || implementor != null):
+                    textWriter.Write("override ");
+                    break;
+                case "GetGType" when ContainerType is ObjectGen || ContainerType?.Parent != null &&
+                                     ContainerType.Parent.Methods.ContainsKey("GetType"):
+                    textWriter.Write("new ");
+                    break;
+                default:
+                    {
+                        if (Modifiers == "new " || dup != null &&
+                            (dup.Signature != null && Signature != null &&
+                             dup.Signature.ToString() == Signature.ToString() || 
+                             dup.Signature == null && Signature == null))
+                            textWriter.Write("new ");
 
-		public void GenerateImport (StreamWriter sw)
-		{
-			string import_sig = IsStatic ? "" : ContainerType.MarshalType + " raw";
-			import_sig += !IsStatic && Parameters.Count > 0 ? ", " : "";
-			import_sig += Parameters.ImportSignature.ToString();
+                        break;
+                    }
+            }
+
+            if (Name.StartsWith(ContainerType.Name))
+                Name = Name.Substring(ContainerType.Name.Length);
+
+            if (IsGetter || IsSetter)
+            {
+                if (_returnValue.IsVoid)
+                    textWriter.Write(Parameters.AccessorReturnType);
+                else
+                    textWriter.Write(_returnValue.CsType);
+                textWriter.Write(" ");
+                if (Name.StartsWith("Get") || Name.StartsWith("Set"))
+                    textWriter.Write(Name.Substring(3));
+                else
+                {
+                    int dot = Name.LastIndexOf('.');
+                    if (dot != -1 && (Name.Substring(dot + 1, 3) == "Get" || Name.Substring(dot + 1, 3) == "Set"))
+                        textWriter.Write(Name.Substring(0, dot + 1) + Name.Substring(dot + 4));
+                    else
+                        textWriter.Write(Name);
+                }
+                textWriter.WriteLine(" { ");
+            }
+            else if (IsAccessor)
+            {
+                textWriter.Write(Signature.AccessorType + " " + Name + "(" + Signature.AsAccessor + ")");
+            }
+            else
+            {
+                textWriter.Write(_returnValue.CsType + " " + Name + "(" + (Signature != null ? Signature.ToString() : "") + ")");
+            }
+        }
+
+        public void GenerateDecl(StreamWriter sw)
+        {
+            if (IsStatic)
+                return;
+
+            if (IsGetter || IsSetter)
+            {
+                Method comp = GetComplement();
+                if (comp != null && IsSetter)
+                    return;
+
+                sw.Write("\t\t");
+                GenerateDeclCommon(sw, null);
+
+                sw.Write("\t\t\t");
+                sw.Write(IsGetter ? "get;" : "set;");
+
+                if (comp != null && comp.IsSetter)
+                    sw.WriteLine(" set;");
+                else
+                    sw.WriteLine();
+
+                sw.WriteLine("\t\t}");
+            }
+            else
+            {
+                sw.Write("\t\t");
+                GenerateDeclCommon(sw, null);
+                sw.WriteLine(";");
+            }
+
+            Statistics.MethodCount++;
+        }
+
+        public void GenerateImport(StreamWriter sw)
+        {
+            string import_sig = IsStatic ? "" : ContainerType.MarshalType + " raw";
+            import_sig += !IsStatic && Parameters.Count > 0 ? ", " : "";
+            import_sig += Parameters.ImportSignature.ToString();
 
             sw.WriteLine("\t\t[UnmanagedFunctionPointer (CallingConvention.Cdecl)]");
 
-            if (retval.MarshalType.StartsWith("[return:"))
-				sw.WriteLine("\t\tdelegate " + retval.CSType + " d_" + CName + "(" + import_sig + ");");
-			else
-                sw.WriteLine("\t\tdelegate " + retval.MarshalType + " d_" + CName + "(" + import_sig + ");");
-			sw.WriteLine("\t\tstatic d_" + CName + " " + CName + " = FuncLoader.LoadFunction<d_" + CName + ">(FuncLoader.GetProcAddress(GLibrary.Load(" + LibraryName + "), \"" + CName + "\"));");
-			sw.WriteLine();
-		}
+            if (_returnValue.MarshalType.StartsWith("[return:"))
+                sw.WriteLine("\t\tdelegate " + _returnValue.CsType + " d_" + CName + "(" + import_sig + ");");
+            else
+                sw.WriteLine("\t\tdelegate " + _returnValue.MarshalType + " d_" + CName + "(" + import_sig + ");");
+            sw.WriteLine("\t\tstatic d_" + CName + " " + CName + " = FuncLoader.LoadFunction<d_" + CName + ">(FuncLoader.GetProcAddress(GLibrary.Load(" + LibraryName + "), \"" + CName + "\"));");
+            sw.WriteLine();
+        }
 
-		public void GenerateOverloads (StreamWriter sw)
-		{
-			sw.WriteLine ();
-			sw.Write ("\t\tpublic ");
-			if (IsStatic)
-				sw.Write ("static ");
-			sw.WriteLine (retval.CSType + " " + Name + "(" + (Signature != null ? Signature.WithoutOptional () : "") + ") {");
-			sw.WriteLine ("\t\t\t{0}{1} ({2});", !retval.IsVoid ? "return " : string.Empty, Name, Signature.CallWithoutOptionals ());
-			sw.WriteLine ("\t\t}");
-		}
+        public void GenerateOverloads(StreamWriter sw)
+        {
+            sw.WriteLine();
+            sw.Write("\t\tpublic ");
+            if (IsStatic)
+                sw.Write("static ");
+            sw.WriteLine(_returnValue.CsType + " " + Name + "(" + (Signature != null ? Signature.WithoutOptional() : "") + ") {");
+            sw.WriteLine("\t\t\t{0}{1} ({2});", !_returnValue.IsVoid ? "return " : string.Empty, Name, Signature.CallWithoutOptionals());
+            sw.WriteLine("\t\t}");
+        }
 
-		public void Generate (GenerationInfo gen_info, ClassBase implementor)
-		{
-			Method comp = null;
+        public void Generate(GenerationInfo gen_info, ClassBase implementor)
+        {
+            Method comp = null;
 
-			gen_info.CurrentMember = Name;
+            gen_info.CurrentMember = Name;
 
-			/* we are generated by the get Method, if there is one */
-			if (is_set || is_get)
-			{
-				if (Modifiers != "new " && ContainerType.GetPropertyRecursively (Name.Substring (3)) != null)
-					return;
-				comp = GetComplement ();
-				if (comp != null && is_set) {
-					if (Parameters.AccessorReturnType == comp.ReturnType)
-						return;
-					else {
-						is_set = false;
-						call = "(" + (IsStatic ? "" : ContainerType.CallByName () + (Params.Count > 0 ? ", " : "")) + Body.GetCallString (false) + ")";
-						comp = null;
-					}
-				}
-				/* some setters take more than one arg */
-				if (comp != null && !comp.is_set)
-					comp = null;
-			}
-			
-			GenerateImport (gen_info.Writer);
-			if (comp != null && retval.CSType == comp.Parameters.AccessorReturnType)
-				comp.GenerateImport (gen_info.Writer);
+            /* we are generated by the get Method, if there is one */
+            if (IsSetter || IsGetter)
+            {
+                if (Modifiers != "new " && ContainerType.GetPropertyRecursively(Name.Substring(3)) != null)
+                    return;
+                comp = GetComplement();
+                if (comp != null && IsSetter)
+                {
+                    if (Parameters.AccessorReturnType == comp.ReturnType)
+                        return;
+                    else
+                    {
+                        IsSetter = false;
+                        _call = "(" + (IsStatic ? "" : ContainerType.CallByName() + (Parameters.Count > 0 ? ", " : "")) + Body.GetCallString(false) + ")";
+                        comp = null;
+                    }
+                }
+                /* some setters take more than one arg */
+                if (comp != null && !comp.IsSetter)
+                    comp = null;
+            }
 
-			if (IsDeprecated)
-				gen_info.Writer.WriteLine("\t\t[Obsolete]");
-			gen_info.Writer.Write("\t\t");
-			if (Protection != "")
-				gen_info.Writer.Write("{0} ", Protection);
-			GenerateDeclCommon (gen_info.Writer, implementor);
+            GenerateImport(gen_info.Writer);
+            if (comp != null && _returnValue.CsType == ((MethodBase)comp).Parameters.AccessorReturnType)
+                comp.GenerateImport(gen_info.Writer);
 
-			if (is_get || is_set)
-			{
-				gen_info.Writer.Write ("\t\t\t");
-				gen_info.Writer.Write (is_get ? "get" : "set");
-				GenerateBody (gen_info, implementor, "\t");
-			}
-			else
-				GenerateBody (gen_info, implementor, "");
-			
-			if (is_get || is_set)
-			{
-				if (comp != null && retval.CSType == comp.Parameters.AccessorReturnType)
-				{
-					gen_info.Writer.WriteLine ();
-					gen_info.Writer.Write ("\t\t\tset");
-					comp.GenerateBody (gen_info, implementor, "\t");
-				}
-				gen_info.Writer.WriteLine ();
-				gen_info.Writer.WriteLine ("\t\t}");
-			}
-			else
-				gen_info.Writer.WriteLine();
+            if (IsDeprecated)
+                gen_info.Writer.WriteLine("\t\t[Obsolete]");
+            gen_info.Writer.Write("\t\t");
+            if (Protection != "")
+                gen_info.Writer.Write("{0} ", Protection);
+            GenerateDeclCommon(gen_info.Writer, implementor);
 
-			if (Parameters.HasOptional && !(is_get || is_set))
-				GenerateOverloads (gen_info.Writer);
-			
-			gen_info.Writer.WriteLine();
+            if (IsGetter || IsSetter)
+            {
+                gen_info.Writer.Write("\t\t\t");
+                gen_info.Writer.Write(IsGetter ? "get" : "set");
+                GenerateBody(gen_info, implementor, "\t");
+            }
+            else
+                GenerateBody(gen_info, implementor, "");
 
-			Statistics.MethodCount++;
-		}
+            if (IsGetter || IsSetter)
+            {
+                if (comp != null && _returnValue.CsType == ((MethodBase)comp).Parameters.AccessorReturnType)
+                {
+                    gen_info.Writer.WriteLine();
+                    gen_info.Writer.Write("\t\t\tset");
+                    comp.GenerateBody(gen_info, implementor, "\t");
+                }
+                gen_info.Writer.WriteLine();
+                gen_info.Writer.WriteLine("\t\t}");
+            }
+            else
+                gen_info.Writer.WriteLine();
 
-		public void GenerateBody (GenerationInfo gen_info, ClassBase implementor, string indent)
-		{
-			StreamWriter sw = gen_info.Writer;
-			sw.WriteLine(" {");
-			if (!IsStatic && implementor != null)
-				implementor.Prepare (sw, indent + "\t\t\t");
-			if (IsAccessor)
-				Body.InitAccessor (sw, Signature, indent);
-			Body.Initialize(gen_info, is_get, is_set, indent);
+            if (Parameters.HasOptional && !(IsGetter || IsSetter))
+                GenerateOverloads(gen_info.Writer);
 
-			sw.Write(indent + "\t\t\t");
-			if (retval.IsVoid)
-				sw.WriteLine(CName + call + ";");
-			else {
-				sw.WriteLine(retval.MarshalType + " raw_ret = " + CName + call + ";");
-				sw.WriteLine(indent + "\t\t\t" + retval.CSType + " ret = " + retval.FromNative ("raw_ret") + ";");
-			}
-			
-			if (!IsStatic && implementor != null)
-				implementor.Finish (sw, indent + "\t\t\t");
-			Body.Finish (sw, indent);
-			Body.HandleException (sw, indent);
+            gen_info.Writer.WriteLine();
 
-			if (is_get && Parameters.Count > 0)
-				sw.WriteLine (indent + "\t\t\treturn " + Parameters.AccessorName + ";");
-			else if (!retval.IsVoid)
-				sw.WriteLine (indent + "\t\t\treturn ret;");
-			else if (IsAccessor)
-				Body.FinishAccessor (sw, Signature, indent);
+            Statistics.MethodCount++;
+        }
 
-			sw.Write(indent + "\t\t}");
-		}
+        public void GenerateBody(GenerationInfo gen_info, ClassBase implementor, string indent)
+        {
+            StreamWriter sw = gen_info.Writer;
+            sw.WriteLine(" {");
+            if (!IsStatic && implementor != null)
+                implementor.Prepare(sw, indent + "\t\t\t");
+            if (IsAccessor)
+                Body.InitAccessor(sw, Signature, indent);
+            Body.Initialize(gen_info, IsGetter, IsSetter, indent);
 
-		bool IsAccessor {
-			get {
-				return retval.IsVoid && Signature.IsAccessor;
-			}
-		}
-	}
+            sw.Write(indent + "\t\t\t");
+            if (_returnValue.IsVoid)
+                sw.WriteLine(CName + _call + ";");
+            else
+            {
+                sw.WriteLine(_returnValue.MarshalType + " raw_ret = " + CName + _call + ";");
+                sw.WriteLine(indent + "\t\t\t" + _returnValue.CsType + " ret = " + _returnValue.FromNative("raw_ret") + ";");
+            }
+
+            if (!IsStatic && implementor != null)
+                implementor.Finish(sw, indent + "\t\t\t");
+            Body.Finish(sw, indent);
+            Body.HandleException(sw, indent);
+
+            if (IsGetter && Parameters.Count > 0)
+                sw.WriteLine(indent + "\t\t\treturn " + Parameters.AccessorName + ";");
+            else if (!_returnValue.IsVoid)
+                sw.WriteLine(indent + "\t\t\treturn ret;");
+            else if (IsAccessor)
+                Body.FinishAccessor(sw, Signature, indent);
+
+            sw.Write(indent + "\t\t}");
+        }
+
+        private bool IsAccessor => _returnValue.IsVoid && Signature.IsAccessor;
+    }
 }
-

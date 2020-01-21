@@ -33,26 +33,25 @@ namespace GapiCodegen
     {
         protected XmlElement Element;
         protected ClassBase ContainerType;
-        protected Parameters Params;
 
         protected MethodBase(XmlElement element, ClassBase containerType)
         {
             Element = element;
             ContainerType = containerType;
 
-            Name = element.GetAttribute("name");
-            IsStatic = element.GetAttribute("shared") == "true";
+            Name = element.GetAttribute(Constants.Name);
+            IsStatic = element.GetAttribute(Constants.Shared) == "true";
             Protection = "public";
             Modifiers = string.Empty;
 
-            Params = new Parameters(element["parameters"]);
+            Parameters = new Parameters(element[Constants.Parameters]);
 
-            if (element.GetAttributeAsBoolean("new_flag"))
+            if (element.GetAttributeAsBoolean(Constants.NewFlag))
                 Modifiers = "new ";
 
-            if (!element.HasAttribute("accessibility")) return;
+            if (!element.HasAttribute(Constants.Accessibility)) return;
 
-            var protection = element.GetAttribute("accessibility");
+            var protection = element.GetAttribute(Constants.Accessibility);
 
             switch (protection)
             {
@@ -89,13 +88,13 @@ namespace GapiCodegen
                 if (_body != null) return _body;
 
                 var logWriter = new LogWriter(Name);
-                _body = new MethodBody(Params, logWriter);
+                _body = new MethodBody(Parameters, logWriter);
 
                 return _body;
             }
         }
 
-        public virtual string CName => SymbolTable.Table.MangleName(Element.GetAttribute("cname"));
+        public virtual string CName => SymbolTable.Table.MangleName(Element.GetAttribute(Constants.CName));
 
         protected bool HasGetterName
         {
@@ -124,19 +123,19 @@ namespace GapiCodegen
 
         public bool IsStatic
         {
-            get => Params.Static;
-            set => Params.Static = value;
+            get => Parameters.Static;
+            set => Parameters.Static = value;
         }
 
-        public string LibraryName => Element.HasAttribute("library")
-            ? Element.GetAttribute("library")
+        public string LibraryName => Element.HasAttribute(Constants.Library)
+            ? Element.GetAttribute(Constants.Library)
             : ContainerType.LibraryName;
 
         public string Modifiers { get; set; }
 
         public string Name { get; set; }
 
-        public Parameters Parameters => Params;
+        public Parameters Parameters { get; set; }
         
         public string Protection { get; set; }
 
@@ -144,13 +143,13 @@ namespace GapiCodegen
 
         private Signature _signature;
 
-        public Signature Signature => _signature ?? (_signature = new Signature(Params));
+        public Signature Signature => _signature ?? (_signature = new Signature(Parameters));
 
         public virtual bool Validate(LogWriter logWriter)
         {
             logWriter.Member = Name;
 
-            if (Params.Validate(logWriter)) return true;
+            if (Parameters.Validate(logWriter)) return true;
 
             Statistics.ThrottledCount++;
             return false;

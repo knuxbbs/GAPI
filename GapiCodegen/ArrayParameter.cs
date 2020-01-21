@@ -27,6 +27,9 @@ using GapiCodegen.Utils;
 
 namespace GapiCodegen
 {
+    /// <summary>
+    /// Represents an parameter that is an array. Can be null-terminated or not.
+    /// </summary>
     public class ArrayParameter : Parameter
     {
         public ArrayParameter(XmlElement element) : base(element)
@@ -107,6 +110,9 @@ namespace GapiCodegen
         private bool NullTerminated { get; }
     }
 
+    /// <summary>
+    /// Represents an array parameter for which the number of elements is given by another parameter.
+    /// </summary>
     public class ArrayCountPair : ArrayParameter
     {
         private readonly XmlElement _countElement;

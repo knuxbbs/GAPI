@@ -154,7 +154,7 @@ namespace GapiCodegen {
 
 		private bool IsEventHandler {
 			get {
-				return retval.CSType == "void" && parms.Count == 0;
+				return retval.CsType == "void" && parms.Count == 0;
 			}
 		}
 
@@ -198,11 +198,11 @@ namespace GapiCodegen {
 			sw.WriteLine("\n\t\t\ttry {");
 			sw.Write (finish);
 			if (!retval.IsVoid) {
-				if (retval.CSType == "bool") {
+				if (retval.CsType == "bool") {
 					sw.WriteLine ("\t\t\t\tif (args.RetVal == null)");
 					sw.WriteLine ("\t\t\t\t\treturn false;");
 				}
-				sw.WriteLine ("\t\t\t\treturn {0};", retval.ToNative (string.Format ("(({0}) args.RetVal)", retval.CSType)));
+				sw.WriteLine ("\t\t\t\treturn {0};", retval.ToNative (string.Format ("(({0}) args.RetVal)", retval.CsType)));
 			}
 			sw.WriteLine("\t\t\t} catch (Exception) {");
 			sw.WriteLine ("\t\t\t\tException ex = new Exception (\"args.RetVal or 'out' property unset or set to incorrect type in " + EventHandlerQualifiedName + " callback\");");

@@ -27,7 +27,7 @@ using GapiCodegen.Utils;
 
 namespace GapiCodegen {
 	public abstract class VirtualMethod : MethodBase  {
-		protected ReturnValue retval;
+		protected ReturnValue ReturnValue;
 		protected ManagedCallString call;
 		
 		protected string modifiers = "";
@@ -36,9 +36,9 @@ namespace GapiCodegen {
 		{
 			if (container_type.ParserVersion == 1) {
 				// The old pre 2.14 parser didn't drop the 1st parameter in all <signal> and <virtual_method> elements
-				Params = new Parameters (element ["parameters"], true);
+				Parameters = new Parameters (element ["parameters"], true);
 			}
-			retval = new ReturnValue (element ["return-type"]);
+			ReturnValue = new ReturnValue (element ["return-type"]);
 		}
 	
 		protected abstract string CallString {
@@ -49,7 +49,7 @@ namespace GapiCodegen {
 		protected new VirtualMethodSignature Signature {
 			get {
 				if (signature == null)
-					signature = new VirtualMethodSignature (Params);
+					signature = new VirtualMethodSignature (Parameters);
 
 				return signature;
 			}
@@ -68,16 +68,16 @@ namespace GapiCodegen {
 			string native_signature = "";
 			if (!IsStatic) {
 				native_signature += "IntPtr inst";
-				if (Params.Count > 0)
+				if (Parameters.Count > 0)
 					native_signature += ", ";
 			}
-			if (Params.Count > 0)
-				native_signature += Params.ImportSignature;
+			if (Parameters.Count > 0)
+				native_signature += Parameters.ImportSignature;
 
 			sw.WriteLine ("\t\t[UnmanagedFunctionPointer (CallingConvention.Cdecl)]");
-			sw.WriteLine ("\t\tdelegate {0} {1}NativeDelegate ({2});", retval.ToNativeType, Name, native_signature);
+			sw.WriteLine ("\t\tdelegate {0} {1}NativeDelegate ({2});", ReturnValue.ToNativeType, Name, native_signature);
 			sw.WriteLine ();
-			sw.WriteLine ("\t\tstatic {0} {1}_cb ({2})", retval.ToNativeType, Name, native_signature);
+			sw.WriteLine ("\t\tstatic {0} {1}_cb ({2})", ReturnValue.ToNativeType, Name, native_signature);
 			sw.WriteLine ("\t\t{");
 			string unconditional = call.Unconditional ("\t\t\t");
 			if (unconditional.Length > 0)
@@ -98,20 +98,20 @@ namespace GapiCodegen {
 			}
 
 			string indent = "\t\t\t\t";
-			if (!retval.IsVoid)
-				sw.WriteLine (indent + retval.CSType + " __result;");
+			if (!ReturnValue.IsVoid)
+				sw.WriteLine (indent + ReturnValue.CsType + " __result;");
 			sw.Write (call.Setup (indent));
 			sw.Write (indent);
-			if (!retval.IsVoid)
+			if (!ReturnValue.IsVoid)
 				sw.Write ("__result = ");
 			if (!IsStatic)
 				sw.Write ("__obj.");
 			sw.WriteLine (CallString + ";");
 			sw.Write (call.Finish (indent));
-			if (!retval.IsVoid)
-				sw.WriteLine ("\t\t\t\treturn " + retval.ToNative ("__result") + ";");
+			if (!ReturnValue.IsVoid)
+				sw.WriteLine ("\t\t\t\treturn " + ReturnValue.ToNative ("__result") + ";");
 
-			bool fatal = Params.HasOutParam || !retval.IsVoid;
+			bool fatal = Parameters.HasOutParam || !ReturnValue.IsVoid;
 			sw.WriteLine ("\t\t\t} catch (Exception e) {");
 			sw.WriteLine ("\t\t\t\tGLib.ExceptionManager.RaiseUnhandledException (e, " + (fatal ? "true" : "false") + ");");
 			if (fatal) {
@@ -121,7 +121,7 @@ namespace GapiCodegen {
 
 			if (call.HasDisposeParam) {
 				sw.WriteLine ("\t\t\t} finally {");
-				sw.Write (call.DisposeParams (indent));
+				sw.Write (call.DisposeParams(indent));
 			}
 			sw.WriteLine ("\t\t\t}");
 			sw.WriteLine ("\t\t}");
@@ -143,12 +143,12 @@ namespace GapiCodegen {
 
 			vstate = ValidState.Valid;
 			logWriter.Member = Name;
-			if (!Params.Validate (logWriter) || !retval.Validate (logWriter)) {
+			if (!Parameters.Validate (logWriter) || !ReturnValue.Validate (logWriter)) {
 				vstate = ValidState.Invalid;
 				return false;
 			}
 
-			call = new ManagedCallString (Params);
+			call = new ManagedCallString (Parameters);
 			return true;
 		}
 	}

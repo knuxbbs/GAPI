@@ -23,125 +23,156 @@ using System;
 using System.IO;
 using System.Xml;
 using GapiCodegen.Generatables;
-using GapiCodegen.Interfaces;
+using GapiCodegen.Utils;
 
-namespace GapiCodegen {
-	public class DefaultSignalHandler : GObjectVirtualMethod {
-		private string signal_name;
+namespace GapiCodegen
+{
+    public class DefaultSignalHandler : GObjectVirtualMethod
+    {
+        private readonly string _signalName;
 
-		public DefaultSignalHandler (XmlElement element, ObjectBase container_type) : base (element, container_type)
-		{
-			signal_name = element.GetAttribute ("cname");
-		}
+        public DefaultSignalHandler(XmlElement element, ObjectBase containerType) : base(element, containerType)
+        {
+            _signalName = element.GetAttribute(Constants.CName);
+        }
 
-		public override string CName {
-			get {
-				return Element.GetAttribute ("field_name");
-			}
-		}
+        public override string CName => Element.GetAttribute(Constants.FieldName);
 
-		protected override bool CanGenerate (GenerationInfo gen_info, ObjectBase implementor)
-		{
-			return true;
-		}
+        protected override bool CanGenerate(GenerationInfo generationInfo, ObjectBase implementor)
+        {
+            return true;
+        }
 
-		protected override void GenerateOverride (GenerationInfo gen_info, ObjectBase implementor)
-		{
-			StreamWriter sw = gen_info.Writer;
+        protected override void GenerateOverride(GenerationInfo generationInfo, ObjectBase implementor)
+        {
+            var streamWriter = generationInfo.Writer;
 
-			if (!base.CanGenerate (gen_info, implementor)) {
-				GenerateOverrideBody (sw);
-				sw.WriteLine ("\t\t\tOverrideVirtualMethod (gtype, \"{0}\", callback);", signal_name);
-				sw.WriteLine ("\t\t}");
-			} else
-				base.GenerateOverride (gen_info, implementor);
-		}
+            if (!base.CanGenerate(generationInfo, implementor))
+            {
+                GenerateOverrideBody(streamWriter);
+                streamWriter.WriteLine("\t\t\tOverrideVirtualMethod (gtype, \"{0}\", callback);", _signalName);
+                streamWriter.WriteLine("\t\t}");
+            }
+            else
+                base.GenerateOverride(generationInfo, implementor);
+        }
 
-		protected override void GenerateUnmanagedInvocation (GenerationInfo gen_info, ObjectBase implementor)
-		{
-			if (!base.CanGenerate (gen_info, implementor))
-				GenerateChainVirtualMethod (gen_info.Writer, implementor);
-			else
-				base.GenerateUnmanagedInvocation (gen_info, implementor);
-		}
+        protected override void GenerateUnmanagedInvocation(GenerationInfo generationInfo, ObjectBase implementor)
+        {
+            if (!base.CanGenerate(generationInfo, implementor))
+            {
+                GenerateChainVirtualMethod(generationInfo.Writer, implementor);
+            }
+            else
+                base.GenerateUnmanagedInvocation(generationInfo, implementor);
+        }
 
-		private void GenerateChainVirtualMethod (StreamWriter sw, ObjectBase implementor)
-		{
-			GenerateMethodBody (sw, implementor);
-			if (retval.IsVoid)
-				sw.WriteLine ("\t\t\tGLib.Value ret = GLib.Value.Empty;");
-			else
-				sw.WriteLine ("\t\t\tGLib.Value ret = new GLib.Value (" + ReturnGType + ");");
+        private void GenerateChainVirtualMethod(StreamWriter streamWriter, ClassBase implementor)
+        {
+            GenerateMethodBody(streamWriter, implementor);
 
-			sw.WriteLine ("\t\t\tGLib.ValueArray inst_and_params = new GLib.ValueArray (" + (Params.Count + 1) + ");");
-			sw.WriteLine ("\t\t\tGLib.Value[] vals = new GLib.Value [" + (Params.Count + 1) + "];");
-			sw.WriteLine ("\t\t\tvals [0] = new GLib.Value (this);");
-			sw.WriteLine ("\t\t\tinst_and_params.Append (vals [0]);");
-			string cleanup = "";
-			for (int i = 0; i < Params.Count; i++) {
-				Parameter p = Params [i];
-				if (p.PassAs != "") {
-					if (SymbolTable.Table.IsBoxed (p.CType)) {
-						if (p.PassAs == "ref")
-							sw.WriteLine ("\t\t\tvals [" + (i + 1) + "] = new GLib.Value (" + p.Name + ");");
-						else
-							sw.WriteLine ("\t\t\tvals [" + (i + 1) + "] = new GLib.Value ((GLib.GType)typeof (" + p.CsType + "));");
-						cleanup += "\t\t\t" + p.Name + " = (" + p.CsType + ") vals [" + i + "];\n";
-					} else {
-						if (p.PassAs == "ref")
-							sw.WriteLine ("\t\t\tIntPtr " + p.Name + "_ptr = GLib.Marshaller.StructureToPtrAlloc (" + p.Generatable.CallByName (p.Name) + ");");
-						else
-							sw.WriteLine ("\t\t\tIntPtr " + p.Name + "_ptr = Marshal.AllocHGlobal (Marshal.SizeOf (typeof (" + p.MarshalType + ")));");
+            streamWriter.WriteLine(ReturnValue.IsVoid
+                ? "\t\t\tGLib.Value ret = GLib.Value.Empty;"
+                : $"\t\t\tGLib.Value ret = new GLib.Value ({ReturnGType});");
 
-						sw.WriteLine ("\t\t\tvals [" + (i + 1) + "] = new GLib.Value (" + p.Name + "_ptr);");
-						cleanup += "\t\t\t" + p.Name + " = " + p.FromNative ("(" + p.MarshalType + ") Marshal.PtrToStructure (" + p.Name + "_ptr, typeof (" + p.MarshalType + "))") + ";\n";
-						cleanup += "\t\t\tMarshal.FreeHGlobal (" + p.Name + "_ptr);\n";
-					}
-				} else if (p.IsLength && i > 0 && Params [i - 1].IsString)
-					sw.WriteLine ("\t\t\tvals [" + (i + 1) + "] = new GLib.Value (System.Text.Encoding.UTF8.GetByteCount (" + Params [i-1].Name + "));");
-				else
-					sw.WriteLine ("\t\t\tvals [" + (i + 1) + "] = new GLib.Value (" + p.Name + ");");
+            streamWriter.WriteLine(
+                $"\t\t\tGLib.ValueArray inst_and_params = new GLib.ValueArray ({Parameters.Count + 1});");
 
-				sw.WriteLine ("\t\t\tinst_and_params.Append (vals [" + (i + 1) + "]);");
-			}
+            streamWriter.WriteLine($"\t\t\tGLib.Value[] vals = new GLib.Value [{Parameters.Count + 1}];");
+            streamWriter.WriteLine("\t\t\tvals [0] = new GLib.Value (this);");
+            streamWriter.WriteLine("\t\t\tinst_and_params.Append (vals [0]);");
 
-			sw.WriteLine ("\t\t\tg_signal_chain_from_overridden (inst_and_params.ArrayPtr, ref ret);");
-			if (cleanup != "")
-				sw.WriteLine (cleanup);
-			sw.WriteLine ("\t\t\tforeach (GLib.Value v in vals)");
-			sw.WriteLine ("\t\t\t\tv.Dispose ();");
-			if (!retval.IsVoid) {
-				IGeneratable igen = SymbolTable.Table [retval.CType];
-				sw.WriteLine ("\t\t\t" + retval.CSType + " result = (" + (igen is EnumGen ? retval.CSType + ") (Enum" : retval.CSType) + ") ret;");
-				sw.WriteLine ("\t\t\tret.Dispose ();");
-				sw.WriteLine ("\t\t\treturn result;");
-			}
-			sw.WriteLine ("\t\t}\n");
-		}
+            var cleanup = string.Empty;
 
-		private string ReturnGType {
-			get {
-				IGeneratable igen = SymbolTable.Table [retval.CType];
+            for (var i = 0; i < Parameters.Count; i++)
+            {
+                var parameter = Parameters[i];
 
-				if (igen is ObjectGen)
-					return "GLib.GType.Object";
-				if (igen is BoxedGen)
-					return retval.CSType + ".GType";
-				if (igen is EnumGen)
-					return retval.CSType + "GType.GType";
+                if (parameter.PassAs != "")
+                {
+                    if (SymbolTable.Table.IsBoxed(parameter.CType))
+                    {
+                        streamWriter.WriteLine(parameter.PassAs == "ref"
+                            ? $"\t\t\tvals [{i + 1}] = new GLib.Value ({parameter.Name});"
+                            : $"\t\t\tvals [{i + 1}] = new GLib.Value ((GLib.GType)typeof ({parameter.CsType}));");
 
-				switch (retval.CSType) {
-				case "bool":
-					return "GLib.GType.Boolean";
-				case "string":
-					return "GLib.GType.String";
-				case "int":
-					return "GLib.GType.Int";
-				default:
-					throw new Exception (retval.CSType);
-				}
-			}
-		}
-	 }
+                        cleanup += $"\t\t\t{parameter.Name} = ({parameter.CsType}) vals [{i}];\n";
+                    }
+                    else
+                    {
+                        streamWriter.WriteLine(parameter.PassAs == "ref"
+                            ? $"\t\t\tIntPtr {parameter.Name}_ptr = GLib.Marshaller.StructureToPtrAlloc ({parameter.Generatable.CallByName(parameter.Name)});"
+                            : $"\t\t\tIntPtr {parameter.Name}_ptr = Marshal.AllocHGlobal (Marshal.SizeOf (typeof ({parameter.MarshalType})));");
+
+                        streamWriter.WriteLine($"\t\t\tvals [{i + 1}] = new GLib.Value ({parameter.Name}_ptr);");
+
+                        cleanup +=
+                            $"\t\t\t{parameter.Name} = {parameter.FromNative($"({parameter.MarshalType}) Marshal.PtrToStructure ({parameter.Name}_ptr, typeof ({parameter.MarshalType}))")};\n";
+                        cleanup += $"\t\t\tMarshal.FreeHGlobal ({parameter.Name}_ptr);\n";
+                    }
+                }
+                else if (parameter.IsLength && i > 0 && Parameters[i - 1].IsString)
+                {
+                    streamWriter.WriteLine(
+                        $"\t\t\tvals [{i + 1}] = new GLib.Value (System.Text.Encoding.UTF8.GetByteCount ({Parameters[i - 1].Name}));");
+                }
+                else
+                {
+                    streamWriter.WriteLine($"\t\t\tvals [{i + 1}] = new GLib.Value ({parameter.Name});");
+                }
+
+                streamWriter.WriteLine("\t\t\tinst_and_params.Append (vals [" + (i + 1) + "]);");
+            }
+
+            streamWriter.WriteLine("\t\t\tg_signal_chain_from_overridden (inst_and_params.ArrayPtr, ref ret);");
+
+            if (!string.IsNullOrEmpty(cleanup))
+            {
+                streamWriter.WriteLine(cleanup);
+            }
+
+            streamWriter.WriteLine("\t\t\tforeach (GLib.Value v in vals)");
+            streamWriter.WriteLine("\t\t\t\tv.Dispose ();");
+
+            if (!ReturnValue.IsVoid)
+            {
+                var generatable = SymbolTable.Table[ReturnValue.CType];
+
+                streamWriter.WriteLine(
+                    $"\t\t\t{ReturnValue.CsType} result = ({(generatable is EnumGen ? $"{ReturnValue.CsType}) (Enum" : ReturnValue.CsType)}) ret;");
+                streamWriter.WriteLine("\t\t\tret.Dispose ();");
+                streamWriter.WriteLine("\t\t\treturn result;");
+            }
+
+            streamWriter.WriteLine("\t\t}\n");
+        }
+
+        private string ReturnGType
+        {
+            get
+            {
+                switch (SymbolTable.Table[ReturnValue.CType])
+                {
+                    case ObjectGen _:
+                        return "GLib.GType.Object";
+                    case BoxedGen _:
+                        return $"{ReturnValue.CsType}.GType";
+                    case EnumGen _:
+                        return $"{ReturnValue.CsType}GType.GType";
+                    default:
+                        switch (ReturnValue.CsType)
+                        {
+                            case "bool":
+                                return "GLib.GType.Boolean";
+                            case "string":
+                                return "GLib.GType.String";
+                            case "int":
+                                return "GLib.GType.Int";
+                            default:
+                                throw new Exception(ReturnValue.CsType);
+                        }
+                }
+            }
+        }
+    }
 }
-

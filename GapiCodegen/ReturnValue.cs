@@ -73,7 +73,7 @@ namespace GapiCodegen {
 			}
 		}
 
-		public string CSType {
+		public string CsType {
 			get {
 				if (IGen == null)
 					return string.Empty;
@@ -115,7 +115,7 @@ namespace GapiCodegen {
 
 		public bool IsVoid {
 			get {
-				return CSType == "void";
+				return CsType == "void";
 			}
 		}
 
@@ -155,7 +155,7 @@ namespace GapiCodegen {
 			else if (is_null_term)
 				return string.Format ("GLib.Marshaller.NullTermPtrToStringArray ({0}, {1})", var, owned ? "true" : "false");
 			else if (is_array)
-				return string.Format ("({0}) GLib.Marshaller.ArrayPtrToArray ({1}, typeof ({2}), (int){3}native_{4}, true)", CSType, var, IGen.QualifiedName, CountParameter.CsType == "int" ? string.Empty : "(" + CountParameter.CsType + ")", CountParameter.Name);
+				return string.Format ("({0}) GLib.Marshaller.ArrayPtrToArray ({1}, typeof ({2}), (int){3}native_{4}, true)", CsType, var, IGen.QualifiedName, CountParameter.CsType == "int" ? string.Empty : "(" + CountParameter.CsType + ")", CountParameter.Name);
 			else
 				return IGen.FromNative (var);
 		}
@@ -185,10 +185,10 @@ namespace GapiCodegen {
 
 		public bool Validate (LogWriter log)
 		{
-			if (MarshalType == "" || CSType == "") {
+			if (MarshalType == "" || CsType == "") {
 				log.Warn ("Unknown return type: {0}", CType);
 				return false;
-			} else if ((CSType == "GLib.List" || CSType == "GLib.SList") && string.IsNullOrEmpty (ElementType))
+			} else if ((CsType == "GLib.List" || CsType == "GLib.SList") && string.IsNullOrEmpty (ElementType))
 				log.Warn ("Returns {0} with unknown element type.  Add element_type attribute with gapi-fixup.", CType);
 
 			if (is_array && !is_null_term && string.IsNullOrEmpty (array_length_param)) {
