@@ -19,167 +19,141 @@
 // Free Software Foundation, Inc., 59 Temple Place - Suite 330,
 // Boston, MA 02111-1307, USA.
 
-
+using System;
 using System.Xml;
 using GapiCodegen.Generatables;
 using GapiCodegen.Utils;
 
-namespace GapiCodegen {
-	public abstract class MethodBase  {
+namespace GapiCodegen
+{
+    /// <summary>
+    /// Abstract base class for constructors, methods and virtual methods.
+    /// </summary>
+    public abstract class MethodBase
+    {
+        protected XmlElement Element;
+        protected ClassBase ContainerType;
+        protected Parameters Params;
 
-		protected XmlElement elem;
-		protected ClassBase container_type;
-		protected Parameters parms;
-		string mods = string.Empty;
-		string name;
-		private string protection = "public";
+        protected MethodBase(XmlElement element, ClassBase containerType)
+        {
+            Element = element;
+            ContainerType = containerType;
 
-		protected MethodBase (XmlElement elem, ClassBase container_type)
-		{
-			this.elem = elem;
-			this.container_type = container_type;
-			name = elem.GetAttribute ("name");
-			parms = new Parameters (elem ["parameters"]);
-			IsStatic = elem.GetAttribute ("shared") == "true";
-			if (elem.GetAttributeAsBoolean ("new_flag"))
-				mods = "new ";
-			if (elem.HasAttribute ("accessibility")) {
-				string attr = elem.GetAttribute ("accessibility");
-				switch (attr) {
-					case "public":
-					case "protected":
-					case "internal":
-					case "private":
-					case "protected internal":
-						protection = attr;
-						break;
-				}
-			}
-		}
+            Name = element.GetAttribute("name");
+            IsStatic = element.GetAttribute("shared") == "true";
+            Protection = "public";
+            Modifiers = string.Empty;
 
-		protected string BaseName {
-			get {
-				string name = Name;
-				int idx = Name.LastIndexOf (".");
-				if (idx > 0)
-					name = Name.Substring (idx + 1);
-				return name;
-			}
-		}
+            Params = new Parameters(element["parameters"]);
 
-		MethodBody body;
-		public MethodBody Body {
-			get {
-				if (body == null) {
-					LogWriter log = new LogWriter (Name);
-					body = new MethodBody (parms, log);
-				}
-				return body;
-			}
-		}
+            if (element.GetAttributeAsBoolean("new_flag"))
+                Modifiers = "new ";
 
-		public virtual string CName {
-			get {
-				return SymbolTable.Table.MangleName (elem.GetAttribute ("cname"));
-			}
-		}
+            if (!element.HasAttribute("accessibility")) return;
 
-		protected bool HasGetterName {
-			get {
-				string name = BaseName;
-				if (name.Length <= 3)
-					return false;
-				if (name.StartsWith ("Get") || name.StartsWith ("Has"))
-					return char.IsUpper (name [3]);
-				else if (name.StartsWith ("Is"))
-					return char.IsUpper (name [2]);
-				else
-					return false;
-			}
-		}
+            var protection = element.GetAttribute("accessibility");
 
-		protected bool HasSetterName {
-			get {
-				string name = BaseName;
-				if (name.Length <= 3)
-					return false;
+            switch (protection)
+            {
+                case "public":
+                case "protected":
+                case "internal":
+                case "private":
+                case "protected internal":
+                    Protection = protection;
+                    break;
+            }
+        }
 
-				return name.StartsWith ("Set") && char.IsUpper (name [3]);
-			}
-		}
+        protected string BaseName
+        {
+            get
+            {
+                var name = Name;
+                var index = Name.LastIndexOf(".", StringComparison.Ordinal);
 
-		public bool IsStatic {
-			get {
-				return parms.Static;
-			}
-			set {
-				parms.Static = value;
-			}
-		}
+                if (index > 0)
+                    name = Name.Substring(index + 1);
 
-		public string LibraryName {
-			get {
-				if (elem.HasAttribute ("library"))
-					return elem.GetAttribute ("library");
-				return container_type.LibraryName;
-			}
-		}
+                return name;
+            }
+        }
 
-		public string Modifiers {
-			get {
-				return mods;
-			}
-			set {
-				mods = value;
-			}
-		}
+        private MethodBody _body;
 
-		public string Name {
-			get {
-				return name;
-			}
-			set {
-				name = value;
-			}
-		}
+        public MethodBody Body
+        {
+            get
+            {
+                if (_body != null) return _body;
 
-		public Parameters Parameters {
-			get {
-				return parms;
-			}
-		}
+                var logWriter = new LogWriter(Name);
+                _body = new MethodBody(Params, logWriter);
 
-	
-		public string Protection {
-			get { return protection; }
-			set { protection = value; }
-		}
+                return _body;
+            }
+        }
 
-		protected string Safety {
-			get {
-				return Body.ThrowsException && !(container_type is InterfaceGen) ? "unsafe " : "";
-			}
-		}
+        public virtual string CName => SymbolTable.Table.MangleName(Element.GetAttribute("cname"));
 
-		Signature sig;
-		public Signature Signature {
-			get {
-				if (sig == null)
-					sig = new Signature (parms);
-				return sig;
-			}
-		}
+        protected bool HasGetterName
+        {
+            get
+            {
+                if (BaseName.Length <= 3)
+                    return false;
 
-		public virtual bool Validate (LogWriter log)
-		{
-			log.Member = Name;
-			if (!parms.Validate (log)) {
-				Statistics.ThrottledCount++;
-				return false;
-			}
+                if (BaseName.StartsWith("Get") || BaseName.StartsWith("Has"))
+                    return char.IsUpper(BaseName[3]);
 
-			return true;
-		}
-	}
+                return BaseName.StartsWith("Is") && char.IsUpper(BaseName[2]);
+            }
+        }
+
+        protected bool HasSetterName
+        {
+            get
+            {
+                if (BaseName.Length <= 3)
+                    return false;
+
+                return BaseName.StartsWith("Set") && char.IsUpper(BaseName[3]);
+            }
+        }
+
+        public bool IsStatic
+        {
+            get => Params.Static;
+            set => Params.Static = value;
+        }
+
+        public string LibraryName => Element.HasAttribute("library")
+            ? Element.GetAttribute("library")
+            : ContainerType.LibraryName;
+
+        public string Modifiers { get; set; }
+
+        public string Name { get; set; }
+
+        public Parameters Parameters => Params;
+        
+        public string Protection { get; set; }
+
+        protected string Safety => Body.ThrowsException && !(ContainerType is InterfaceGen) ? "unsafe " : "";
+
+        private Signature _signature;
+
+        public Signature Signature => _signature ?? (_signature = new Signature(Params));
+
+        public virtual bool Validate(LogWriter logWriter)
+        {
+            logWriter.Member = Name;
+
+            if (Params.Validate(logWriter)) return true;
+
+            Statistics.ThrottledCount++;
+            return false;
+        }
+    }
 }
-

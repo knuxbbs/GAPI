@@ -7,6 +7,9 @@
   <ItemGroup>
     <None Remove="README.asc" />
   </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Mono.Options" Version="6.6.0.161" />
+  </ItemGroup>
   <!--<ItemGroup>
     <Content Include="Schemas\*.*">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

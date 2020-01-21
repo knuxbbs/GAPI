@@ -185,11 +185,11 @@ namespace GapiCodegen
             }
         }
 
-        private static IEnumerable<IGeneratable> ParseNamespace(XmlElement ns)
+        private static IEnumerable<IGeneratable> ParseNamespace(XmlElement namespaceElement)
         {
             var result = new List<IGeneratable>();
 
-            foreach (XmlElement elem in ns.ChildNodes)
+            foreach (XmlElement elem in namespaceElement.ChildNodes)
             {
                 if (elem == null)
                     continue;
@@ -216,37 +216,37 @@ namespace GapiCodegen
                         {
                             if (isOpaque)
                             {
-                                result.Add(new OpaqueGen(ns, elem));
+                                result.Add(new OpaqueGen(namespaceElement, elem));
                             }
                             else
                             {
-                                result.Add(new BoxedGen(ns, elem));
+                                result.Add(new BoxedGen(namespaceElement, elem));
                             }
 
                             break;
                         }
 
                     case "callback":
-                        result.Add(new CallbackGen(ns, elem));
+                        result.Add(new CallbackGen(namespaceElement, elem));
                         break;
 
                     case "enum":
-                        result.Add(new EnumGen(ns, elem));
+                        result.Add(new EnumGen(namespaceElement, elem));
                         break;
 
                     case "interface":
-                        result.Add(new InterfaceGen(ns, elem));
+                        result.Add(new InterfaceGen(namespaceElement, elem));
                         break;
                     case "object":
-                        result.Add(new ObjectGen(ns, elem));
+                        result.Add(new ObjectGen(namespaceElement, elem));
                         break;
 
                     case "class":
-                        result.Add(new ClassGen(ns, elem));
+                        result.Add(new ClassGen(namespaceElement, elem));
                         break;
 
                     case "union":
-                        result.Add(new UnionGen(ns, elem));
+                        result.Add(new UnionGen(namespaceElement, elem));
                         break;
 
                     case "struct":
@@ -255,15 +255,15 @@ namespace GapiCodegen
 
                             if (isOpaque)
                             {
-                                result.Add(new OpaqueGen(ns, elem));
+                                result.Add(new OpaqueGen(namespaceElement, elem));
                             }
                             else if (isNativeStruct)
                             {
-                                result.Add(new NativeStructGen(ns, elem));
+                                result.Add(new NativeStructGen(namespaceElement, elem));
                             }
                             else
                             {
-                                result.Add(new StructGen(ns, elem));
+                                result.Add(new StructGen(namespaceElement, elem));
                             }
 
                             break;

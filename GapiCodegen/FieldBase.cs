@@ -17,7 +17,6 @@
 // Free Software Foundation, Inc., 59 Temple Place - Suite 330,
 // Boston, MA 02111-1307, USA.
 
-using System.IO;
 using System.Xml;
 using GapiCodegen.Generatables;
 using GapiCodegen.Interfaces;
@@ -30,27 +29,27 @@ namespace GapiCodegen
     /// </summary>
     public abstract class FieldBase : PropertyBase
     {
-        public FieldBase abi_field = null;
-        string getterName, setterName;
-        protected string getOffsetName, offsetName;
+        public FieldBase AbiField = null;
+        private string _getterName, _setterName;
+        protected string GetOffsetName, OffsetName;
 
-        protected FieldBase(XmlElement element, ClassBase container_type) : base(element, container_type)
+        protected FieldBase(XmlElement element, ClassBase containerType) : base(element, containerType)
         {
         }
 
-        public virtual bool Validate(LogWriter log)
+        public virtual bool Validate(LogWriter logWriter)
         {
-            log.Member = Name;
-            if (!Ignored && !Hidden && CSType == "")
-            {
-                if (Name == "Priv")
-                    return false;
-                log.Warn("field has unknown type: " + CType);
-                Statistics.ThrottledCount++;
-                return false;
-            }
+            logWriter.Member = Name;
 
-            return true;
+            if (Ignored || Hidden || CsType != "") return true;
+
+            if (Name == "Priv")
+                return false;
+
+            logWriter.Warn($"Field has unknown type: {CType}.");
+            Statistics.ThrottledCount++;
+
+            return false;
         }
 
         internal virtual bool Readable
@@ -58,7 +57,10 @@ namespace GapiCodegen
             get
             {
                 if (Parser.GetVersion(Element.OwnerDocument.DocumentElement) <= 2)
+                {
                     return Element.GetAttribute("readable") != "false";
+                }
+
                 return Element.HasAttribute("readable") && Element.GetAttributeAsBoolean("readable");
             }
         }
@@ -68,300 +70,306 @@ namespace GapiCodegen
             get
             {
                 if (Parser.GetVersion(Element.OwnerDocument.DocumentElement) <= 2)
+                {
                     return Element.GetAttribute("writeable") != "false";
+                }
+
                 return Element.HasAttribute("writeable") && Element.GetAttributeAsBoolean("writeable");
             }
         }
 
         protected abstract string DefaultAccess { get; }
 
-        protected virtual string Access
-        {
-            get { return Element.HasAttribute("access") ? Element.GetAttribute("access") : DefaultAccess; }
-        }
+        protected virtual string Access => Element.HasAttribute("access")
+            ? Element.GetAttribute("access")
+            : DefaultAccess;
 
-        public bool IsArray
-        {
-            get { return Element.HasAttribute("array_len") || Element.GetAttributeAsBoolean("array"); }
-        }
+        public bool IsArray => Element.HasAttribute("array_len") || Element.GetAttributeAsBoolean("array");
 
-        public bool IsBitfield
-        {
-            get { return Element.HasAttribute("bits"); }
-        }
+        public bool IsBitfield => Element.HasAttribute("bits");
 
         public bool Ignored
         {
             get
             {
-                if (container_type.GetProperty(Name) != null)
+                if (ContainerType.GetProperty(Name) != null)
                     return true;
+
                 if (IsArray)
                     return true;
-                if (Access == "private" && Getter == null && Setter == null)
-                    return true;
-                return false;
+
+                return Access == "private" && Getter == null && Setter == null;
             }
         }
 
-        private bool UseABIStruct(GenerationInfo gen_info)
+        private bool UseAbiStruct(GenerationInfo generationInfo)
         {
-            if (!container_type.CanGenerateABIStruct(new LogWriter(container_type.CName)))
+            if (!ContainerType.CanGenerateABIStruct(new LogWriter(ContainerType.CName)))
                 return false;
 
-            return abi_field != null && abi_field.getOffsetName != null &&
-                   gen_info.GlueWriter == null;
+            return AbiField?.GetOffsetName != null && generationInfo.GlueWriter == null;
         }
 
-        void CheckGlue(GenerationInfo gen_info)
+        private void CheckGlue(GenerationInfo generationInfo)
         {
-            getterName = setterName = getOffsetName = null;
+            _getterName = _setterName = GetOffsetName = null;
+
             if (Access != "public")
                 return;
 
-            if (UseABIStruct(gen_info))
+            if (UseAbiStruct(generationInfo))
             {
-                getOffsetName = abi_field.getOffsetName;
-                offsetName = ((StructAbiField) abi_field).abi_info_name + ".GetFieldOffset(\"" +
-                             ((StructField) abi_field).CName + "\")";
+                GetOffsetName = AbiField.GetOffsetName;
+                OffsetName = ((StructAbiField)AbiField).abi_info_name + ".GetFieldOffset(\"" +
+                             ((StructField)AbiField).CName + "\")";
 
                 return;
             }
 
-            if (gen_info.GlueWriter == null)
+            if (generationInfo.GlueWriter == null)
                 return;
 
-            string prefix = (container_type.NS + "Sharp_" + container_type.NS + "_" + container_type.Name)
+            var prefix = (ContainerType.Namespace + "Sharp_" + ContainerType.Namespace + "_" + ContainerType.Name)
                 .Replace(".", "__").ToLower();
 
             if (IsBitfield)
             {
                 if (Readable && Getter == null)
-                    getterName = prefix + "_get_" + CName;
+                    _getterName = $"{prefix}_get_{CName}";
+
                 if (Writable && Setter == null)
-                    setterName = prefix + "_set_" + CName;
+                    _setterName = $"{prefix}_set_{CName}";
             }
             else
             {
-                if (Readable && Getter == null || Writable && Setter == null)
-                {
-                    offsetName = CName + "_offset";
-                    getOffsetName = prefix + "_get_" + offsetName;
-                }
+                if ((!Readable || Getter != null) && (!Writable || Setter != null)) return;
+
+                OffsetName = $"{CName}_offset";
+                GetOffsetName = $"{prefix}_get_{OffsetName}";
             }
         }
 
-        protected override void GenerateImports(GenerationInfo gen_info, string indent)
+        protected override void GenerateImports(GenerationInfo generationInfo, string indent)
         {
-            StreamWriter sw = gen_info.Writer;
-            SymbolTable table = SymbolTable.Table;
-
-            if (gen_info.GlueWriter == null)
+            if (generationInfo.GlueWriter == null)
             {
-                base.GenerateImports(gen_info, indent);
+                base.GenerateImports(generationInfo, indent);
                 return;
             }
 
-            if (getterName != null)
+            var streamWriter = generationInfo.Writer;
+            var table = SymbolTable.Table;
+
+            if (_getterName != null)
             {
-                sw.WriteLine(indent + "[DllImport (\"{0}\")]", gen_info.GlueLibName);
-                sw.WriteLine(indent + "extern static {0} {1} ({2} raw);",
-                    table.GetMarshalType(CType), getterName,
-                    container_type.MarshalType);
+                streamWriter.WriteLine(indent + "[DllImport (\"{0}\")]", generationInfo.GlueLibName);
+                streamWriter.WriteLine(indent + "extern static {0} {1} ({2} raw);",
+                    table.GetMarshalType(CType), _getterName,
+                    ContainerType.MarshalType);
             }
 
-            if (setterName != null)
+            if (_setterName != null)
             {
-                sw.WriteLine(indent + "[DllImport (\"{0}\")]", gen_info.GlueLibName);
-                sw.WriteLine(indent + "extern static void {0} ({1} raw, {2} value);",
-                    setterName, container_type.MarshalType, table.GetMarshalType(CType));
+                streamWriter.WriteLine(indent + "[DllImport (\"{0}\")]", generationInfo.GlueLibName);
+                streamWriter.WriteLine(indent + "extern static void {0} ({1} raw, {2} value);",
+                    _setterName, ContainerType.MarshalType, table.GetMarshalType(CType));
             }
 
-            if (getOffsetName != null)
+            if (GetOffsetName != null)
             {
-                sw.WriteLine(indent + "[DllImport (\"{0}\")]", gen_info.GlueLibName);
-                sw.WriteLine(indent + "extern static uint {0} ();", getOffsetName);
-                sw.WriteLine();
-                sw.WriteLine(indent + "static uint " + offsetName + " = " + getOffsetName + " ();");
+                streamWriter.WriteLine(indent + "[DllImport (\"{0}\")]", generationInfo.GlueLibName);
+                streamWriter.WriteLine(indent + "extern static uint {0} ();", GetOffsetName);
+                streamWriter.WriteLine();
+                streamWriter.WriteLine($"{indent}static uint {OffsetName} = {GetOffsetName} ();");
             }
 
-            base.GenerateImports(gen_info, indent);
+            base.GenerateImports(generationInfo, indent);
         }
 
-        public virtual void Generate(GenerationInfo gen_info, string indent)
+        public virtual void Generate(GenerationInfo generationInfo, string indent)
         {
             if (Ignored || Hidden)
                 return;
 
-            CheckGlue(gen_info);
+            CheckGlue(generationInfo);
 
-            GenerateImports(gen_info, indent);
+            GenerateImports(generationInfo, indent);
 
-            if (Getter == null && getterName == null && offsetName == null &&
-                Setter == null && setterName == null)
+            if (Getter == null && _getterName == null && OffsetName == null &&
+                Setter == null && _setterName == null)
             {
                 return;
             }
 
+            var streamWriter = generationInfo.Writer;
+            var modifiers = Element.GetAttributeAsBoolean("new_flag") ? "new " : "";
 
-            SymbolTable table = SymbolTable.Table;
-            IGeneratable gen = table[CType];
-            StreamWriter sw = gen_info.Writer;
-            string modifiers = Element.GetAttributeAsBoolean("new_flag") ? "new " : "";
+            streamWriter.WriteLine($"{indent}public {modifiers}{CsType} {Name} {{");
 
-            sw.WriteLine(indent + "public " + modifiers + CSType + " " + Name + " {");
+            var table = SymbolTable.Table;
+            var generatable = table[CType];
 
             if (Getter != null)
             {
-                sw.Write(indent + "\tget ");
-                Getter.GenerateBody(gen_info, container_type, "\t");
-                sw.WriteLine("");
+                streamWriter.Write($"{indent}\tget ");
+                Getter.GenerateBody(generationInfo, ContainerType, "\t");
+                streamWriter.WriteLine("");
             }
-            else if (getterName != null)
+            else if (_getterName != null)
             {
-                sw.WriteLine(indent + "\tget {");
-                container_type.Prepare(sw, indent + "\t\t");
-                sw.WriteLine(indent + "\t\t" + CSType + " result = " +
-                             table.FromNative(ctype, getterName + " (" + container_type.CallByName() + ")") + ";");
-                container_type.Finish(sw, indent + "\t\t");
-                sw.WriteLine(indent + "\t\treturn result;");
-                sw.WriteLine(indent + "\t}");
+                streamWriter.WriteLine($"{indent}\tget {{");
+                ContainerType.Prepare(streamWriter, $"{indent}\t\t");
+
+                streamWriter.WriteLine(indent + "\t\t" + CsType + " result = " +
+                             table.FromNative(CType, _getterName + " (" + ContainerType.CallByName() + ")") + ";");
+
+                ContainerType.Finish(streamWriter, $"{indent}\t\t");
+                streamWriter.WriteLine($"{indent}\t\treturn result;");
+                streamWriter.WriteLine($"{indent}\t}}");
             }
-            else if (Readable && offsetName != null)
+            else if (Readable && OffsetName != null)
             {
-                sw.WriteLine(indent + "\tget {");
-                sw.WriteLine(indent + "\t\tunsafe {");
-                if (gen is CallbackGen)
+                streamWriter.WriteLine($"{indent}\tget {{");
+                streamWriter.WriteLine($"{indent}\t\tunsafe {{");
+
+                if (generatable is CallbackGen)
                 {
-                    sw.WriteLine(indent + "\t\t\tIntPtr* raw_ptr = (IntPtr*)(((byte*)" + container_type.CallByName() +
-                                 ") + " + offsetName + ");");
-                    sw.WriteLine(
+                    streamWriter.WriteLine(indent + "\t\t\tIntPtr* raw_ptr = (IntPtr*)(((byte*)" + ContainerType.CallByName() +
+                                 ") + " + OffsetName + ");");
+
+                    streamWriter.WriteLine(
                         indent + "\t\t\t {0} del = ({0})Marshal.GetDelegateForFunctionPointer(*raw_ptr, typeof({0}));",
                         table.GetMarshalType(CType));
-                    sw.WriteLine(indent + "\t\t\treturn " + table.FromNative(ctype, "(del)") + ";");
+
+                    streamWriter.WriteLine($"{indent}\t\t\treturn {table.FromNative(CType, "(del)")};");
                 }
                 else
                 {
-                    sw.WriteLine(indent + "\t\t\t" + table.GetMarshalType(CType) + "* raw_ptr = (" +
-                                 table.GetMarshalType(CType) + "*)(((byte*)" + container_type.CallByName() + ") + " +
-                                 offsetName + ");");
-                    sw.WriteLine(indent + "\t\t\treturn " + table.FromNative(ctype, "(*raw_ptr)") + ";");
+                    streamWriter.WriteLine(indent + "\t\t\t" + table.GetMarshalType(CType) + "* raw_ptr = (" +
+                                 table.GetMarshalType(CType) + "*)(((byte*)" + ContainerType.CallByName() + ") + " +
+                                 OffsetName + ");");
+
+                    streamWriter.WriteLine($"{indent}\t\t\treturn {table.FromNative(CType, "(*raw_ptr)")};");
                 }
 
-                sw.WriteLine(indent + "\t\t}");
-                sw.WriteLine(indent + "\t}");
+                streamWriter.WriteLine($"{indent}\t\t}}");
+                streamWriter.WriteLine($"{indent}\t}}");
             }
 
-            string to_native = gen is IManualMarshaler
-                ? (gen as IManualMarshaler).AllocNative("value")
-                : gen.CallByName("value");
+            var toNative = generatable is IManualMarshaler marshaler
+                ? marshaler.AllocNative("value")
+                : generatable.CallByName("value");
 
             if (Setter != null)
             {
-                sw.Write(indent + "\tset ");
-                Setter.GenerateBody(gen_info, container_type, "\t");
-                sw.WriteLine("");
+                streamWriter.Write($"{indent}\tset ");
+                Setter.GenerateBody(generationInfo, ContainerType, "\t");
+                streamWriter.WriteLine("");
             }
-            else if (setterName != null)
+            else if (_setterName != null)
             {
-                sw.WriteLine(indent + "\tset {");
-                container_type.Prepare(sw, indent + "\t\t");
-                sw.WriteLine(
-                    indent + "\t\t" + setterName + " (" + container_type.CallByName() + ", " + to_native + ");");
-                container_type.Finish(sw, indent + "\t\t");
-                sw.WriteLine(indent + "\t}");
+                streamWriter.WriteLine($"{indent}\tset {{");
+                ContainerType.Prepare(streamWriter, $"{indent}\t\t");
+
+                streamWriter.WriteLine(
+                    $"{indent}\t\t{_setterName} ({ContainerType.CallByName()}, {toNative});");
+
+                ContainerType.Finish(streamWriter, $"{indent}\t\t");
+                streamWriter.WriteLine($"{indent}\t}}");
             }
-            else if (Writable && offsetName != null)
+            else if (Writable && OffsetName != null)
             {
-                sw.WriteLine(indent + "\tset {");
-                sw.WriteLine(indent + "\t\tunsafe {");
-                if (gen is CallbackGen)
+                streamWriter.WriteLine($"{indent}\tset {{");
+                streamWriter.WriteLine($"{indent}\t\tunsafe {{");
+
+                if (generatable is CallbackGen callbackGen)
                 {
-                    sw.WriteLine(indent + "\t\t\t{0} wrapper = new {0} (value);", ((CallbackGen) gen).WrapperName);
-                    sw.WriteLine(indent + "\t\t\tIntPtr* raw_ptr = (IntPtr*)(((byte*)" + container_type.CallByName() +
-                                 ") + " + offsetName + ");");
-                    sw.WriteLine(
-                        indent + "\t\t\t*raw_ptr = Marshal.GetFunctionPointerForDelegate (wrapper.NativeDelegate);");
+                    streamWriter.WriteLine(indent + "\t\t\t{0} wrapper = new {0} (value);", callbackGen.WrapperName);
+                    streamWriter.WriteLine(
+                        $"{indent}\t\t\tIntPtr* raw_ptr = (IntPtr*)(((byte*){ContainerType.CallByName()}) + {OffsetName});");
+                    streamWriter.WriteLine(
+                        $"{indent}\t\t\t*raw_ptr = Marshal.GetFunctionPointerForDelegate (wrapper.NativeDelegate);");
                 }
                 else
                 {
-                    sw.WriteLine(indent + "\t\t\t" + table.GetMarshalType(CType) + "* raw_ptr = (" +
-                                 table.GetMarshalType(CType) + "*)(((byte*)" + container_type.CallByName() + ") + " +
-                                 offsetName + ");");
-                    sw.WriteLine(indent + "\t\t\t*raw_ptr = " + to_native + ";");
+                    streamWriter.WriteLine(indent + "\t\t\t" + table.GetMarshalType(CType) + "* raw_ptr = (" +
+                                 table.GetMarshalType(CType) + "*)(((byte*)" + ContainerType.CallByName() + ") + " +
+                                 OffsetName + ");");
+                    streamWriter.WriteLine($"{indent}\t\t\t*raw_ptr = {toNative};");
                 }
 
-                sw.WriteLine(indent + "\t\t}");
-                sw.WriteLine(indent + "\t}");
+                streamWriter.WriteLine($"{indent}\t\t}}");
+                streamWriter.WriteLine($"{indent}\t}}");
             }
 
-            sw.WriteLine(indent + "}");
-            sw.WriteLine("");
+            streamWriter.WriteLine($"{indent}}}");
+            streamWriter.WriteLine("");
 
-            if ((getterName != null || setterName != null || getOffsetName != null) && gen_info.GlueWriter != null)
-                GenerateGlue(gen_info);
+            if ((_getterName != null || _setterName != null || GetOffsetName != null) && generationInfo.GlueWriter != null)
+                GenerateGlue(generationInfo);
         }
 
-        protected void GenerateGlue(GenerationInfo gen_info)
+        protected void GenerateGlue(GenerationInfo generationInfo)
         {
-            StreamWriter sw = gen_info.GlueWriter;
-            SymbolTable table = SymbolTable.Table;
+            var table = SymbolTable.Table;
 
-            string FieldCType = CType.Replace("-", " ");
-            bool byref = table[CType] is ByRefGen || table[CType] is StructGen;
-            string GlueCType = byref ? FieldCType + " *" : FieldCType;
-            string ContainerCType = container_type.CName;
-            string ContainerCName = container_type.Name.ToLower();
+            var fieldCType = CType.Replace("-", " ");
+            var byRef = table[CType] is ByRefGen || table[CType] is StructGen;
+            var glueCType = byRef ? $"{fieldCType} *" : fieldCType;
+            var containerCType = ContainerType.CName;
+            var containerCName = ContainerType.Name.ToLower();
 
-            if (getterName != null)
+            var streamWriter = generationInfo.GlueWriter;
+
+            if (_getterName != null)
             {
-                sw.WriteLine("{0} {1} ({2} *{3});",
-                    GlueCType, getterName, ContainerCType, ContainerCName);
+                streamWriter.WriteLine("{0} {1} ({2} *{3});",
+                    glueCType, _getterName, containerCType, containerCName);
             }
 
-            if (setterName != null)
+            if (_setterName != null)
             {
-                sw.WriteLine("void {0} ({1} *{2}, {3} value);",
-                    setterName, ContainerCType, ContainerCName, GlueCType);
+                streamWriter.WriteLine("void {0} ({1} *{2}, {3} value);",
+                    _setterName, containerCType, containerCName, glueCType);
             }
 
-            if (getOffsetName != null)
-                sw.WriteLine("guint {0} (void);", getOffsetName);
-            sw.WriteLine("");
+            if (GetOffsetName != null)
+                streamWriter.WriteLine("guint {0} (void);", GetOffsetName);
 
-            if (getterName != null)
+            streamWriter.WriteLine("");
+
+            if (_getterName != null)
             {
-                sw.WriteLine(GlueCType);
-                sw.WriteLine("{0} ({1} *{2})", getterName, ContainerCType, ContainerCName);
-                sw.WriteLine("{");
-                sw.WriteLine("\treturn ({0}){1}{2}->{3};", GlueCType,
-                    byref ? "&" : "", ContainerCName, CName);
-                sw.WriteLine("}");
-                sw.WriteLine("");
+                streamWriter.WriteLine(glueCType);
+                streamWriter.WriteLine("{0} ({1} *{2})", _getterName, containerCType, containerCName);
+                streamWriter.WriteLine("{");
+                streamWriter.WriteLine("\treturn ({0}){1}{2}->{3};", glueCType,
+                    byRef ? "&" : "", containerCName, CName);
+                streamWriter.WriteLine("}");
+                streamWriter.WriteLine("");
             }
 
-            if (setterName != null)
+            if (_setterName != null)
             {
-                sw.WriteLine("void");
-                sw.WriteLine("{0} ({1} *{2}, {3} value)",
-                    setterName, ContainerCType, ContainerCName, GlueCType);
-                sw.WriteLine("{");
-                sw.WriteLine("\t{0}->{1} = ({2}){3}value;", ContainerCName, CName,
-                    FieldCType, byref ? "*" : "");
-                sw.WriteLine("}");
-                sw.WriteLine("");
+                streamWriter.WriteLine("void");
+                streamWriter.WriteLine("{0} ({1} *{2}, {3} value)",
+                    _setterName, containerCType, containerCName, glueCType);
+                streamWriter.WriteLine("{");
+                streamWriter.WriteLine("\t{0}->{1} = ({2}){3}value;", containerCName, CName,
+                    fieldCType, byRef ? "*" : "");
+                streamWriter.WriteLine("}");
+                streamWriter.WriteLine("");
             }
 
-            if (getOffsetName != null)
-            {
-                sw.WriteLine("guint");
-                sw.WriteLine("{0} (void)", getOffsetName);
-                sw.WriteLine("{");
-                sw.WriteLine("\treturn (guint)G_STRUCT_OFFSET ({0}, {1});",
-                    ContainerCType, CName);
-                sw.WriteLine("}");
-                sw.WriteLine("");
-            }
+            if (GetOffsetName == null) return;
+
+            streamWriter.WriteLine("guint");
+            streamWriter.WriteLine("{0} (void)", GetOffsetName);
+            streamWriter.WriteLine("{");
+            streamWriter.WriteLine("\treturn (guint)G_STRUCT_OFFSET ({0}, {1});",
+                containerCType, CName);
+            streamWriter.WriteLine("}");
+            streamWriter.WriteLine("");
         }
     }
 }

@@ -17,100 +17,91 @@
 // Free Software Foundation, Inc., 59 Temple Place - Suite 330,
 // Boston, MA 02111-1307, USA.
 
-
 using System.Xml;
 using GapiCodegen.Generatables;
 using GapiCodegen.Utils;
 
-namespace GapiCodegen {
-	public abstract class PropertyBase {
+namespace GapiCodegen
+{
+    /// <summary>
+    /// Abstract base class for property-like elements.
+    /// </summary>
+    public abstract class PropertyBase
+    {
+        protected XmlElement Element;
+        public ClassBase ContainerType;
 
-		protected XmlElement Element;
-		public ClassBase container_type;
+        protected PropertyBase(XmlElement element, ClassBase containerType)
+        {
+            Element = element;
+            ContainerType = containerType;
+        }
 
-		public PropertyBase (XmlElement element, ClassBase container_type)
-		{
-			this.Element = element;
-			this.container_type = container_type;
-		}
+        public string Name => Element.GetAttribute("name");
 
-		public string Name {
-			get {
-				return Element.GetAttribute ("name");
-			}
-		}
+        public virtual string CName => Element.GetAttribute("cname");
 
-		public virtual string CName {
-			get {
-				return Element.GetAttribute ("cname");
-			}
-		}
+        private string _cType;
 
-		protected string ctype;
-		public virtual string CType {
-			get {
-				if (ctype == null) {
-					if (Element.GetAttribute("bits") == "1")
-						ctype = "gboolean";
-					else
-						ctype = Element.GetAttribute("type");
-				}
-				return ctype;
-			}
-		}
+        public virtual string CType
+        {
+            get
+            {
+                if (_cType != null) return _cType;
 
-		protected string cstype;
-		public string CSType {
-			get {
-				if (Getter != null)
-					return Getter.Signature.IsAccessor ? Getter.Signature.AccessorType : Getter.ReturnType;
-				else if (Setter != null)
-					return Setter.Signature.Types;
-				else if (cstype == null)
-					cstype = SymbolTable.Table.GetCsType (CType);
-				return cstype;
-			}
-		}
+                _cType = Element.GetAttribute("bits") == "1" ? "gboolean" : Element.GetAttribute("type");
 
-		public virtual bool Hidden {
-			get {
-				return Element.GetAttributeAsBoolean ("hidden");
-			}
-		}
+                return _cType;
+            }
+            set => _cType = value;
+        }
 
-		protected bool IsNew {
-			get {
-				return Element.GetAttributeAsBoolean ("new_flag");
-			}
-		}
+        public string CsType
+        {
+            get
+            {
+                if (Getter != null)
+                    return Getter.Signature.IsAccessor ? Getter.Signature.AccessorType : Getter.ReturnType;
 
-		protected Method Getter {
-			get {
-				Method getter = container_type.GetMethod ("Get" + Name);
-				if (getter != null && getter.Name == "Get" + Name && getter.IsGetter)
-					return getter;
-				else
-					return null;
-			}
-		}
+                return Setter != null ? Setter.Signature.Types : SymbolTable.Table.GetCsType(CType);
+            }
+        }
 
-		protected Method Setter {
-			get {
-				Method setter = container_type.GetMethod ("Set" + Name);
-				if (setter != null && setter.Name == "Set" + Name && setter.IsSetter && (Getter == null || setter.Signature.Types == CSType))
-					return setter;
-				else
-					return null;
-			}
-		}
+        public virtual bool Hidden => Element.GetAttributeAsBoolean("hidden");
 
-		protected virtual void GenerateImports (GenerationInfo gen_info, string indent)
-		{
-			if (Getter != null)
-				Getter.GenerateImport (gen_info.Writer);
-			if (Setter != null)
-				Setter.GenerateImport (gen_info.Writer);
-		}
-	}
+        protected bool IsNew => Element.GetAttributeAsBoolean("new_flag");
+
+        protected Method Getter
+        {
+            get
+            {
+                var getter = ContainerType.GetMethod($"Get{Name}");
+
+                if (getter != null && getter.Name == $"Get{Name}" && getter.IsGetter)
+                    return getter;
+
+                return null;
+            }
+        }
+
+        protected Method Setter
+        {
+            get
+            {
+                var setter = ContainerType.GetMethod($"Set{Name}");
+
+                if (setter != null && setter.Name == $"Set{Name}" && setter.IsSetter &&
+                    (Getter == null || setter.Signature.Types == CsType))
+                    return setter;
+
+                return null;
+            }
+        }
+
+        protected virtual void GenerateImports(GenerationInfo generationInfo, string indent)
+        {
+            Getter?.GenerateImport(generationInfo.Writer);
+            Setter?.GenerateImport(generationInfo.Writer);
+        }
+    }
 }
-

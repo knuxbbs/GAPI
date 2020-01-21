@@ -36,9 +36,9 @@ namespace GapiCodegen.Generatables {
 		IList<StructField> fields = new List<StructField> ();
 		bool need_read_native = false;
 
-		protected StructBase (XmlElement ns, XmlElement elem) : base (ns, elem)
+		protected StructBase (XmlElement namespaceElement, XmlElement element) : base (namespaceElement, element)
 		{
-			foreach (XmlNode node in elem.ChildNodes) {
+			foreach (XmlNode node in element.ChildNodes) {
 
 				if (!(node is XmlElement)) continue;
 				XmlElement member = (XmlElement) node;
@@ -106,7 +106,7 @@ namespace GapiCodegen.Generatables {
 
 		private bool DisableNew {
 			get {
-				return Elem.GetAttributeAsBoolean ("disable_new");
+				return Element.GetAttributeAsBoolean ("disable_new");
 			}
 		}
 
@@ -155,7 +155,7 @@ namespace GapiCodegen.Generatables {
 				}
 			}
 
-			if (!Elem.GetAttributeAsBoolean ("noequals")) {
+			if (!Element.GetAttributeAsBoolean ("noequals")) {
 				sw.WriteLine ("\t\tpublic bool Equals ({0} other)", Name);
 				sw.WriteLine ("\t\t{");
 				sw.WriteLine ("\t\t\treturn {0};", equals.ToString ());
@@ -167,7 +167,7 @@ namespace GapiCodegen.Generatables {
 			sw.WriteLine ("\t\t\treturn other is {0} && Equals (({0}) other);", Name);
 			sw.WriteLine ("\t\t}");
 			sw.WriteLine ();
-			if (Elem.GetAttributeAsBoolean ("nohash"))
+			if (Element.GetAttributeAsBoolean ("nohash"))
 				return;
 			sw.WriteLine ("\t\tpublic override int GetHashCode ()");
 			sw.WriteLine ("\t\t{");
@@ -221,13 +221,13 @@ namespace GapiCodegen.Generatables {
 			bool need_close = false;
 
 			if (generationInfo.Writer == null) {
-				generationInfo.Writer = generationInfo.OpenStream (Name, NS);
+				generationInfo.Writer = generationInfo.OpenStream (Name, Namespace);
 				need_close = true;
 			}
 
 			StreamWriter sw = generationInfo.Writer;
 			
-			sw.WriteLine ("namespace " + NS + " {");
+			sw.WriteLine ("namespace " + Namespace + " {");
 			sw.WriteLine ();
 			sw.WriteLine ("\tusing System;");
 			sw.WriteLine ("\tusing System.Collections;");

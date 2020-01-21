@@ -23,7 +23,7 @@ namespace GapiCodegen.Generatables
 {
 	public class UnionGen : StructBase {
 
-		public UnionGen (XmlElement ns, XmlElement elem) : base (ns, elem)
+		public UnionGen (XmlElement namespaceElement, XmlElement element) : base (namespaceElement, element)
 		{
 		}
 

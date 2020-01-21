@@ -49,7 +49,7 @@ namespace GapiCodegen.Generatables
         protected IList<InterfaceVirtualMethod> interface_vms = new List<InterfaceVirtualMethod>();
         protected Hashtable sigs = new Hashtable();
 
-        protected ObjectBase(XmlElement ns, XmlElement elem, bool is_interface) : base(ns, elem)
+        protected ObjectBase(XmlElement namespaceElement, XmlElement element, bool is_interface) : base(namespaceElement, element)
         {
             this._isInterface = is_interface;
             XmlElement class_elem = null;
@@ -59,7 +59,7 @@ namespace GapiCodegen.Generatables
             if (ParserVersion == 1)
                 class_struct_name = CName + (is_interface ? "Iface" : "Class");
 
-            foreach (XmlNode node in elem.ChildNodes)
+            foreach (XmlNode node in element.ChildNodes)
             {
                 if (!(node is XmlElement)) continue;
                 XmlElement member = node as XmlElement;
@@ -415,7 +415,7 @@ namespace GapiCodegen.Generatables
         }
         public override string GenerateGetSizeOf()
         {
-            return NS + "." + Name + ".abi_info.Size";
+            return Namespace + "." + Name + ".abi_info.Size";
         }
     }
 }

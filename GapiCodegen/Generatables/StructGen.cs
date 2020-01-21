@@ -26,13 +26,13 @@ using GapiCodegen.Utils;
 namespace GapiCodegen.Generatables {
 	public class StructGen : StructBase {
 		
-		public StructGen (XmlElement ns, XmlElement elem) : base (ns, elem) {}
+		public StructGen (XmlElement namespaceElement, XmlElement element) : base (namespaceElement, element) {}
 		
 		public override void Generate (GenerationInfo generationInfo)
 		{
 			generationInfo.CurrentType = QualifiedName;
 
-			StreamWriter sw = generationInfo.Writer = generationInfo.OpenStream (Name, NS);
+			StreamWriter sw = generationInfo.Writer = generationInfo.OpenStream (Name, Namespace);
 			base.Generate (generationInfo);
 			if (GetMethod ("GetType") == null && GetMethod ("GetGType") == null) {
 				sw.WriteLine ("\t\tprivate static GLib.GType GType {");

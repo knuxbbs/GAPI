@@ -128,7 +128,7 @@ namespace GapiCodegen {
 				if (IsEventHandler)
 					return "System.EventArgs";
 				else
-					return container_type.NS + "." + Name + "Args";
+					return container_type.Namespace + "." + Name + "Args";
 			}
 		}
 
@@ -136,7 +136,7 @@ namespace GapiCodegen {
 			get {
 				if (IsEventHandler)
 					return "EventHandler";
-				else if (SymbolTable.Table [container_type.NS + Name + "Handler"] != null)
+				else if (SymbolTable.Table [container_type.Namespace + Name + "Handler"] != null)
 					return Name + "EventHandler";
 		else
 					return Name + "Handler";
@@ -148,7 +148,7 @@ namespace GapiCodegen {
 				if (IsEventHandler)
 					return "System.EventHandler";
 				else
-					return container_type.NS + "." + EventHandlerName;
+					return container_type.Namespace + "." + EventHandlerName;
 			}
 		}
 
@@ -277,9 +277,9 @@ namespace GapiCodegen {
 			if (IsEventHandler)
 				return;
 
-			string ns = container_type.NS;
+			string ns = container_type.Namespace;
 
-			StreamWriter sw = gen_info.OpenStream (EventHandlerName, container_type.NS);
+			StreamWriter sw = gen_info.OpenStream (EventHandlerName, container_type.Namespace);
 			
 			sw.WriteLine ("namespace " + ns + " {");
 			sw.WriteLine ();

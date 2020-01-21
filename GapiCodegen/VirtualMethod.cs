@@ -32,13 +32,13 @@ namespace GapiCodegen {
 		
 		protected string modifiers = "";
 
-		public VirtualMethod (XmlElement elem, ObjectBase container_type) : base (elem, container_type)
+		public VirtualMethod (XmlElement element, ObjectBase container_type) : base (element, container_type)
 		{
 			if (container_type.ParserVersion == 1) {
 				// The old pre 2.14 parser didn't drop the 1st parameter in all <signal> and <virtual_method> elements
-				parms = new Parameters (elem ["parameters"], true);
+				Params = new Parameters (element ["parameters"], true);
 			}
-			retval = new ReturnValue (elem ["return-type"]);
+			retval = new ReturnValue (element ["return-type"]);
 		}
 	
 		protected abstract string CallString {
@@ -49,7 +49,7 @@ namespace GapiCodegen {
 		protected new VirtualMethodSignature Signature {
 			get {
 				if (signature == null)
-					signature = new VirtualMethodSignature (parms);
+					signature = new VirtualMethodSignature (Params);
 
 				return signature;
 			}
@@ -61,18 +61,18 @@ namespace GapiCodegen {
 		public void GenerateCallback (StreamWriter sw, ClassBase implementor)
 		{
 			LogWriter log = new LogWriter ();
-			log.Type = container_type.QualifiedName;
+			log.Type = ContainerType.QualifiedName;
 			if (!Validate (log))
 				return;
 
 			string native_signature = "";
 			if (!IsStatic) {
 				native_signature += "IntPtr inst";
-				if (parms.Count > 0)
+				if (Params.Count > 0)
 					native_signature += ", ";
 			}
-			if (parms.Count > 0)
-				native_signature += parms.ImportSignature;
+			if (Params.Count > 0)
+				native_signature += Params.ImportSignature;
 
 			sw.WriteLine ("\t\t[UnmanagedFunctionPointer (CallingConvention.Cdecl)]");
 			sw.WriteLine ("\t\tdelegate {0} {1}NativeDelegate ({2});", retval.ToNativeType, Name, native_signature);
@@ -88,11 +88,11 @@ namespace GapiCodegen {
 				string type;
 				if (implementor != null)
 					type = implementor.QualifiedName;
-				else if (container_type is InterfaceGen)
+				else if (ContainerType is InterfaceGen)
 					// We are in an interface/adaptor, invoke the method in the implementor class
-					type = (container_type as InterfaceGen).ImplementorName;
+					type = (ContainerType as InterfaceGen).ImplementorName;
 				else
-					type = container_type.Name;
+					type = ContainerType.Name;
 
 				sw.WriteLine ("\t\t\t\t{0} __obj = GLib.Object.GetObject (inst, false) as {0};", type);
 			}
@@ -111,7 +111,7 @@ namespace GapiCodegen {
 			if (!retval.IsVoid)
 				sw.WriteLine ("\t\t\t\treturn " + retval.ToNative ("__result") + ";");
 
-			bool fatal = parms.HasOutParam || !retval.IsVoid;
+			bool fatal = Params.HasOutParam || !retval.IsVoid;
 			sw.WriteLine ("\t\t\t} catch (Exception e) {");
 			sw.WriteLine ("\t\t\t\tGLib.ExceptionManager.RaiseUnhandledException (e, " + (fatal ? "true" : "false") + ");");
 			if (fatal) {
@@ -136,19 +136,19 @@ namespace GapiCodegen {
 
 		ValidState vstate = ValidState.Unvalidated;
 
-		public override bool Validate (LogWriter log)
+		public override bool Validate (LogWriter logWriter)
 		{
 			if (vstate != ValidState.Unvalidated)
 				return vstate == ValidState.Valid;
 
 			vstate = ValidState.Valid;
-			log.Member = Name;
-			if (!parms.Validate (log) || !retval.Validate (log)) {
+			logWriter.Member = Name;
+			if (!Params.Validate (logWriter) || !retval.Validate (logWriter)) {
 				vstate = ValidState.Invalid;
 				return false;
 			}
 
-			call = new ManagedCallString (parms);
+			call = new ManagedCallString (Params);
 			return true;
 		}
 	}

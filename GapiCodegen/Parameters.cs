@@ -28,6 +28,9 @@ using GapiCodegen.Utils;
 
 namespace GapiCodegen
 {
+    /// <summary>
+    /// Represents the list of parameters to a method.
+    /// </summary>
     public class Parameters : IEnumerable<Parameter>
     {
         private IList<Parameter> _paramList = new List<Parameter>();
@@ -267,6 +270,9 @@ namespace GapiCodegen
 
         public string AccessorName => AccessorParam?.Name;
 
+        /// <summary>
+        /// Represents a signature for an unmanaged method.
+        /// </summary>
         public string ImportSignature
         {
             get

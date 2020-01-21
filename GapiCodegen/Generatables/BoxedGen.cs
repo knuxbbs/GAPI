@@ -26,7 +26,7 @@ using GapiCodegen.Utils;
 namespace GapiCodegen.Generatables {
 	public class BoxedGen : StructBase {
 		
-		public BoxedGen (XmlElement ns, XmlElement elem) : base (ns, elem) {}
+		public BoxedGen (XmlElement namespaceElement, XmlElement element) : base (namespaceElement, element) {}
 		
 		public override void Generate (GenerationInfo generationInfo)
 		{
@@ -37,7 +37,7 @@ namespace GapiCodegen.Generatables {
 
 			generationInfo.CurrentType = QualifiedName;
 
-			StreamWriter sw = generationInfo.Writer = generationInfo.OpenStream (Name, NS);
+			StreamWriter sw = generationInfo.Writer = generationInfo.OpenStream (Name, Namespace);
 			base.Generate (generationInfo);
 			sw.WriteLine ("\t\tpublic static explicit operator GLib.Value (" + QualifiedName + " boxed)");
 			sw.WriteLine ("\t\t{");

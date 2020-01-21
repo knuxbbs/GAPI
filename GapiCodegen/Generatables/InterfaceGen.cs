@@ -34,10 +34,10 @@ namespace GapiCodegen.Generatables
     {
         bool consume_only;
 
-        public InterfaceGen(XmlElement ns, XmlElement elem) : base(ns, elem, true)
+        public InterfaceGen(XmlElement namespaceElement, XmlElement element) : base(namespaceElement, element, true)
         {
-            consume_only = elem.GetAttributeAsBoolean("consume_only");
-            foreach (XmlNode node in elem.ChildNodes)
+            consume_only = element.GetAttributeAsBoolean("consume_only");
+            foreach (XmlNode node in element.ChildNodes)
             {
                 if (!(node is XmlElement)) continue;
                 XmlElement member = (XmlElement)node;
@@ -77,7 +77,7 @@ namespace GapiCodegen.Generatables
         {
             get
             {
-                return NS + "." + AdapterName;
+                return Namespace + "." + AdapterName;
             }
         }
 
@@ -288,9 +288,9 @@ namespace GapiCodegen.Generatables
 
         void GenerateAdapter(GenerationInfo gen_info)
         {
-            StreamWriter sw = gen_info.Writer = gen_info.OpenStream(AdapterName, NS);
+            StreamWriter sw = gen_info.Writer = gen_info.OpenStream(AdapterName, Namespace);
 
-            sw.WriteLine("namespace " + NS + " {");
+            sw.WriteLine("namespace " + Namespace + " {");
             sw.WriteLine();
             sw.WriteLine("\tusing System;");
             sw.WriteLine("\tusing System.Runtime.InteropServices;");
@@ -394,9 +394,9 @@ namespace GapiCodegen.Generatables
         public override void Generate(GenerationInfo generationInfo)
         {
             GenerateAdapter(generationInfo);
-            StreamWriter sw = generationInfo.Writer = generationInfo.OpenStream(Name, NS);
+            StreamWriter sw = generationInfo.Writer = generationInfo.OpenStream(Name, Namespace);
 
-            sw.WriteLine("namespace " + NS + " {");
+            sw.WriteLine("namespace " + Namespace + " {");
             sw.WriteLine();
             sw.WriteLine("\tusing System;");
             sw.WriteLine();

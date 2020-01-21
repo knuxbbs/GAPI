@@ -22,6 +22,9 @@ using GapiCodegen.Interfaces;
 
 namespace GapiCodegen.Generatables
 {
+    /// <summary>
+    /// Abstract base class for types which aren’t generated from xml like simple types or manually wrapped/implemented types.
+    /// </summary>
     public abstract class SimpleBase : IGeneratable
     {
         private readonly string _namespace = string.Empty;

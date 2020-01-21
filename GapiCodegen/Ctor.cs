@@ -33,9 +33,9 @@ namespace GapiCodegen {
 		private string name;
 		private bool needs_chaining = false;
 
-		public Ctor (XmlElement elem, ClassBase implementor) : base (elem, implementor)
+		public Ctor (XmlElement element, ClassBase implementor) : base (element, implementor)
 		{
-			preferred = elem.GetAttributeAsBoolean ("preferred");
+			preferred = element.GetAttributeAsBoolean ("preferred");
 			if (implementor is ObjectGen)
 				needs_chaining = true;
 			name = implementor.Name;
@@ -80,7 +80,7 @@ namespace GapiCodegen {
 			Body.Initialize(gen_info, false, false, "");
 
 			sw.Write("\t\t\t" + name + " result = ");
-			if (container_type is StructBase)
+			if (ContainerType is StructBase)
 				sw.Write ("{0}.New (", name);
 			else
 				sw.Write ("new {0} (", name);
@@ -114,7 +114,7 @@ namespace GapiCodegen {
 						var values = new List<string> ();
 						for (int i = 0; i < Parameters.Count; i++) {
 							Parameter p = Parameters[i];
-							if (container_type.GetPropertyRecursively (p.StudlyName) != null) {
+							if (ContainerType.GetPropertyRecursively (p.StudlyName) != null) {
 								names.Add (p.Name);
 								values.Add (p.Name);
 							} else if (p.PropertyName != string.Empty) {
@@ -150,10 +150,10 @@ namespace GapiCodegen {
 				}
 	
 				Body.Initialize(gen_info, false, false, "");
-				if (container_type is ObjectGen) {
+				if (ContainerType is ObjectGen) {
 					sw.WriteLine ("\t\t\towned = true;");
 				}
-				sw.WriteLine("\t\t\t{0} = {1}({2});", container_type.AssignToName, CName, Body.GetCallString (false));
+				sw.WriteLine("\t\t\t{0} = {1}({2});", ContainerType.AssignToName, CName, Body.GetCallString (false));
 				Body.Finish (sw, "");
 				Body.HandleException (sw, "");
 			}

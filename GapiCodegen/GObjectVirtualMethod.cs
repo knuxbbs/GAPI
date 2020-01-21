@@ -32,9 +32,9 @@ namespace GapiCodegen
         protected string class_struct_name;
         const bool force_glue_generation = false;
 
-        public GObjectVirtualMethod(XmlElement elem, ObjectBase container_type) : base(elem, container_type)
+        public GObjectVirtualMethod(XmlElement element, ObjectBase container_type) : base(element, container_type)
         {
-            parms.HideData = false;
+            Params.HideData = false;
             Protection = "protected";
             class_struct_name = container_type.ClassStructName;
         }
@@ -44,7 +44,7 @@ namespace GapiCodegen
         {
             get
             {
-                return elem.GetAttribute("block_glue") == "1";
+                return Element.GetAttribute("block_glue") == "1";
             }
         }
 
@@ -61,7 +61,7 @@ namespace GapiCodegen
             gen_info.CurrentMember = Name;
 
             if (!CanGenerate(gen_info, implementor))
-                throw new NotSupportedException(string.Format("Cannot generate virtual method {0}.{1}. Make sure a writable glue path was provided to the generator.", container_type.Name, CallString));
+                throw new NotSupportedException(string.Format("Cannot generate virtual method {0}.{1}. Make sure a writable glue path was provided to the generator.", ContainerType.Name, CallString));
 
             GenerateOverride(gen_info, implementor);
             GenerateCallback(gen_info.Writer, implementor);
@@ -88,7 +88,7 @@ namespace GapiCodegen
         {
             get
             {
-                if (!((ObjectBase)container_type).CanGenerateClassStruct || force_glue_generation)
+                if (!((ObjectBase)ContainerType).CanGenerateClassStruct || force_glue_generation)
                 {
                     if (BlockGlue)
                         return VMCodeType.None;
@@ -122,7 +122,7 @@ namespace GapiCodegen
             {
                 if (IsStatic)
                 {
-                    switch (elem.GetAttribute("override_in"))
+                    switch (Element.GetAttribute("override_in"))
                     {
                         case "declaring_class":
                             return VMOverrideType.DeclaringClass;
@@ -172,7 +172,7 @@ namespace GapiCodegen
                 sw.WriteLine("\t\tpublic static " + Name + "Delegate " + Name + "Handler {");
                 sw.WriteLine("\t\t\tset {");
                 sw.WriteLine("\t\t\t\t{0}_handler = value;", CName);
-                sw.WriteLine("\t\t\t\tOverride{0} ((GLib.GType) typeof ({1}), value == null ? null : {0}VMCallback);", Name, container_type.Name);
+                sw.WriteLine("\t\t\t\tOverride{0} ((GLib.GType) typeof ({1}), value == null ? null : {0}VMCallback);", Name, ContainerType.Name);
                 sw.WriteLine("\t\t\t}");
                 sw.WriteLine("\t\t}");
             }
@@ -202,7 +202,7 @@ namespace GapiCodegen
 
         protected void GenerateMethodBody(StreamWriter sw, ClassBase implementor)
         {
-            sw.WriteLine("\t\t[GLib.DefaultSignalHandler(Type=typeof(" + (implementor != null ? implementor.QualifiedName : container_type.QualifiedName) + "), ConnectionMethod=\"Override" + Name + "\")]");
+            sw.WriteLine("\t\t[GLib.DefaultSignalHandler(Type=typeof(" + (implementor != null ? implementor.QualifiedName : ContainerType.QualifiedName) + "), ConnectionMethod=\"Override" + Name + "\")]");
             sw.Write("\t\t{0} ", Protection);
             if (modifiers != "")
                 sw.Write("{0} ", modifiers);
@@ -220,7 +220,7 @@ namespace GapiCodegen
         {
             StreamWriter sw = gen_info.Writer;
             string native_call = "this.Handle";
-            if (parms.Count > 0)
+            if (Params.Count > 0)
                 native_call += ", " + Body.GetCallString(false);
 
             GenerateMethodBody(sw, null);
@@ -231,7 +231,7 @@ namespace GapiCodegen
             sw.WriteLine("\t\t\t\tunmanaged = ({0}NativeDelegate) Marshal.GetDelegateForFunctionPointer(*raw_ptr, typeof({0}NativeDelegate));", Name);
             sw.WriteLine("\t\t\t}");
             sw.Write("\t\t\tif (unmanaged == null) ");
-            if (parms.HasOutParam)
+            if (Params.HasOutParam)
                 sw.WriteLine("throw new InvalidOperationException (\"No base method to invoke\");");
             else if (retval.IsVoid)
                 sw.WriteLine("return;");
@@ -265,12 +265,12 @@ namespace GapiCodegen
         {
             get
             {
-                string[] glue_params = new string[IsStatic ? parms.Count + 1 : parms.Count + 2];
+                string[] glue_params = new string[IsStatic ? Params.Count + 1 : Params.Count + 2];
                 glue_params[0] = class_struct_name + " *class_struct";
                 if (!IsStatic)
-                    glue_params[1] = container_type.CName + "* inst";
-                for (int i = 0; i < parms.Count; i++)
-                    glue_params[i + (IsStatic ? 1 : 2)] = parms[i].CType.Replace("const-", "const ") + " " + parms[i].Name;
+                    glue_params[1] = ContainerType.CName + "* inst";
+                for (int i = 0; i < Params.Count; i++)
+                    glue_params[i + (IsStatic ? 1 : 2)] = Params[i].CType.Replace("const-", "const ") + " " + Params[i].Name;
                 return string.Join(", ", glue_params);
             }
         }
@@ -304,7 +304,7 @@ namespace GapiCodegen
             StreamWriter glue = gen_info.GlueWriter;
             StreamWriter sw = gen_info.Writer;
 
-            string glue_name = string.Format("{0}sharp_{1}_override_{2}", container_type.NS.ToLower().Replace(".", "_"), container_type.Name.ToLower(), CName);
+            string glue_name = string.Format("{0}sharp_{1}_override_{2}", ContainerType.Namespace.ToLower().Replace(".", "_"), ContainerType.Name.ToLower(), CName);
             sw.WriteLine("\t\t[DllImport (\"{0}\")]", gen_info.GlueLibName);
             sw.WriteLine("\t\tstatic extern void {0} (IntPtr class_struct, {1}NativeDelegate cb);", glue_name, Name);
             sw.WriteLine();
@@ -324,7 +324,7 @@ namespace GapiCodegen
         void GenerateUnmanagedInvocation_glue(GenerationInfo gen_info)
         {
             StreamWriter glue = gen_info.GlueWriter;
-            string glue_name = string.Format("{0}sharp_{1}_invoke_{2}", container_type.NS.ToLower().Replace(".", "_"), container_type.Name.ToLower(), CName);
+            string glue_name = string.Format("{0}sharp_{1}_invoke_{2}", ContainerType.Namespace.ToLower().Replace(".", "_"), ContainerType.Name.ToLower(), CName);
 
             glue.WriteLine("{0} {1} ({2});\n", retval.CType.Replace("const-", "const "), glue_name, GlueSignature);
             glue.WriteLine("{0}\n{1} ({2})", retval.CType.Replace("const-", "const "), glue_name, GlueSignature);
@@ -332,11 +332,11 @@ namespace GapiCodegen
             glue.Write("\tif (class_struct->{0})\n\t\t", CName);
             if (!retval.IsVoid)
                 glue.Write("return ");
-            string[] call_args = new string[IsStatic ? parms.Count : parms.Count + 1];
+            string[] call_args = new string[IsStatic ? Params.Count : Params.Count + 1];
             if (!IsStatic)
                 call_args[0] = "inst";
-            for (int i = 0; i < parms.Count; i++)
-                call_args[IsStatic ? i : i + 1] = parms[i].Name;
+            for (int i = 0; i < Params.Count; i++)
+                call_args[IsStatic ? i : i + 1] = Params[i].Name;
             glue.WriteLine("(* class_struct->{0}) ({1});", CName, string.Join(", ", call_args));
             if (!retval.IsVoid)
                 glue.WriteLine("\treturn " + DefaultGlueValue + ";");
@@ -348,8 +348,8 @@ namespace GapiCodegen
             sw.Write("\t\tstatic extern {0} {1} (IntPtr class_struct", retval.MarshalType, glue_name);
             if (!IsStatic)
                 sw.Write(", IntPtr inst");
-            if (parms.Count > 0)
-                sw.Write(", {0}", parms.ImportSignature);
+            if (Params.Count > 0)
+                sw.Write(", {0}", Params.ImportSignature);
             sw.WriteLine(");");
             sw.WriteLine();
 
@@ -358,7 +358,7 @@ namespace GapiCodegen
             string glue_call_string = "this.LookupGType ().GetThresholdType ().GetClassPtr ()";
             if (!IsStatic)
                 glue_call_string += ", Handle";
-            if (parms.Count > 0)
+            if (Params.Count > 0)
                 glue_call_string += ", " + Body.GetCallString(false);
 
             sw.Write("\t\t\t");
@@ -372,9 +372,9 @@ namespace GapiCodegen
             sw.WriteLine();
         }
 
-        public override bool Validate(LogWriter log)
+        public override bool Validate(LogWriter logWriter)
         {
-            if (!base.Validate(log))
+            if (!base.Validate(logWriter))
                 return false;
 
             bool is_valid = true;
@@ -384,11 +384,11 @@ namespace GapiCodegen
                 switch (OverrideType)
                 {
                     case VMOverrideType.Unspecified:
-                        log.Warn("Static virtual methods can only be generated if you provide info on how to override this method via the metadata ");
+                        logWriter.Warn("Static virtual methods can only be generated if you provide info on how to override this method via the metadata ");
                         is_valid = false;
                         break;
                     case VMOverrideType.ImplementingClass:
-                        log.Warn("Overriding static virtual methods in the implementing class is not supported yet ");
+                        logWriter.Warn("Overriding static virtual methods in the implementing class is not supported yet ");
                         is_valid = false;
                         break;
                 }

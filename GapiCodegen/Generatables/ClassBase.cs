@@ -22,7 +22,6 @@
 // Free Software Foundation, Inc., 59 Temple Place - Suite 330,
 // Boston, MA 02111-1307, USA.
 
-
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
@@ -61,7 +60,7 @@ namespace GapiCodegen.Generatables {
 
 		public ClassBase Parent {
 			get {
-				string parent = Elem.GetAttribute("parent");
+				string parent = Element.GetAttribute("parent");
 
 				if (parent == "")
 					return null;
@@ -70,15 +69,15 @@ namespace GapiCodegen.Generatables {
 			}
 		}
 
-		protected ClassBase (XmlElement ns, XmlElement elem) : base (ns, elem) {
+		protected ClassBase (XmlElement namespaceElement, XmlElement element) : base (namespaceElement, element) {
 
-			deprecated = elem.GetAttributeAsBoolean ("deprecated");
-			isabstract = elem.GetAttributeAsBoolean ("abstract");
+			deprecated = element.GetAttributeAsBoolean ("deprecated");
+			isabstract = element.GetAttributeAsBoolean ("abstract");
 			abi_fields_valid = true;
-			string parent_type = Elem.GetAttribute("parent");
+			string parent_type = Element.GetAttribute("parent");
 
 			int num_abi_fields = 0;
-			foreach (XmlNode node in elem.ChildNodes) {
+			foreach (XmlNode node in element.ChildNodes) {
 				if (!(node is XmlElement)) continue;
 				XmlElement member = (XmlElement) node;
 				StructAbiField abi_field = null;
@@ -129,7 +128,7 @@ namespace GapiCodegen.Generatables {
 						name += "mangled";
 
 					var field = new ObjectField (member, this);
-					field.abi_field = abi_field;
+					field.AbiField = abi_field;
 					fields.Add (name, field);
 					break;
 
@@ -162,8 +161,8 @@ namespace GapiCodegen.Generatables {
 			if (!CanGenerateABIStruct(log))
 				return false;
 
-			var parent = SymbolTable.Table[Elem.GetAttribute("parent")];
-			string cs_parent = SymbolTable.Table.GetCsType(Elem.GetAttribute("parent"));
+			var parent = SymbolTable.Table[Element.GetAttribute("parent")];
+			string cs_parent = SymbolTable.Table.GetCsType(Element.GetAttribute("parent"));
 			var parent_can_generate = true;
 
 			cs_parent_struct = null;
@@ -231,7 +230,7 @@ namespace GapiCodegen.Generatables {
 
 				if (gen_info.CAbiWriter != null) {
 					gen_info.CAbiWriter.WriteLine("\tg_print(\"\\\"sizeof({0})\\\": \\\"%\" G_GUINT64_FORMAT \"\\\"\\n\", (guint64) sizeof({0}));", structname);
-					gen_info.AbiWriter.WriteLine("\t\t\tConsole.WriteLine(\"\\\"sizeof({0})\\\": \\\"\" + {1}.{2}." + info_name + ".Size + \"\\\"\");", structname, NS, Name);
+					gen_info.AbiWriter.WriteLine("\t\t\tConsole.WriteLine(\"\\\"sizeof({0})\\\": \\\"\" + {1}.{2}." + info_name + ".Size + \"\\\"\");", structname, Namespace, Name);
 				}
 			} else {
 				if (cs_parent_struct != "") {
@@ -255,7 +254,7 @@ namespace GapiCodegen.Generatables {
 						field_alignment_structures_writer);
 				var union = field as UnionAbiField;
 				if (union == null && gen_info.CAbiWriter != null && !field.IsBitfield) {
-					gen_info.AbiWriter.WriteLine("\t\t\tConsole.WriteLine(\"\\\"{0}.{3}\\\": \\\"\" + {1}.{2}." + info_name + ".GetFieldOffset(\"{3}\") + \"\\\"\");", structname, NS, Name, field.CName);
+					gen_info.AbiWriter.WriteLine("\t\t\tConsole.WriteLine(\"\\\"{0}.{3}\\\": \\\"\" + {1}.{2}." + info_name + ".GetFieldOffset(\"{3}\") + \"\\\"\");", structname, Namespace, Name, field.CName);
 					gen_info.CAbiWriter.WriteLine("\tg_print(\"\\\"{0}.{1}\\\": \\\"%\" G_GUINT64_FORMAT \"\\\"\\n\", (guint64) G_STRUCT_OFFSET({0}, {1}));", structname, field.CName);
 				}
 

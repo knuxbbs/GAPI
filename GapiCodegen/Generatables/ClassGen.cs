@@ -25,7 +25,7 @@ using System.Xml;
 namespace GapiCodegen.Generatables {
 	public class ClassGen : ClassBase  {
 
-		public ClassGen (XmlElement ns, XmlElement elem) : base (ns, elem) {}
+		public ClassGen (XmlElement namespaceElement, XmlElement element) : base (namespaceElement, element) {}
 
 		public override string AssignToName {
 			get {
@@ -58,9 +58,9 @@ namespace GapiCodegen.Generatables {
 		{
 			generationInfo.CurrentType = QualifiedName;
 
-			StreamWriter sw = generationInfo.Writer = generationInfo.OpenStream(Name, NS);
+			StreamWriter sw = generationInfo.Writer = generationInfo.OpenStream(Name, Namespace);
 
-			sw.WriteLine ("namespace " + NS + " {");
+			sw.WriteLine ("namespace " + Namespace + " {");
 			sw.WriteLine ();
 			sw.WriteLine ("\tusing System;");
 			sw.WriteLine ("\tusing System.Runtime.InteropServices;");

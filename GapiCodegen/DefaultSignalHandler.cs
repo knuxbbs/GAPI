@@ -29,14 +29,14 @@ namespace GapiCodegen {
 	public class DefaultSignalHandler : GObjectVirtualMethod {
 		private string signal_name;
 
-		public DefaultSignalHandler (XmlElement elem, ObjectBase container_type) : base (elem, container_type)
+		public DefaultSignalHandler (XmlElement element, ObjectBase container_type) : base (element, container_type)
 		{
-			signal_name = elem.GetAttribute ("cname");
+			signal_name = element.GetAttribute ("cname");
 		}
 
 		public override string CName {
 			get {
-				return elem.GetAttribute ("field_name");
+				return Element.GetAttribute ("field_name");
 			}
 		}
 
@@ -73,13 +73,13 @@ namespace GapiCodegen {
 			else
 				sw.WriteLine ("\t\t\tGLib.Value ret = new GLib.Value (" + ReturnGType + ");");
 
-			sw.WriteLine ("\t\t\tGLib.ValueArray inst_and_params = new GLib.ValueArray (" + (parms.Count + 1) + ");");
-			sw.WriteLine ("\t\t\tGLib.Value[] vals = new GLib.Value [" + (parms.Count + 1) + "];");
+			sw.WriteLine ("\t\t\tGLib.ValueArray inst_and_params = new GLib.ValueArray (" + (Params.Count + 1) + ");");
+			sw.WriteLine ("\t\t\tGLib.Value[] vals = new GLib.Value [" + (Params.Count + 1) + "];");
 			sw.WriteLine ("\t\t\tvals [0] = new GLib.Value (this);");
 			sw.WriteLine ("\t\t\tinst_and_params.Append (vals [0]);");
 			string cleanup = "";
-			for (int i = 0; i < parms.Count; i++) {
-				Parameter p = parms [i];
+			for (int i = 0; i < Params.Count; i++) {
+				Parameter p = Params [i];
 				if (p.PassAs != "") {
 					if (SymbolTable.Table.IsBoxed (p.CType)) {
 						if (p.PassAs == "ref")
@@ -97,8 +97,8 @@ namespace GapiCodegen {
 						cleanup += "\t\t\t" + p.Name + " = " + p.FromNative ("(" + p.MarshalType + ") Marshal.PtrToStructure (" + p.Name + "_ptr, typeof (" + p.MarshalType + "))") + ";\n";
 						cleanup += "\t\t\tMarshal.FreeHGlobal (" + p.Name + "_ptr);\n";
 					}
-				} else if (p.IsLength && i > 0 && parms [i - 1].IsString)
-					sw.WriteLine ("\t\t\tvals [" + (i + 1) + "] = new GLib.Value (System.Text.Encoding.UTF8.GetByteCount (" + parms [i-1].Name + "));");
+				} else if (p.IsLength && i > 0 && Params [i - 1].IsString)
+					sw.WriteLine ("\t\t\tvals [" + (i + 1) + "] = new GLib.Value (System.Text.Encoding.UTF8.GetByteCount (" + Params [i-1].Name + "));");
 				else
 					sw.WriteLine ("\t\t\tvals [" + (i + 1) + "] = new GLib.Value (" + p.Name + ");");
 

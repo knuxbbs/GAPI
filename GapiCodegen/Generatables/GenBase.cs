@@ -19,97 +19,78 @@
 // Free Software Foundation, Inc., 59 Temple Place - Suite 330,
 // Boston, MA 02111-1307, USA.
 
-
 using System.Xml;
 using GapiCodegen.Interfaces;
 using GapiCodegen.Utils;
 
-namespace GapiCodegen.Generatables {
-	public abstract class GenBase : IGeneratable {
-		
-		private XmlElement ns;
-		private XmlElement elem;
+namespace GapiCodegen.Generatables
+{
+    /// <summary>
+    /// Abstract base class for any api.xml element that will have its own generated .cs file.
+    /// </summary>
+    public abstract class GenBase : IGeneratable
+    {
+        private readonly XmlElement _namespaceElement;
 
-		protected GenBase (XmlElement ns, XmlElement elem)
-		{
-			this.ns = ns;
-			this.elem = elem;
-		}
+        protected GenBase(XmlElement namespaceElement, XmlElement element)
+        {
+            _namespaceElement = namespaceElement;
+            Element = element;
+        }
 
-		public string CName {
-			get {
-				return elem.GetAttribute ("cname");
-			}
-		}
+        public string CName => Element.GetAttribute("cname");
 
-		public XmlElement Elem {
-			get {
-				return elem;
-			}
-		}
+        public XmlElement Element { get; }
 
-		public int ParserVersion {
-			get {
-				XmlElement root = elem.OwnerDocument.DocumentElement;
-				return root.HasAttribute ("parser_version") ? int.Parse (root.GetAttribute ("parser_version")) : 1;
-			}
-		}
+        public int ParserVersion
+        {
+            get
+            {
+                var root = Element.OwnerDocument.DocumentElement;
 
-		public bool IsInternal {
-			get {
-				return elem.GetAttributeAsBoolean ("internal");
-			}
-		}
+                return root.HasAttribute("parser_version") 
+                    ? int.Parse(root.GetAttribute("parser_version")) 
+                    : 1;
+            }
+        }
 
-		public string LibraryName {
-			get {
-				return ns.GetAttribute ("library");
-			}
-		}
+        public bool IsInternal => Element.GetAttributeAsBoolean("internal");
 
-		public abstract string MarshalType { get; }
+        public string LibraryName => _namespaceElement.GetAttribute("library");
 
-		public virtual string Name {
-			get {
-				return elem.GetAttribute ("name");
-			}
-		}
+        public abstract string MarshalType { get; }
 
-		public string NS {
-			get {
-				return ns.GetAttribute ("name");
-			}
-		}
+        public virtual string Name => Element.GetAttribute("name");
 
-		public abstract string DefaultValue { get; }
+        public string Namespace => _namespaceElement.GetAttribute("name");
 
-		public string QualifiedName {
-			get {
-				return NS + "." + Name;
-			}
-		}
+        public abstract string DefaultValue { get; }
 
-		public abstract string CallByName (string var);
+        public string QualifiedName => $"{Namespace}.{Name}";
 
-		public abstract string FromNative (string var);
+        public abstract string CallByName(string var);
 
-		public abstract bool Validate ();
+        public abstract string FromNative(string var);
 
-		public virtual string GenerateGetSizeOf () {
-			return null;
-		}
+        public abstract bool Validate();
 
-		public virtual string GenerateAlign () {
-			return null;
-		}
+        public virtual string GenerateGetSizeOf()
+        {
+            return null;
+        }
 
-		public void Generate ()
-		{
-			GenerationInfo geninfo = new GenerationInfo (ns);
-			Generate (geninfo);
-		}
+        public virtual string GenerateAlign()
+        {
+            return null;
+        }
 
-		public abstract void Generate (GenerationInfo generationInfo);
-	}
+        public void Generate()
+        {
+            var generationInfo = new GenerationInfo(_namespaceElement);
+
+            Generate(generationInfo);
+        }
+
+        public abstract void Generate(GenerationInfo generationInfo);
+    }
 }
-

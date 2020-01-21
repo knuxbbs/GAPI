@@ -26,6 +26,9 @@ using GapiCodegen.Utils;
 
 namespace GapiCodegen
 {
+    /// <summary>
+    /// Represents a single parameter to a method.
+    /// </summary>
     public class Parameter
     {
         private readonly XmlElement _element;

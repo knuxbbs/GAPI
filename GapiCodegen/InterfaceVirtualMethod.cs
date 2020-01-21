@@ -29,10 +29,10 @@ namespace GapiCodegen
     {
         private Method target;
 
-        public InterfaceVirtualMethod(XmlElement elem, Method target, ObjectBase container_type) : base(elem, container_type)
+        public InterfaceVirtualMethod(XmlElement element, Method target, ObjectBase container_type) : base(element, container_type)
         {
             this.target = target;
-            parms.HideData = true;
+            Params.HideData = true;
             Protection = "public";
         }
 
@@ -40,7 +40,7 @@ namespace GapiCodegen
         {
             get
             {
-                return HasGetterName && (!retval.IsVoid && parms.Count == 0 || retval.IsVoid && parms.Count == 1 && parms[0].PassAs == "out");
+                return HasGetterName && (!retval.IsVoid && Params.Count == 0 || retval.IsVoid && Params.Count == 1 && Params[0].PassAs == "out");
             }
         }
 
@@ -51,7 +51,7 @@ namespace GapiCodegen
                 if (!HasSetterName || !retval.IsVoid)
                     return false;
 
-                if (parms.Count == 1 || parms.Count == 3 && parms[0].Scope == "notified")
+                if (Params.Count == 1 || Params.Count == 3 && Params[0].Scope == "notified")
                     return true;
                 else
                     return false;
@@ -76,8 +76,8 @@ namespace GapiCodegen
             if (IsGetter)
             {
                 string name = Name.StartsWith("Get") ? Name.Substring(3) : Name;
-                string type = retval.IsVoid ? parms[0].CsType : retval.CSType;
-                if (complement != null && complement.parms[0].CsType == type)
+                string type = retval.IsVoid ? Params[0].CsType : retval.CSType;
+                if (complement != null && complement.Params[0].CsType == type)
                     sw.WriteLine("\t\t" + type + " " + name + " { get; set; }");
                 else
                 {
@@ -87,19 +87,19 @@ namespace GapiCodegen
                 }
             }
             else if (IsSetter)
-                sw.WriteLine("\t\t" + parms[0].CsType + " " + Name.Substring(3) + " { set; }");
+                sw.WriteLine("\t\t" + Params[0].CsType + " " + Name.Substring(3) + " { set; }");
             else
                 sw.WriteLine("\t\t" + retval.CSType + " " + Name + " (" + Signature + ");");
         }
 
-        public override bool Validate(LogWriter log)
+        public override bool Validate(LogWriter logWriter)
         {
-            if (!base.Validate(log))
+            if (!base.Validate(logWriter))
                 return false;
 
-            if (target == null && !(container_type as InterfaceGen).IsConsumeOnly)
+            if (target == null && !(ContainerType as InterfaceGen).IsConsumeOnly)
             {
-                log.Warn("No matching target method to invoke. Add target_method attribute with fixup.");
+                logWriter.Warn("No matching target method to invoke. Add target_method attribute with fixup.");
                 return false;
             }
 

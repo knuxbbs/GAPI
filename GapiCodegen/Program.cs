@@ -26,6 +26,7 @@ using System.Linq;
 using GapiCodegen.Generatables;
 using GapiCodegen.Interfaces;
 using GapiCodegen.Utils;
+using Mono.Options;
 
 namespace GapiCodegen
 {

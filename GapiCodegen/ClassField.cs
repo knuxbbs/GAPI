@@ -16,30 +16,33 @@
 // Free Software Foundation, Inc., 59 Temple Place - Suite 330,
 // Boston, MA 02111-1307, USA.
 
-
 using System.Xml;
 using GapiCodegen.Generatables;
 using GapiCodegen.Utils;
 
-namespace GapiCodegen {
-	public class ClassField : StructField {
-		protected new ObjectBase container_type;
+namespace GapiCodegen
+{
+    /// <summary>
+    /// Handles 'field' elements in classes.
+    /// </summary>
+    public class ClassField : StructField
+    {
+        protected ObjectBase ObjectBase;
 
-		public ClassField (XmlElement element, ObjectBase container_type) : base (element, container_type) {
-			this.container_type = container_type;
-		}
+        public ClassField(XmlElement element, ObjectBase containerType) : base(element, containerType)
+        {
+            ObjectBase = containerType;
+        }
 
-		public override bool Validate (LogWriter log)
-		{
-			if (!base.Validate (log))
-				return false;
+        public override bool Validate(LogWriter logWriter)
+        {
+            if (!base.Validate(logWriter))
+                return false;
 
-			if (IsBitfield) {
-				log.Warn ("bitfields are not supported");
-				return false;
-			}
+            if (!IsBitfield) return true;
 
-			return true;
-		}
-	}
+            logWriter.Warn("Bitfields are not supported.");
+            return false;
+        }
+    }
 }

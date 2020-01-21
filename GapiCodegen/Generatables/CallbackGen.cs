@@ -33,10 +33,10 @@ namespace GapiCodegen.Generatables {
 		private ReturnValue retval;
 		private bool valid = true;
 
-		public CallbackGen (XmlElement ns, XmlElement elem) : base (ns, elem) 
+		public CallbackGen (XmlElement namespaceElement, XmlElement element) : base (namespaceElement, element) 
 		{
-			retval = new ReturnValue (elem ["return-type"]);
-			parms = new Parameters (elem ["parameters"]);
+			retval = new ReturnValue (element ["return-type"]);
+			parms = new Parameters (element ["parameters"]);
 			parms.HideData = true;
 		}
 
@@ -66,7 +66,7 @@ namespace GapiCodegen.Generatables {
 			get {
 				if (!valid)
 					return string.Empty;
-				return NS + "Sharp." + Name + "Invoker";
+				return Namespace + "Sharp." + Name + "Invoker";
 			}
 		}
 
@@ -74,14 +74,14 @@ namespace GapiCodegen.Generatables {
 			get {
 				if (!valid)
 					return string.Empty;
-				return NS + "Sharp." + Name + "Wrapper";
+				return Namespace + "Sharp." + Name + "Wrapper";
 			}
 		}
 
 		public override string MarshalType {
 			get {
 				if (valid)
-					return NS + "Sharp." + Name + "Native";
+					return Namespace + "Sharp." + Name + "Native";
 				else
 					return "";
 			}
@@ -94,7 +94,7 @@ namespace GapiCodegen.Generatables {
 
 		public override string FromNative (string var)
 		{
-			return NS + "Sharp." + Name + "Wrapper.GetManagedDelegate (" + var + ")";
+			return Namespace + "Sharp." + Name + "Wrapper.GetManagedDelegate (" + var + ")";
 		}
 
 		public void WriteAccessors (TextWriter sw, string indent, string fieldName)
@@ -200,9 +200,9 @@ namespace GapiCodegen.Generatables {
 			body = new MethodBody (parms, log);
 
 			StreamWriter save_sw = gen_info.Writer;
-			StreamWriter sw = gen_info.Writer = gen_info.OpenStream (qualname, NS);
+			StreamWriter sw = gen_info.Writer = gen_info.OpenStream (qualname, Namespace);
 
-			sw.WriteLine ("namespace " + NS + "Sharp {");
+			sw.WriteLine ("namespace " + Namespace + "Sharp {");
 			sw.WriteLine ();
 			sw.WriteLine ("\tusing System;");
 			sw.WriteLine ("\tusing System.Runtime.InteropServices;");
@@ -263,16 +263,16 @@ namespace GapiCodegen.Generatables {
 			sw.WriteLine ("\t\t}");
 			sw.WriteLine ();
 			sw.WriteLine ("\t\tinternal " + wrapper + " NativeDelegate;");
-			sw.WriteLine ("\t\t" + NS + "." + Name + " managed;");
+			sw.WriteLine ("\t\t" + Namespace + "." + Name + " managed;");
 			sw.WriteLine ();
-			sw.WriteLine ("\t\tpublic " + Name + "Wrapper (" + NS + "." + Name + " managed)");
+			sw.WriteLine ("\t\tpublic " + Name + "Wrapper (" + Namespace + "." + Name + " managed)");
 			sw.WriteLine ("\t\t{");
 			sw.WriteLine ("\t\t\tthis.managed = managed;");
 			sw.WriteLine ("\t\t\tif (managed != null)");
 			sw.WriteLine ("\t\t\t\tNativeDelegate = new " + wrapper + " (NativeCallback);");
 			sw.WriteLine ("\t\t}");
 			sw.WriteLine ();
-			sw.WriteLine ("\t\tpublic static " + NS + "." + Name + " GetManagedDelegate (" + wrapper + " native)");
+			sw.WriteLine ("\t\tpublic static " + Namespace + "." + Name + " GetManagedDelegate (" + wrapper + " native)");
 			sw.WriteLine ("\t\t{");
 			sw.WriteLine ("\t\t\tif (native == null)");
 			sw.WriteLine ("\t\t\t\treturn null;");
@@ -286,7 +286,7 @@ namespace GapiCodegen.Generatables {
 			sw.WriteLine ("}");
 			sw.Close ();
 			gen_info.Writer = save_sw;
-			return NS + "Sharp." + Name + "Wrapper";
+			return Namespace + "Sharp." + Name + "Wrapper";
 		}
 		
 		public override void Generate (GenerationInfo generationInfo)
@@ -295,9 +295,9 @@ namespace GapiCodegen.Generatables {
 
 			sig = new Signature (parms);
 
-			StreamWriter sw = generationInfo.OpenStream (Name, NS);
+			StreamWriter sw = generationInfo.OpenStream (Name, Namespace);
 
-			sw.WriteLine ("namespace " + NS + " {");
+			sw.WriteLine ("namespace " + Namespace + " {");
 			sw.WriteLine ();
 			sw.WriteLine ("\tusing System;");
 			sw.WriteLine ();

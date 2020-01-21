@@ -5,12 +5,9 @@ namespace GapiCodegen
 {
     public class MethodAbiField : StructAbiField
     {
-        private XmlElement _element;
-        
         public MethodAbiField(XmlElement element, ClassBase containerType, string infoName) :
             base(element, containerType, infoName)
         {
-            _element = element;
         }
 
         public override string CType => "gpointer";

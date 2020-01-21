@@ -26,7 +26,7 @@ using GapiCodegen.Interfaces;
 namespace GapiCodegen.Generatables {
 	public abstract class HandleBase : ClassBase, IPropertyAccessor, IOwnable {
 
-		protected HandleBase (XmlElement ns, XmlElement elem) : base (ns, elem) {}
+		protected HandleBase (XmlElement namespaceElement, XmlElement element) : base (namespaceElement, element) {}
 					
 		public override string AssignToName {
 			get {
@@ -35,11 +35,11 @@ namespace GapiCodegen.Generatables {
 		}
 
 		public override string GenerateGetSizeOf () {
-			return NS + "." + Name + ".abi_info.Size";
+			return Namespace + "." + Name + ".abi_info.Size";
 		}
 
 		public override string GenerateAlign () {
-			return NS + "." + Name + ".abi_info.Align";
+			return Namespace + "." + Name + ".abi_info.Align";
 		}
 
 

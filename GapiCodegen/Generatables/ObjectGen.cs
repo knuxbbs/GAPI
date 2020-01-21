@@ -37,9 +37,9 @@ namespace GapiCodegen.Generatables
         private IDictionary<string, ChildProperty> childprops = new Dictionary<string, ChildProperty>();
         private static IDictionary<string, DirectoryInfo> dirs = new Dictionary<string, DirectoryInfo>();
 
-        public ObjectGen(XmlElement ns, XmlElement elem) : base(ns, elem, false)
+        public ObjectGen(XmlElement namespaceElement, XmlElement element) : base(namespaceElement, element, false)
         {
-            foreach (XmlNode node in elem.ChildNodes)
+            foreach (XmlNode node in element.ChildNodes)
             {
                 XmlElement member = node as XmlElement;
                 if (member == null)
@@ -104,7 +104,7 @@ namespace GapiCodegen.Generatables
 
         private bool DisableVoidCtor
         {
-            get { return Elem.GetAttributeAsBoolean("disable_void_ctor"); }
+            get { return Element.GetAttributeAsBoolean("disable_void_ctor"); }
         }
 
         private class DirectoryInfo
@@ -145,12 +145,12 @@ namespace GapiCodegen.Generatables
         {
             generationInfo.CurrentType = QualifiedName;
 
-            string asm_name = generationInfo.AssemblyName.Length == 0 ? NS.ToLower() + "-sharp" : generationInfo.AssemblyName;
+            string asm_name = generationInfo.AssemblyName.Length == 0 ? Namespace.ToLower() + "-sharp" : generationInfo.AssemblyName;
             DirectoryInfo di = GetDirectoryInfo(generationInfo.Dir, asm_name);
 
-            StreamWriter sw = generationInfo.Writer = generationInfo.OpenStream(Name, NS);
+            StreamWriter sw = generationInfo.Writer = generationInfo.OpenStream(Name, Namespace);
 
-            sw.WriteLine("namespace " + NS + " {");
+            sw.WriteLine("namespace " + Namespace + " {");
             sw.WriteLine();
             sw.WriteLine("\tusing System;");
             sw.WriteLine("\tusing System.Collections;");
@@ -167,7 +167,7 @@ namespace GapiCodegen.Generatables
                 sw.WriteLine("\t" + attr);
             sw.Write("\t{0} {1}partial class " + Name, IsInternal ? "internal" : "public",
                 IsAbstract ? "abstract " : "");
-            string cs_parent = table.GetCsType(Elem.GetAttribute("parent"));
+            string cs_parent = table.GetCsType(Element.GetAttribute("parent"));
             if (cs_parent != "")
             {
                 di.objects.Add(CName, QualifiedName);
@@ -210,7 +210,7 @@ namespace GapiCodegen.Generatables
                 }
             }
 
-            if (has_sigs && Elem.HasAttribute("parent"))
+            if (has_sigs && Element.HasAttribute("parent"))
             {
                 GenSignals(generationInfo, null);
             }
@@ -291,10 +291,10 @@ namespace GapiCodegen.Generatables
 
         protected override void GenCtors(GenerationInfo gen_info)
         {
-            if (!Elem.HasAttribute("parent"))
+            if (!Element.HasAttribute("parent"))
                 return;
-            string defaultconstructoraccess = Elem.HasAttribute("defaultconstructoraccess")
-                ? Elem.GetAttribute("defaultconstructoraccess")
+            string defaultconstructoraccess = Element.HasAttribute("defaultconstructoraccess")
+                ? Element.GetAttribute("defaultconstructoraccess")
                 : "public";
 
             gen_info.Writer.WriteLine("\t\t" + defaultconstructoraccess + " " + Name + " (IntPtr raw) : base(raw) {}");
@@ -324,7 +324,7 @@ namespace GapiCodegen.Generatables
                    child_ancestor.childprops.Count == 0)
                 child_ancestor = child_ancestor.Parent as ObjectGen;
 
-            sw.WriteLine("\t\tpublic class " + Name + "Child : " + child_ancestor.NS + "." + child_ancestor.Name + "." +
+            sw.WriteLine("\t\tpublic class " + Name + "Child : " + child_ancestor.Namespace + "." + child_ancestor.Name + "." +
                          child_ancestor.Name + "Child {");
             sw.WriteLine("\t\t\tprotected internal " + Name +
                          "Child (Gtk.Container parent, Gtk.Widget child) : base (parent, child) {}");

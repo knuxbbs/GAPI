@@ -32,7 +32,7 @@ namespace GapiCodegen {
 
 		public bool Validate (LogWriter log)
 		{
-			if (CSType == "" && !Hidden) {
+			if (CsType == "" && !Hidden) {
 				log.Member = Name;
 				log.Warn ("property has unknown type '{0}' ", CType);
 				Statistics.ThrottledCount++;
@@ -57,7 +57,7 @@ namespace GapiCodegen {
 
 		bool IsDeprecated {
 			get {
-				return !container_type.IsDeprecated &&
+				return !ContainerType.IsDeprecated &&
 					Element.GetAttributeAsBoolean ("deprecated");
 			}
 		}
@@ -67,13 +67,13 @@ namespace GapiCodegen {
 		}
 
 		protected virtual string RawGetter (string qpname) {
-            if (container_type is InterfaceGen)
+            if (ContainerType is InterfaceGen)
                 return "implementor.GetProperty (" + qpname + ")";
 			return "GetProperty (" + qpname + ")";
 		}
 
 		protected virtual string RawSetter (string qpname) {
-            if (container_type is InterfaceGen)
+            if (ContainerType is InterfaceGen)
                 return "implementor.SetProperty(" + qpname + ", val)";
 			return "SetProperty(" + qpname + ", val)";
 		}
@@ -84,10 +84,10 @@ namespace GapiCodegen {
 				return;
 
 			string name = Name;
-			if (name == container_type.Name)
+			if (name == ContainerType.Name)
 				name += "Prop";
 
-			sw.WriteLine (indent + CSType + " " + name + " {");
+			sw.WriteLine (indent + CsType + " " + name + " {");
 			sw.Write (indent + "\t");
 			if (Readable || Getter != null)
 				sw.Write ("get; ");
@@ -107,13 +107,13 @@ namespace GapiCodegen {
 
 			string modifiers = "";
 
-			if (IsNew || container_type.Parent != null && container_type.Parent.GetPropertyRecursively (Name) != null)
+			if (IsNew || ContainerType.Parent != null && ContainerType.Parent.GetPropertyRecursively (Name) != null)
 				modifiers = "new ";
 			else if (implementor != null && implementor.Parent != null && implementor.Parent.GetPropertyRecursively (Name) != null)
 				modifiers = "new ";
 
 			string name = Name;
-			if (name == container_type.Name) {
+			if (name == ContainerType.Name) {
 				name += "Prop";
 			}
 			string qpname = "\"" + CName + "\"";
@@ -134,7 +134,7 @@ namespace GapiCodegen {
 			    Setter != null && Setter.IsDeprecated)
 				sw.WriteLine (indent + "[Obsolete]");
 			sw.WriteLine (indent + PropertyAttribute (qpname));
-			sw.WriteLine (indent + "public " + modifiers + CSType + " " + name + " {");
+			sw.WriteLine (indent + "public " + modifiers + CsType + " " + name + " {");
 			indent += "\t";
 
 			if (Getter != null) {
@@ -145,7 +145,7 @@ namespace GapiCodegen {
 				sw.WriteLine(indent + "get {");
 				sw.WriteLine(indent + "\tGLib.Value val = " + RawGetter (qpname) + ";");
 				if (table.IsOpaque (CType) || table.IsBoxed (CType)) {
-					sw.WriteLine(indent + "\t" + CSType + " ret = (" + CSType + ") val;");
+					sw.WriteLine(indent + "\t" + CsType + " ret = (" + CsType + ") val;");
 				} else if (table.IsInterface (CType)) {
 					var igen = table.GetInterfaceGen (CType);
 
@@ -153,8 +153,8 @@ namespace GapiCodegen {
 					sw.WriteLine (indent + "\t{0} ret = {1}.GetObject ((GLib.Object) val);",
 					              igen.QualifiedName, igen.QualifiedAdapterName);
 				} else {
-					sw.Write(indent + "\t" + CSType + " ret = ");
-					sw.Write ("(" + CSType + ") ");
+					sw.Write(indent + "\t" + CsType + " ret = ");
+					sw.Write ("(" + CsType + ") ");
 					if (v_type != "") {
 						sw.Write(v_type + " ");
 					}

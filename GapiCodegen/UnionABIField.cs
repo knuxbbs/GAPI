@@ -63,12 +63,12 @@ namespace GapiCodegen
             return res;
         }
 
-        public override bool Validate(LogWriter log)
+        public override bool Validate(LogWriter logWriter)
         {
 
             if (!is_valid)
             {
-                log.Warn("Can't generate ABI compatible union");
+                logWriter.Warn("Can't generate ABI compatible union");
             }
             return is_valid;
         }

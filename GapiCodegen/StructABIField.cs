@@ -16,7 +16,7 @@ namespace GapiCodegen
                 string info_name) : base(element, container_type)
         {
             this.container_type = container_type;
-            getOffsetName = null;
+            GetOffsetName = null;
             abi_info_name = info_name;
         }
 
@@ -49,7 +49,7 @@ namespace GapiCodegen
             }
         }
 
-        public override bool Validate(LogWriter log)
+        public override bool Validate(LogWriter logWriter)
         {
             string cstype = SymbolTable.Table.GetCsType(CType, true);
 
@@ -58,11 +58,11 @@ namespace GapiCodegen
 
             if (cstype == null || cstype == "")
             {
-                log.Warn(" field \"" + CName + "\" has no cstype, can't generate ABI field.");
+                logWriter.Warn(" field \"" + CName + "\" has no cstype, can't generate ABI field.");
                 return false;
             }
 
-            if (!base.Validate(log))
+            if (!base.Validate(logWriter))
                 return false;
 
             return true;
@@ -70,7 +70,7 @@ namespace GapiCodegen
 
         public void SetGetOffseName()
         {
-            getOffsetName = "Get" + CName + "Offset";
+            GetOffsetName = "Get" + CName + "Offset";
         }
 
         public override string GenerateGetSizeOf(string indent)

@@ -26,7 +26,7 @@ using GapiCodegen.Utils;
 namespace GapiCodegen.Generatables {
 	public class OpaqueGen : HandleBase {
 
-		public OpaqueGen (XmlElement ns, XmlElement elem) : base (ns, elem) {}
+		public OpaqueGen (XmlElement namespaceElement, XmlElement element) : base (namespaceElement, element) {}
 	
 		public override string FromNative(string var, bool owned)
 		{
@@ -35,7 +35,7 @@ namespace GapiCodegen.Generatables {
 
 		private bool DisableRawCtor {
 			get {
-				return Elem.GetAttributeAsBoolean ("disable_raw_ctor");
+				return Element.GetAttributeAsBoolean ("disable_raw_ctor");
 			}
 		}
 
@@ -43,9 +43,9 @@ namespace GapiCodegen.Generatables {
 		{
 			generationInfo.CurrentType = QualifiedName;
 
-			StreamWriter sw = generationInfo.Writer = generationInfo.OpenStream (Name, NS);
+			StreamWriter sw = generationInfo.Writer = generationInfo.OpenStream (Name, Namespace);
 
-			sw.WriteLine ("namespace " + NS + " {");
+			sw.WriteLine ("namespace " + Namespace + " {");
 			sw.WriteLine ();
 			sw.WriteLine ("\tusing System;");
 			sw.WriteLine ("\tusing System.Collections;");
@@ -63,7 +63,7 @@ namespace GapiCodegen.Generatables {
 			if (IsDeprecated)
 				sw.WriteLine ("\t[Obsolete]");
 			sw.Write ("\t{0} partial {1}class " + Name, IsInternal ? "internal" : "public", IsAbstract ? "abstract " : string.Empty);
-			string cs_parent = table.GetCsType(Elem.GetAttribute("parent"));
+			string cs_parent = table.GetCsType(Element.GetAttribute("parent"));
 			if (cs_parent != "")
 				sw.Write (" : " + cs_parent);
 			else

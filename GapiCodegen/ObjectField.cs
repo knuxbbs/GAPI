@@ -16,35 +16,25 @@
 // Free Software Foundation, Inc., 59 Temple Place - Suite 330,
 // Boston, MA 02111-1307, USA.
 
-
 using System.Xml;
 using GapiCodegen.Generatables;
 using GapiCodegen.Utils;
 
-namespace GapiCodegen {
-	public class ObjectField : FieldBase {
+namespace GapiCodegen
+{
+    /// <summary>
+    ///  Handles 'field' elements in objects.
+    /// </summary>
+    public class ObjectField : FieldBase
+    {
+        public ObjectField(XmlElement element, ClassBase containerType) : base(element, containerType)
+        {
+            if (CType == "char*" || CType == "gchar*")
+                CType = $"const-{CType}";
+        }
 
-		public ObjectField (XmlElement element, ClassBase container_type) : base (element, container_type){
-			if (CType == "char*" || CType == "gchar*")
-				ctype = "const-" + CType;
-		}
+        internal override bool Writable => Element.GetAttributeAsBoolean("writeable");
 
-		public ObjectField (XmlElement element, ClassBase container_type, FieldBase abi_field) : base (element, container_type) {
-			if (CType == "char*" || CType == "gchar*")
-				ctype = "const-" + CType;
-		}
-
-		internal override bool Writable {
-			get {
-				return Element.GetAttributeAsBoolean ("writeable");
-			}
-		}
-
-		protected override string DefaultAccess {
-			get {
-				return "private";
-			}
-		}
-	}
+        protected override string DefaultAccess => "private";
+    }
 }
-
