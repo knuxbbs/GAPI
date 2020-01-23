@@ -34,9 +34,9 @@ namespace GapiCodegen.Generatables {
 			}
 		}
 		
-		public override string FromNative (string var)
+		public override string FromNative (string varName)
 		{
-			return "GLib.Marshaller.Utf8PtrToString (" + var + ")";
+			return "GLib.Marshaller.Utf8PtrToString (" + varName + ")";
 		}
 
 		public string AllocNative (string managedVar)

@@ -71,9 +71,9 @@ namespace GapiCodegen.Generatables
 			return string.Format ("{0} == null ? IntPtr.Zero : {0}.{1}", var, "Handle");
 		}
 
-		public override string FromNative (string var, bool owned)
+		public override string FromNative (string varName, bool owned)
 		{
-			return "new " + QualifiedName + "( " + var + " )";
+			return "new " + QualifiedName + "( " + varName + " )";
 		}
 
 		public override void Generate (GenerationInfo generationInfo)
@@ -105,8 +105,8 @@ namespace GapiCodegen.Generatables
 			GenNativeAccessor (generationInfo);
 			GenFields (generationInfo);
 			sw.WriteLine ();
-			GenCtors (generationInfo);
-			GenMethods (generationInfo, null, this);
+			GenerateCtors (generationInfo);
+			GenerateMethods (generationInfo, null, this);
 			GenEqualsAndHash (sw);
 
 			if (!need_close)
@@ -143,9 +143,9 @@ namespace GapiCodegen.Generatables
 			sw.WriteLine ();
 		}
 
-		protected override void GenCtors (GenerationInfo gen_info)
+		protected override void GenerateCtors (GenerationInfo generationInfo)
 		{
-			StreamWriter sw = gen_info.Writer;
+			StreamWriter sw = generationInfo.Writer;
 
 			if (Parent == null) {
 				sw.WriteLine ("\t\tpublic {0} (IntPtr raw)", Name);
@@ -158,7 +158,7 @@ namespace GapiCodegen.Generatables
 
 			sw.WriteLine ();
 
-			base.GenCtors (gen_info);
+			base.GenerateCtors (generationInfo);
 		}
 
 		protected new void GenFields (GenerationInfo gen_info)

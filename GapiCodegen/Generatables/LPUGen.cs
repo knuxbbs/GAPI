@@ -23,36 +23,33 @@ using GapiCodegen.Interfaces;
 
 namespace GapiCodegen.Generatables
 {
+    /// <summary>
+    /// Marshals system specific unsigned long and "size" types.
+    /// </summary>
     public class LPUGen : SimpleGen, IPropertyAccessor
     {
         public LPUGen(string cType) : base(cType, "ulong", "0") { }
 
-        public override string MarshalType
-        {
-            get
-            {
-                return "UIntPtr";
-            }
-        }
+        public override string MarshalType => "UIntPtr";
 
         public override string CallByName(string varName)
         {
-            return "new UIntPtr (" + varName + ")";
+            return $"new UIntPtr ({varName})";
         }
 
-        public override string FromNative(string var)
+        public override string FromNative(string varName)
         {
-            return "(ulong) " + var;
+            return $"(ulong) {varName}";
         }
 
-        public void WriteAccessors(TextWriter sw, string indent, string fieldName)
+        public void WriteAccessors(TextWriter textWriter, string indent, string fieldName)
         {
-            sw.WriteLine(indent + "get {");
-            sw.WriteLine(indent + "\treturn " + FromNative(fieldName) + ";");
-            sw.WriteLine(indent + "}");
-            sw.WriteLine(indent + "set {");
-            sw.WriteLine(indent + "\t" + fieldName + " = " + CallByName("value") + ";");
-            sw.WriteLine(indent + "}");
+            textWriter.WriteLine($"{indent}get {{");
+            textWriter.WriteLine($"{indent}\treturn {FromNative(fieldName)};");
+            textWriter.WriteLine($"{indent}}}");
+            textWriter.WriteLine($"{indent}set {{");
+            textWriter.WriteLine($"{indent}\t{fieldName} = {CallByName("value")};");
+            textWriter.WriteLine($"{indent}}}");
         }
     }
 }

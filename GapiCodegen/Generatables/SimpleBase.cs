@@ -58,9 +58,9 @@ namespace GapiCodegen.Generatables
             return var;
         }
 
-        public virtual string FromNative(string var)
+        public virtual string FromNative(string varName)
         {
-            return var;
+            return varName;
         }
 
         public bool Validate()

@@ -18,62 +18,58 @@
 // Free Software Foundation, Inc., 59 Temple Place - Suite 330,
 // Boston, MA 02111-1307, USA.
 
-
 using System.IO;
 using System.Xml;
 using GapiCodegen.Interfaces;
 
-namespace GapiCodegen.Generatables {
-	public abstract class HandleBase : ClassBase, IPropertyAccessor, IOwnable {
+namespace GapiCodegen.Generatables
+{
+    /// <summary>
+    /// Base class for wrapped IntPtr reference types.
+    /// </summary>
+    public abstract class HandleBase : ClassBase, IPropertyAccessor, IOwnable
+    {
+        protected HandleBase(XmlElement namespaceElement, XmlElement element) : base(namespaceElement, element) { }
 
-		protected HandleBase (XmlElement namespaceElement, XmlElement element) : base (namespaceElement, element) {}
-					
-		public override string AssignToName {
-			get {
-				return "Raw";
-			}
-		}
+        public override string AssignToName => "Raw";
 
-		public override string GenerateGetSizeOf () {
-			return Namespace + "." + Name + ".abi_info.Size";
-		}
+        public override string GenerateGetSizeOf()
+        {
+            return $"{Namespace}.{Name}.abi_info.Size";
+        }
 
-		public override string GenerateAlign () {
-			return Namespace + "." + Name + ".abi_info.Align";
-		}
+        public override string GenerateAlign()
+        {
+            return $"{Namespace}.{Name}.abi_info.Align";
+        }
 
+        public override string MarshalType => "IntPtr";
 
-		public override string MarshalType {
-			get {
-				return "IntPtr";
-			}
-		}
+        public override string CallByName(string name)
+        {
+            return $"{name} == null ? IntPtr.Zero : {name}.Handle";
+        }
 
-		public override string CallByName (string name)
-		{
-			return name + " == null ? IntPtr.Zero : " + name + ".Handle";
-		}
+        public override string CallByName()
+        {
+            return "Handle";
+        }
 
-		public override string CallByName ()
-		{
-			return "Handle";
-		}
+        public abstract string FromNative(string varName, bool owned);
 
-		public abstract string FromNative (string var, bool owned);
+        public override string FromNative(string varName)
+        {
+            return FromNative(varName, false);
+        }
 
-		public override string FromNative (string var)
-		{
-			return FromNative (var, false);
-		}
-
-		public void WriteAccessors (TextWriter sw, string indent, string fieldName)
-		{
-			sw.WriteLine (indent + "get {");
-			sw.WriteLine (indent + "\treturn " + FromNative (fieldName, false) + ";");
-			sw.WriteLine (indent + "}");
-			sw.WriteLine (indent + "set {");
-			sw.WriteLine (indent + "\t" + fieldName + " = " + CallByName ("value") + ";");
-			sw.WriteLine (indent + "}");
-		}
-	}
+        public void WriteAccessors(TextWriter textWriter, string indent, string fieldName)
+        {
+            textWriter.WriteLine($"{indent}get {{");
+            textWriter.WriteLine($"{indent}\treturn {FromNative(fieldName, false)};");
+            textWriter.WriteLine($"{indent}}}");
+            textWriter.WriteLine($"{indent}set {{");
+            textWriter.WriteLine($"{indent}\t{fieldName} = {CallByName("value")};");
+            textWriter.WriteLine($"{indent}}}");
+        }
+    }
 }

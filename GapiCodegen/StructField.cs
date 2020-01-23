@@ -48,13 +48,13 @@ namespace GapiCodegen
 
                 try
                 {
-                    result = int.Parse(Element.GetAttribute("array_len"));
+                    result = int.Parse(Element.GetAttribute(Constants.ArrayLen));
                 }
                 catch (Exception)
                 {
                     var logWriter = new LogWriter($"{ContainerType.Name}.{Name}");
 
-                    logWriter.Warn($"Non-numeric array_len: \"{Element.GetAttribute("array_len")}\" incorrectly generated.");
+                    logWriter.Warn($"Non-numeric array_len: \"{Element.GetAttribute(Constants.ArrayLen)}\" incorrectly generated.");
 
                     result = 0;
                 }
@@ -63,7 +63,7 @@ namespace GapiCodegen
             }
         }
 
-        public bool IsNullTermArray => Element.GetAttributeAsBoolean("null_term_array");
+        public bool IsNullTermArray => Element.GetAttributeAsBoolean(Constants.NullTermArray);
 
         public new string CsType
         {
@@ -174,7 +174,7 @@ namespace GapiCodegen
                 if (Element.GetAttributeAsBoolean("is-padding"))
                     return Element.GetAttributeAsBoolean("is-padding");
 
-                return Element.GetAttribute("access") == "private" &&
+                return Element.GetAttribute(Constants.Access) == "private" &&
                        (CName.StartsWith("dummy") || CName.StartsWith("padding"));
             }
         }
@@ -203,8 +203,9 @@ namespace GapiCodegen
                 var studly = base.Name;
 
                 if (studly == "")
-                    throw new Exception(
-                        $"{CName} API file must be regenerated with a current version of the GAPI parser. It is incompatible with this version of the GAPI code generator.");
+                    throw new Exception(string.Format(
+                        "{0} API file must be regenerated with a current version of the GAPI parser. It is incompatible with this version of the GAPI code generator.",
+                        CName));
 
                 return studly;
             }

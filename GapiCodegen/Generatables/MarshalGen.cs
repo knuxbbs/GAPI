@@ -46,9 +46,9 @@ namespace GapiCodegen.Generatables {
 			return string.Format (call_fmt, var);
 		}
 		
-		public override string FromNative (string var)
+		public override string FromNative (string varName)
 		{
-			return string.Format (from_fmt, var);
+			return string.Format (from_fmt, varName);
 		}
 	}
 }

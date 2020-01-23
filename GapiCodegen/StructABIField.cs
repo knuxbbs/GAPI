@@ -8,16 +8,16 @@ namespace GapiCodegen
 {
     public class StructAbiField : StructField
     {
-        protected new ClassBase container_type;
+        protected ClassBase container_type;
         public string parent_structure_name;
         public string abi_info_name;
 
-        public StructAbiField(XmlElement element, ClassBase container_type,
-                string info_name) : base(element, container_type)
+        public StructAbiField(XmlElement element, ClassBase containerType,
+                string infoName) : base(element, containerType)
         {
-            this.container_type = container_type;
+            container_type = containerType;
             GetOffsetName = null;
-            abi_info_name = info_name;
+            abi_info_name = infoName;
         }
 
         public override string CName
@@ -129,7 +129,7 @@ namespace GapiCodegen
                     structw.WriteLine(tmpindent + "public struct " + alig_struct_name);
                     structw.WriteLine(tmpindent + "{");
                     structw.WriteLine(tmpindent + "\tsbyte f1;");
-                    base.Generate(gen_info, tmpindent + "\t", true, structw);
+                    Generate(gen_info, tmpindent + "\t", true, structw);
                     structw.WriteLine(tmpindent + "}");
                     structw.WriteLine();
 

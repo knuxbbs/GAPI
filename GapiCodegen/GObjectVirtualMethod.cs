@@ -279,7 +279,7 @@ namespace GapiCodegen
         {
             get
             {
-                if (ReturnValue.IGen is EnumGen)
+                if (ReturnValue.Generatable is EnumGen)
                     return string.Format("({0}) 0", ReturnValue.CType);
 
                 string val = ReturnValue.DefaultValue;

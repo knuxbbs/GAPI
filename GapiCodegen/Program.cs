@@ -117,7 +117,7 @@ namespace GapiCodegen
             if (filenames.Count == 0)
             {
                 Console.WriteLine("You need to specify a file to process using the --generate option.");
-                Console.WriteLine("Try `gapi-codegen --help' for more information.");
+                Console.WriteLine("Try `gapi-codegen --help` for more information.");
                 return 64;
             }
 
@@ -129,9 +129,9 @@ namespace GapiCodegen
             }
             catch (OptionException e)
             {
-                Console.Write("gapi-codegen: ");
-                Console.WriteLine(e.Message);
-                Console.WriteLine("Try `gapi-codegen --help' for more information.");
+                Console.WriteLine($"gapi-codegen: {e.Message}");
+                Console.WriteLine("Try `gapi-codegen --help` for more information.");
+
                 return 64;
             }
 

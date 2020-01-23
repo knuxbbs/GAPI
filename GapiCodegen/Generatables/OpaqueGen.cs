@@ -28,9 +28,9 @@ namespace GapiCodegen.Generatables {
 
 		public OpaqueGen (XmlElement namespaceElement, XmlElement element) : base (namespaceElement, element) {}
 	
-		public override string FromNative(string var, bool owned)
+		public override string FromNative(string varName, bool owned)
 		{
-			return var + " == IntPtr.Zero ? null : (" + QualifiedName + ") GLib.Opaque.GetOpaque (" + var + ", typeof (" + QualifiedName + "), " + (owned ? "true" : "false") + ")";
+			return varName + " == IntPtr.Zero ? null : (" + QualifiedName + ") GLib.Opaque.GetOpaque (" + varName + ", typeof (" + QualifiedName + "), " + (owned ? "true" : "false") + ")";
 		}
 
 		private bool DisableRawCtor {
@@ -69,7 +69,7 @@ namespace GapiCodegen.Generatables {
 			else
 				sw.Write (" : GLib.Opaque");
 
-			foreach (string iface in managed_interfaces) {
+			foreach (string iface in ManagedInterfaces) {
 				if (Parent != null && Parent.Implements (iface))
 					continue;
 				sw.Write (", " + iface);
@@ -78,10 +78,10 @@ namespace GapiCodegen.Generatables {
 			sw.WriteLine (" {");
 			sw.WriteLine ();
 
-			GenConstants (generationInfo);
-			GenFields (generationInfo);
-			GenMethods (generationInfo, null, null);
-			GenCtors (generationInfo);
+			GenerateConstants (generationInfo);
+			GenerateFields (generationInfo);
+			GenerateMethods (generationInfo, null, null);
+			GenerateCtors (generationInfo);
 
 			if (ref_ != null) {
 				ref_.GenerateImport (sw);
@@ -193,7 +193,7 @@ namespace GapiCodegen.Generatables {
 				sw.WriteLine ();
 			}
 
-			GenerateStructureABI(generationInfo);
+			GenerateStructureAbi(generationInfo);
 			sw.WriteLine ("#endregion");
 
 			sw.WriteLine ("\t}");
@@ -235,14 +235,14 @@ namespace GapiCodegen.Generatables {
 			return method;
 		}
 
-		protected override void GenCtors (GenerationInfo gen_info)
+		protected override void GenerateCtors (GenerationInfo generationInfo)
 		{
 			if (!DisableRawCtor) {
-				gen_info.Writer.WriteLine("\t\tpublic " + Name + "(IntPtr raw) : base(raw) {}");
-				gen_info.Writer.WriteLine();
+				generationInfo.Writer.WriteLine("\t\tpublic " + Name + "(IntPtr raw) : base(raw) {}");
+				generationInfo.Writer.WriteLine();
 			}
 
-			base.GenCtors (gen_info);
+			base.GenerateCtors (generationInfo);
 		}
 
 	}

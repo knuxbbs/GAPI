@@ -34,8 +34,8 @@ namespace GapiCodegen.Generatables {
 		private IDictionary<string, ObjectField> fields = new Dictionary<string, ObjectField> ();
 		private IDictionary<string, Method> methods = new Dictionary<string, Method> ();
 		private IDictionary<string, Constant> constants = new Dictionary<string, Constant>();
-		protected IList<string> interfaces = new List<string>();
-		protected IList<string> managed_interfaces = new List<string>();
+		protected IList<string> Interfaces = new List<string>();
+		protected IList<string> ManagedInterfaces = new List<string>();
 		protected IList<Ctor> ctors = new List<Ctor>();
 
 		protected List<StructAbiField> abi_fields = new List<StructAbiField> ();
@@ -151,14 +151,14 @@ namespace GapiCodegen.Generatables {
 			}
 		}
 
-		public virtual bool CanGenerateABIStruct(LogWriter log) {
+		public virtual bool CanGenerateAbiStruct(LogWriter logWriter) {
 			return abi_fields_valid;
 		}
 
 		bool CheckABIStructParent(LogWriter log, out string cs_parent_struct) {
 			cs_parent_struct = null;
 
-			if (!CanGenerateABIStruct(log))
+			if (!CanGenerateAbiStruct(log))
 				return false;
 
 			var parent = SymbolTable.Table[Element.GetAttribute("parent")];
@@ -194,11 +194,11 @@ namespace GapiCodegen.Generatables {
 			return parent_can_generate;
 		}
 
-		protected void GenerateStructureABI (GenerationInfo gen_info) {
-			GenerateStructureABI(gen_info, null, "abi_info", CName);
+		protected void GenerateStructureAbi (GenerationInfo gen_info) {
+			GenerateStructureAbi(gen_info, null, "abi_info", CName);
 		}
 
-		protected void GenerateStructureABI (GenerationInfo gen_info, List<StructAbiField> _fields,
+		protected void GenerateStructureAbi (GenerationInfo gen_info, IList<StructAbiField> _fields,
 				string info_name, string structname)
 		{
 			string cs_parent_struct = null;
@@ -282,7 +282,7 @@ namespace GapiCodegen.Generatables {
 		{
 			LogWriter log = new LogWriter (QualifiedName);
 
-			foreach (string iface in interfaces) {
+			foreach (string iface in Interfaces) {
 				InterfaceGen igen = SymbolTable.Table[iface] as InterfaceGen;
 				if (igen == null) {
 					log.Warn ("implements unknown GInterface " + iface);
@@ -388,7 +388,7 @@ namespace GapiCodegen.Generatables {
 			}
 		}
 
-		public void GenProperties (GenerationInfo gen_info, ClassBase implementor)
+		public void GenerateProperties (GenerationInfo gen_info, ClassBase implementor)
 		{		
 			if (props.Count == 0)
 				return;
@@ -397,14 +397,14 @@ namespace GapiCodegen.Generatables {
 				prop.Generate (gen_info, "\t\t", implementor);
 		}
 
-		protected void GenFields (GenerationInfo gen_info)
+		protected void GenerateFields (GenerationInfo gen_info)
 		{
 			foreach (ObjectField field in fields.Values) {
 				field.Generate (gen_info, "\t\t");
 			}
 		}
 
-		protected void GenConstants (GenerationInfo gen_info)
+		protected void GenerateConstants (GenerationInfo gen_info)
 		{
 			foreach (Constant con in constants.Values)
 				con.Generate (gen_info, "\t\t");
@@ -419,9 +419,9 @@ namespace GapiCodegen.Generatables {
 				if (element.GetAttributeAsBoolean ("hidden"))
 					continue;
 				if (element.HasAttribute ("cname"))
-					interfaces.Add (element.GetAttribute ("cname"));
+					Interfaces.Add (element.GetAttribute ("cname"));
 				else if (element.HasAttribute ("name"))
-					managed_interfaces.Add (element.GetAttribute ("name"));
+					ManagedInterfaces.Add (element.GetAttribute ("name"));
 			}
 		}
 		
@@ -436,7 +436,7 @@ namespace GapiCodegen.Generatables {
                     fields != null && fields.ContainsKey(mname.Substring(3)));
 		}
 
-		public void GenMethods (GenerationInfo gen_info, IDictionary<string, bool> collisions, ClassBase implementor)
+		public void GenerateMethods (GenerationInfo gen_info, IDictionary<string, bool> collisions, ClassBase implementor)
 		{
 			if (methods == null)
 				return;
@@ -488,7 +488,7 @@ namespace GapiCodegen.Generatables {
 				p = Parent.GetMethodRecursively (name, true);
 			
 			if (check_self && p == null) {
-				foreach (string iface in interfaces) {
+				foreach (string iface in Interfaces) {
 					ClassBase igen = SymbolTable.Table.GetClassGen (iface);
 					if (igen == null)
 						continue;
@@ -510,7 +510,7 @@ namespace GapiCodegen.Generatables {
 				klass = klass.Parent;
 			}
 			if (p == null) {
-				foreach (string iface in interfaces) {
+				foreach (string iface in Interfaces) {
 					ClassBase igen = SymbolTable.Table.GetClassGen (iface);
 					if (igen == null)
 						continue;
@@ -524,7 +524,7 @@ namespace GapiCodegen.Generatables {
 
 		public bool Implements (string iface)
 		{
-			if (interfaces.Contains (iface))
+			if (Interfaces.Contains (iface))
 				return true;
 			else if (Parent != null)
 				return Parent.Implements (iface);
@@ -574,11 +574,11 @@ namespace GapiCodegen.Generatables {
 			ctors_initted = true;
 		}
 
-		protected virtual void GenCtors (GenerationInfo gen_info)
+		protected virtual void GenerateCtors (GenerationInfo generationInfo)
 		{
 			InitializeCtors ();
 			foreach (Ctor ctor in ctors)
-				ctor.Generate (gen_info);
+				ctor.Generate (generationInfo);
 		}
 
 		public virtual void Finish (StreamWriter sw, string indent)

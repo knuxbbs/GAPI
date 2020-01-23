@@ -45,7 +45,7 @@ namespace GapiCodegen.Generatables
                 switch (member.Name)
                 {
                     case "signal":
-                        object sig = sigs[member.GetAttribute("name")];
+                        object sig = Signals[member.GetAttribute("name")];
                         if (sig == null)
                             sig = new Signal(node as XmlElement, this);
                         break;
@@ -104,9 +104,9 @@ namespace GapiCodegen.Generatables
                 var, owned ? "OwnedHandle" : "Handle", QualifiedAdapterName);
         }
 
-        public override string FromNative(string var, bool owned)
+        public override string FromNative(string varName, bool owned)
         {
-            return QualifiedAdapterName + ".GetObject (" + var + ", " + (owned ? "true" : "false") + ")";
+            return QualifiedAdapterName + ".GetObject (" + varName + ", " + (owned ? "true" : "false") + ")";
         }
 
         public override bool ValidateForSubclass()
@@ -130,12 +130,12 @@ namespace GapiCodegen.Generatables
 
         void GenerateStaticCtor(StreamWriter sw)
         {
-            sw.WriteLine("\t\tstatic {0} iface;", class_struct_name);
+            sw.WriteLine("\t\tstatic {0} iface;", ClassStructName);
             sw.WriteLine();
             sw.WriteLine("\t\tstatic " + AdapterName + " ()");
             sw.WriteLine("\t\t{");
             sw.WriteLine("\t\t\tGLib.GType.Register (_gtype, typeof ({0}));", AdapterName);
-            foreach (InterfaceVirtualMethod vm in interface_vms)
+            foreach (InterfaceVirtualMethod vm in InterfaceVirtualMethods)
             {
                 if (vm.Validate(new LogWriter(QualifiedName)))
                     sw.WriteLine("\t\t\tiface.{0} = new {0}NativeDelegate ({0}_cb);", vm.Name);
@@ -146,18 +146,18 @@ namespace GapiCodegen.Generatables
 
         void GenerateInitialize(StreamWriter sw)
         {
-            if (interface_vms.Count > 0)
+            if (InterfaceVirtualMethods.Count > 0)
             {
                 sw.WriteLine("\t\tstatic int class_offset = 2 * IntPtr.Size;"); // Class size of GTypeInterface struct
                 sw.WriteLine();
             }
             sw.WriteLine("\t\tstatic void Initialize (IntPtr ptr, IntPtr data)");
             sw.WriteLine("\t\t{");
-            if (interface_vms.Count > 0)
+            if (InterfaceVirtualMethods.Count > 0)
             {
                 sw.WriteLine("\t\t\tIntPtr ifaceptr = new IntPtr (ptr.ToInt64 () + class_offset);");
-                sw.WriteLine("\t\t\t{0} native_iface = ({0}) Marshal.PtrToStructure (ifaceptr, typeof ({0}));", class_struct_name);
-                foreach (InterfaceVirtualMethod vm in interface_vms)
+                sw.WriteLine("\t\t\t{0} native_iface = ({0}) Marshal.PtrToStructure (ifaceptr, typeof ({0}));", ClassStructName);
+                foreach (InterfaceVirtualMethod vm in InterfaceVirtualMethods)
                 {
                     sw.WriteLine("\t\t\tnative_iface." + vm.Name + " = iface." + vm.Name + ";");
                 }
@@ -169,7 +169,7 @@ namespace GapiCodegen.Generatables
 
         void GenerateCallbacks(StreamWriter sw)
         {
-            foreach (InterfaceVirtualMethod vm in interface_vms)
+            foreach (InterfaceVirtualMethod vm in InterfaceVirtualMethods)
             {
                 vm.GenerateCallback(sw, null);
             }
@@ -313,15 +313,15 @@ namespace GapiCodegen.Generatables
             if (!IsConsumeOnly)
                 GenerateImplementorProp(sw);
 
-            GenProperties(gen_info, null);
+            GenerateProperties(gen_info, null);
 
-            foreach (Signal sig in sigs.Values)
+            foreach (Signal sig in Signals.Values)
                 sig.GenEvent(sw, null, "GLib.Object.GetObject (Handle)");
 
             Method temp = GetMethod("GetType");
             if (temp != null)
                 Methods.Remove("GetType");
-            GenMethods(gen_info, null, this);
+            GenerateMethods(gen_info, null, this);
             if (temp != null)
                 Methods["GetType"] = temp;
 
@@ -345,11 +345,11 @@ namespace GapiCodegen.Generatables
             sw.WriteLine("\t" + access + " partial interface " + ImplementorName + " : GLib.IWrapper {");
             sw.WriteLine();
             var vm_table = new Dictionary<string, InterfaceVirtualMethod>();
-            foreach (InterfaceVirtualMethod vm in interface_vms)
+            foreach (InterfaceVirtualMethod vm in InterfaceVirtualMethods)
             {
                 vm_table[vm.Name] = vm;
             }
-            foreach (InterfaceVirtualMethod vm in interface_vms)
+            foreach (InterfaceVirtualMethod vm in InterfaceVirtualMethods)
             {
                 if (!vm_table.ContainsKey(vm.Name))
                 {
@@ -405,7 +405,7 @@ namespace GapiCodegen.Generatables
             sw.WriteLine("\t" + access + " partial interface " + Name + " : GLib.IWrapper {");
             sw.WriteLine();
 
-            foreach (Signal sig in sigs.Values)
+            foreach (Signal sig in Signals.Values)
             {
                 sig.GenerateDecl(sw);
                 sig.GenEventHandler(generationInfo);

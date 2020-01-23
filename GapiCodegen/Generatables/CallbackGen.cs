@@ -92,16 +92,16 @@ namespace GapiCodegen.Generatables {
 			return varName + ".NativeDelegate";
 		}
 
-		public override string FromNative (string var)
+		public override string FromNative (string varName)
 		{
-			return Namespace + "Sharp." + Name + "Wrapper.GetManagedDelegate (" + var + ")";
+			return Namespace + "Sharp." + Name + "Wrapper.GetManagedDelegate (" + varName + ")";
 		}
 
-		public void WriteAccessors (TextWriter sw, string indent, string fieldName)
+		public void WriteAccessors (TextWriter textWriter, string indent, string fieldName)
 		{
-			sw.WriteLine (indent + "get {");
-			sw.WriteLine (indent + "\treturn " + FromNative (fieldName) + ";");
-			sw.WriteLine (indent + "}");
+			textWriter.WriteLine (indent + "get {");
+			textWriter.WriteLine (indent + "\treturn " + FromNative (fieldName) + ";");
+			textWriter.WriteLine (indent + "}");
 		}
 
 		string CastFromInt (string type)

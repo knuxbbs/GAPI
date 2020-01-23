@@ -105,7 +105,7 @@ namespace GapiCodegen
 
         private bool UseAbiStruct(GenerationInfo generationInfo)
         {
-            if (!ContainerType.CanGenerateABIStruct(new LogWriter(ContainerType.CName)))
+            if (!ContainerType.CanGenerateAbiStruct(new LogWriter(ContainerType.CName)))
                 return false;
 
             return AbiField?.GetOffsetName != null && generationInfo.GlueWriter == null;

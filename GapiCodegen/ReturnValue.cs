@@ -23,181 +23,184 @@ using GapiCodegen.Generatables;
 using GapiCodegen.Interfaces;
 using GapiCodegen.Utils;
 
-namespace GapiCodegen {
-	public class ReturnValue  {
+namespace GapiCodegen
+{
+    /// <summary>
+    /// Represents the return value of a method, virtual method or signal.
+    /// </summary>
+    public class ReturnValue
+    {
+        private readonly bool _isNullTermArray;
+        private readonly bool _isArray;
+        private readonly bool _elementsOwned;
+        private readonly bool _owned;
+        private readonly string _defaultValue = string.Empty;
+        private readonly string _elementType = string.Empty;
 
-		
-		bool is_null_term;
-		bool is_array;
-		bool elements_owned;
-		bool owned;
-		string array_length_param = string.Empty;
-		int array_length_param_index = -1;
-		string ctype = string.Empty;
-		string default_value = string.Empty;
-		string element_ctype = string.Empty;
-		Parameter count_param;
+        public ReturnValue(XmlElement element)
+        {
+            if (element == null) return;
 
-		public ReturnValue (XmlElement elem)
-		{
-			if (elem != null) {
-				is_null_term = elem.GetAttributeAsBoolean ("null_term_array");
-				is_array = elem.GetAttributeAsBoolean ("array") || elem.HasAttribute ("array_length_param");
-				array_length_param = elem.GetAttribute ("array_length_param");
-				if (elem.HasAttribute ("array_length_param_length"))
-					array_length_param_index = int.Parse (elem.GetAttribute ("array_length_param_index"));
-				elements_owned = elem.GetAttributeAsBoolean ("elements_owned");
-				owned = elem.GetAttributeAsBoolean ("owned");
-				ctype = elem.GetAttribute("type");
-				default_value = elem.GetAttribute ("default_value");
-				element_ctype = elem.GetAttribute ("element_type");
-			}
-		}
+            _isNullTermArray = element.GetAttributeAsBoolean(Constants.NullTermArray);
+            _isArray = element.GetAttributeAsBoolean(Constants.Array) || element.HasAttribute("array_length_param");
+            CountParameterName = element.GetAttribute("array_length_param");
 
-		public Parameter CountParameter {
-			get { return count_param; }
-			set { count_param = value; }
-		}
+            if (element.HasAttribute("array_length_param_length"))
+                CountParameterIndex = int.Parse(element.GetAttribute("array_length_param_index"));
 
-		public string CountParameterName {
-			get { return array_length_param; }
-		}
+            _elementsOwned = element.GetAttributeAsBoolean(Constants.ElementsOwned);
+            _owned = element.GetAttributeAsBoolean(Constants.Owned);
 
-		public int CountParameterIndex {
-			get { return array_length_param_index; }
-		}
+            CType = element.GetAttribute(Constants.Type);
+            _defaultValue = element.GetAttribute(Constants.DefaultValue);
+            _elementType = element.GetAttribute(Constants.ElementType);
+        }
 
-		public string CType {
-			get {
-				return ctype;
-			}
-		}
+        public Parameter CountParameter { get; set; }
 
-		public string CsType {
-			get {
-				if (IGen == null)
-					return string.Empty;
+        public string CountParameterName { get; } = string.Empty;
 
-				if (ElementType != string.Empty)
-					return ElementType + "[]";
+        public int CountParameterIndex { get; } = -1;
 
-				return IGen.QualifiedName + (is_array || is_null_term ? "[]" : string.Empty);
-			}
-		}
+        public string CType { get; } = string.Empty;
 
-		public string DefaultValue {
-			get {
-				if (!string.IsNullOrEmpty (default_value))
-					return default_value;
-				if (IGen == null)
-					return string.Empty;
-				return IGen.DefaultValue;
-			}
-		}
+        public string CsType
+        {
+            get
+            {
+                if (Generatable == null)
+                    return string.Empty;
 
-		string ElementType {
-			get {
-				if (element_ctype.Length > 0)
-					return SymbolTable.Table.GetCsType (element_ctype);
+                return ElementType != string.Empty
+                    ? $"{ElementType}[]"
+                    : $"{Generatable.QualifiedName}{(_isArray || _isNullTermArray ? "[]" : string.Empty)}";
+            }
+        }
 
-				return string.Empty;
-			}
-		}
+        public string DefaultValue
+        {
+            get
+            {
+                if (!string.IsNullOrEmpty(_defaultValue))
+                    return _defaultValue;
 
-		IGeneratable igen;
-		public IGeneratable IGen {
-			get {
-				if (igen == null)
-					igen = SymbolTable.Table [CType];
-				return igen;
-			}
-		}
+                return Generatable != null ? Generatable.DefaultValue : string.Empty;
+            }
+        }
 
-		public bool IsVoid {
-			get {
-				return CsType == "void";
-			}
-		}
+        private string ElementType =>
+            _elementType.Length > 0 ? SymbolTable.Table.GetCsType(_elementType) : string.Empty;
 
-		public string MarshalType {
-			get {
-				if (IGen == null)
-					return string.Empty;
-				else if (is_array || is_null_term)
-					return "IntPtr";
-				return IGen.MarshalType;
-			}
-		}
+        private IGeneratable _generatable;
 
-		public string ToNativeType {
-			get {
-				if (IGen == null)
-					return string.Empty;
-				if (is_array || is_null_term)
-					return "IntPtr";
-				return IGen.MarshalType;
-			}
-		}
+        public IGeneratable Generatable => _generatable ?? (_generatable = SymbolTable.Table[CType]);
 
-		public string FromNative (string var)
-		{
-			if (IGen == null)
-				return string.Empty;
+        public bool IsVoid => CsType == "void";
 
-			if (ElementType != string.Empty) {
-				string args = (owned ? "true" : "false") + ", " + (elements_owned ? "true" : "false");
-				if (IGen.QualifiedName == "GLib.PtrArray")
-					return string.Format ("({0}[]) GLib.Marshaller.PtrArrayToArray ({1}, {2}, typeof({0}))", ElementType, var, args);
-				else
-					return string.Format ("({0}[]) GLib.Marshaller.ListPtrToArray ({1}, typeof({2}), {3}, typeof({4}))", ElementType, var, IGen.QualifiedName, args, element_ctype == "gfilename*" ? "GLib.ListBase.FilenameString" : ElementType);
-			} else if (IGen is IOwnable)
-				return ((IOwnable)IGen).FromNative (var, owned);
-			else if (is_null_term)
-				return string.Format ("GLib.Marshaller.NullTermPtrToStringArray ({0}, {1})", var, owned ? "true" : "false");
-			else if (is_array)
-				return string.Format ("({0}) GLib.Marshaller.ArrayPtrToArray ({1}, typeof ({2}), (int){3}native_{4}, true)", CsType, var, IGen.QualifiedName, CountParameter.CsType == "int" ? string.Empty : "(" + CountParameter.CsType + ")", CountParameter.Name);
-			else
-				return IGen.FromNative (var);
-		}
-			
-		public string ToNative (string var)
-		{
-			if (IGen == null)
-				return string.Empty;
+        public string MarshalType
+        {
+            get
+            {
+                if (Generatable == null)
+                    return string.Empty;
 
-			if (ElementType.Length > 0) {
-				string args = ", typeof (" + ElementType + "), " + (owned ? "true" : "false") + ", " + (elements_owned ? "true" : "false");
-				var = "new " + IGen.QualifiedName + "(" + var + args + ")";
-			} else if (is_null_term)
-				return string.Format ("GLib.Marshaller.StringArrayToNullTermStrvPointer ({0})", var);
-			else if (is_array)
-				return string.Format ("GLib.Marshaller.ArrayToArrayPtr ({0})", var);
+                if (_isArray || _isNullTermArray)
+                    return "IntPtr";
 
-			if (IGen is IManualMarshaler)
-				return (IGen as IManualMarshaler).AllocNative (var);
-			else if (IGen is ObjectGen && owned)
-				return var + " == null ? IntPtr.Zero : " + var + ".OwnedHandle";
-			else if (IGen is OpaqueGen && owned)
-				return var + " == null ? IntPtr.Zero : " + var + ".OwnedCopy";
-			else
-				return IGen.CallByName (var);
-		}
+                return Generatable.MarshalType;
+            }
+        }
 
-		public bool Validate (LogWriter log)
-		{
-			if (MarshalType == "" || CsType == "") {
-				log.Warn ("Unknown return type: {0}", CType);
-				return false;
-			} else if ((CsType == "GLib.List" || CsType == "GLib.SList") && string.IsNullOrEmpty (ElementType))
-				log.Warn ("Returns {0} with unknown element type.  Add element_type attribute with gapi-fixup.", CType);
+        public string ToNativeType
+        {
+            get
+            {
+                if (Generatable == null)
+                    return string.Empty;
 
-			if (is_array && !is_null_term && string.IsNullOrEmpty (array_length_param)) {
-				log.Warn ("Returns an array with undeterminable length. Add null_term_array or array_length_param attribute with gapi-fixup.");
-				return false;
-			}
+                if (_isArray || _isNullTermArray)
+                    return "IntPtr";
 
-			return true;
-		}
-	}
+                return Generatable.MarshalType;
+            }
+        }
+
+        public string FromNative(string var)
+        {
+            if (Generatable == null)
+                return string.Empty;
+
+            if (ElementType != string.Empty)
+            {
+                var args = $"{(_owned ? "true" : "false")}, {(_elementsOwned ? "true" : "false")}";
+
+                return Generatable.QualifiedName == "GLib.PtrArray"
+                    ? string.Format("({0}[]) GLib.Marshaller.PtrArrayToArray ({1}, {2}, typeof({0}))", ElementType, var,
+                        args)
+                    : string.Format("({0}[]) GLib.Marshaller.ListPtrToArray ({1}, typeof({2}), {3}, typeof({4}))",
+                        ElementType, var, Generatable.QualifiedName, args,
+                        _elementType == "gfilename*" ? "GLib.ListBase.FilenameString" : ElementType);
+            }
+
+            if (Generatable is IOwnable ownable)
+                return ownable.FromNative(var, _owned);
+
+            if (_isNullTermArray)
+                return $"GLib.Marshaller.NullTermPtrToStringArray ({var}, {(_owned ? "true" : "false")})";
+
+            return _isArray
+                ? string.Format("({0}) GLib.Marshaller.ArrayPtrToArray ({1}, typeof ({2}), (int){3}native_{4}, true)",
+                    CsType, var, Generatable.QualifiedName,
+                    CountParameter.CsType == "int" ? string.Empty : $"({CountParameter.CsType})",
+                    CountParameter.Name)
+                : Generatable.FromNative(var);
+        }
+
+        public string ToNative(string var)
+        {
+            if (Generatable == null)
+                return string.Empty;
+
+            if (ElementType.Length > 0)
+            {
+                var args =
+                    $", typeof ({ElementType}), {(_owned ? "true" : "false")}, {(_elementsOwned ? "true" : "false")}";
+
+                var = $"new {Generatable.QualifiedName}({var}{args})";
+            }
+            else if (_isNullTermArray)
+                return $"GLib.Marshaller.StringArrayToNullTermStrvPointer ({var})";
+            else if (_isArray)
+                return $"GLib.Marshaller.ArrayToArrayPtr ({var})";
+
+            switch (Generatable)
+            {
+                case IManualMarshaler _:
+                    return (Generatable as IManualMarshaler)?.AllocNative(var);
+                case ObjectGen _ when _owned:
+                    return $"{var} == null ? IntPtr.Zero : {var}.OwnedHandle";
+                case OpaqueGen _ when _owned:
+                    return $"{var} == null ? IntPtr.Zero : {var}.OwnedCopy";
+                default:
+                    return Generatable.CallByName(var);
+            }
+        }
+
+        public bool Validate(LogWriter logWriter)
+        {
+            if (MarshalType == "" || CsType == "")
+            {
+                logWriter.Warn($"Unknown return type: {CType}.");
+                return false;
+            }
+
+            if ((CsType == "GLib.List" || CsType == "GLib.SList") && string.IsNullOrEmpty(ElementType))
+                logWriter.Warn($"Returns {CType} with unknown element type. Add element_type attribute with gapi-fixup.");
+
+            if (!_isArray || _isNullTermArray || !string.IsNullOrEmpty(CountParameterName)) return true;
+            logWriter.Warn("Returns an array with undeterminable length. Add null_term_array or array_length_param attribute with gapi-fixup.");
+            
+            return false;
+        }
+    }
 }
-

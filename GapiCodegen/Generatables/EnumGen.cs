@@ -77,9 +77,9 @@ namespace GapiCodegen.Generatables {
 			return "(int) " + varName;
 		}
 		
-		public override string FromNative(string var)
+		public override string FromNative(string varName)
 		{
-			return "(" + QualifiedName + ") " + var;
+			return "(" + QualifiedName + ") " + varName;
 		}
 
 		public override string GenerateAlign () {

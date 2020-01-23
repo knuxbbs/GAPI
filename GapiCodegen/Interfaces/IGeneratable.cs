@@ -64,9 +64,9 @@ namespace GapiCodegen.Interfaces
         /// <summary>
         /// Generates an expression to convert var from MarshalType.
         /// </summary>
-        /// <param name="var"></param>
+        /// <param name="varName"></param>
         /// <returns></returns>
-        string FromNative(string var);
+        string FromNative(string varName);
 
         /// <summary>
         /// Generates code to get size of the type.

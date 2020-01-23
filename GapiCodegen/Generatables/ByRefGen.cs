@@ -48,9 +48,9 @@ namespace GapiCodegen.Generatables {
 			return "GLib.Marshaller.StructureToPtrAlloc (" + var_name + ")";
 		}
 
-		public override string FromNative (string var_name)
+		public override string FromNative (string varName)
 		{
-			return string.Format ("({0}) Marshal.PtrToStructure ({1}, typeof ({0}))", QualifiedName, var_name);
+			return string.Format ("({0}) Marshal.PtrToStructure ({1}, typeof ({0}))", QualifiedName, varName);
 		}
 
 		public string ReleaseNative (string var_name)

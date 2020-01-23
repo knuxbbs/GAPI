@@ -36,14 +36,14 @@ namespace GapiCodegen.Generatables {
 			return varName + " == null ? IntPtr.Zero : " + varName + ".Handle";
 		}
 		
-		public override string FromNative (string var)
+		public override string FromNative (string varName)
 		{
-			return string.Format ("new {0} ({1})", QualifiedName, var);
+			return string.Format ("new {0} ({1})", QualifiedName, varName);
 		}
 		
-		public string FromNative (string var, bool owned)
+		public string FromNative (string varName, bool owned)
 		{
-			return string.Format ("new {0} ({1}, {2})", QualifiedName, var, owned ? "true" : "false");
+			return string.Format ("new {0} ({1}, {2})", QualifiedName, varName, owned ? "true" : "false");
 		}
 	}
 }

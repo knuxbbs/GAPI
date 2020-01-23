@@ -59,9 +59,9 @@ namespace GapiCodegen.Generatables {
 			return varName + " == null ? IntPtr.Zero : " + varName + ".Handle";
 		}
 		
-		public override string FromNative(string var)
+		public override string FromNative(string varName)
 		{
-			return string.Format (from_fmt, var);
+			return string.Format (from_fmt, varName);
 		}
 
 		public override string GenerateGetSizeOf () {

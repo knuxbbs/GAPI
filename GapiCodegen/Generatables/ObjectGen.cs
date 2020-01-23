@@ -21,59 +21,62 @@
 
 using System;
 using System.Collections.Generic;
-using System.IO;
+using System.Linq;
 using System.Xml;
 using GapiCodegen.Utils;
 
 namespace GapiCodegen.Generatables
 {
     /// <summary>
-    /// The Object Generatable.
+    /// Handles 'boxed' and 'struct' elements with the "opaque" flag (by creating C# classes).
     /// </summary>
     public class ObjectGen : ObjectBase
     {
-        private IList<string> custom_attrs = new List<string>();
-        private IList<XmlElement> strings = new List<XmlElement>();
-        private IDictionary<string, ChildProperty> childprops = new Dictionary<string, ChildProperty>();
-        private static IDictionary<string, DirectoryInfo> dirs = new Dictionary<string, DirectoryInfo>();
+        private readonly IList<string> _customAttributes = new List<string>();
+        private readonly IList<XmlElement> _staticStrings = new List<XmlElement>();
+        private readonly IDictionary<string, ChildProperty> _childProperties = new Dictionary<string, ChildProperty>();
 
         public ObjectGen(XmlElement namespaceElement, XmlElement element) : base(namespaceElement, element, false)
         {
             foreach (XmlNode node in element.ChildNodes)
             {
-                XmlElement member = node as XmlElement;
+                var member = node as XmlElement;
+
                 if (member == null)
                 {
                     continue;
                 }
 
-                if (member.GetAttributeAsBoolean("hidden"))
+                if (member.GetAttributeAsBoolean(Constants.Hidden))
                     continue;
 
                 switch (node.Name)
                 {
-                    case "callback":
+                    case Constants.Callback:
                         Statistics.IgnoreCount++;
                         break;
 
-                    case "custom-attribute":
-                        custom_attrs.Add(member.InnerXml);
+                    case Constants.CustomAttribute:
+                        _customAttributes.Add(member.InnerXml);
                         break;
 
-                    case "static-string":
-                        strings.Add(member);
+                    case Constants.StaticString:
+                        _staticStrings.Add(member);
                         break;
 
-                    case "childprop":
-                        string name = member.GetAttribute("name");
-                        while (childprops.ContainsKey(name))
+                    case Constants.ChildProp:
+                        var name = member.GetAttribute(Constants.Name);
+
+                        while (_childProperties.ContainsKey(name))
                             name += "mangled";
-                        childprops.Add(name, new ChildProperty(member, this));
+
+                        _childProperties.Add(name, new ChildProperty(member, this));
                         break;
 
                     default:
                         if (!IsNodeNameHandled(node.Name))
-                            Console.WriteLine("Unexpected node " + node.Name + " in " + CName);
+                            Console.WriteLine($"Unexpected node {node.Name} in {CName}.");
+
                         break;
                 }
             }
@@ -81,62 +84,54 @@ namespace GapiCodegen.Generatables
 
         public override string CallByName(string var, bool owned)
         {
-            return string.Format("{0} == null ? IntPtr.Zero : {0}.{1}", var, owned ? "OwnedHandle" : "Handle");
+            return $"{var} == null ? IntPtr.Zero : {var}.{(owned ? "OwnedHandle" : "Handle")}";
         }
 
         public override bool Validate()
         {
-            LogWriter log = new LogWriter(QualifiedName);
+            var logWriter = new LogWriter(QualifiedName);
 
-            var invalids = new List<string>();
+            var invalidProps = _childProperties.Keys
+                .Where(propertyName => !_childProperties[propertyName].Validate(logWriter)).ToArray();
 
-            foreach (string prop_name in childprops.Keys)
-            {
-                if (!childprops[prop_name].Validate(log))
-                    invalids.Add(prop_name);
-            }
-
-            foreach (string prop_name in invalids)
-                childprops.Remove(prop_name);
+            foreach (var propertyName in invalidProps)
+                _childProperties.Remove(propertyName);
 
             return base.Validate();
         }
 
-        private bool DisableVoidCtor
-        {
-            get { return Element.GetAttributeAsBoolean("disable_void_ctor"); }
-        }
+        private bool DisableVoidCtor => Element.GetAttributeAsBoolean(Constants.DisableVoidCtor);
+
+        private static readonly IDictionary<string, DirectoryInfo> DirectoriesInfo = new Dictionary<string, DirectoryInfo>();
 
         private class DirectoryInfo
         {
-            public string assembly_name;
-            public IDictionary<string, string> objects;
+            public readonly string AssemblyName;
+            public readonly IDictionary<string, string> Objects;
 
-            public DirectoryInfo(string assembly_name)
+            public DirectoryInfo(string assemblyName)
             {
-                this.assembly_name = assembly_name;
-                objects = new Dictionary<string, string>();
+                AssemblyName = assemblyName;
+                Objects = new Dictionary<string, string>();
             }
         }
 
-        private static DirectoryInfo GetDirectoryInfo(string dir, string assembly_name)
+        private static DirectoryInfo GetDirectoryInfo(string directory, string assemblyName)
         {
             DirectoryInfo result;
 
-            if (dirs.ContainsKey(dir))
+            if (DirectoriesInfo.ContainsKey(directory))
             {
-                result = dirs[dir];
-                if (result.assembly_name != assembly_name)
-                {
-                    Console.WriteLine("Can't put multiple assemblies in one directory.");
-                    return null;
-                }
+                result = DirectoriesInfo[directory];
 
-                return result;
+                if (result.AssemblyName == assemblyName) return result;
+
+                Console.WriteLine("Can't put multiple assemblies in one directory.");
+                return null;
             }
 
-            result = new DirectoryInfo(assembly_name);
-            dirs.Add(dir, result);
+            result = new DirectoryInfo(assemblyName);
+            DirectoriesInfo.Add(directory, result);
 
             return result;
         }
@@ -145,296 +140,306 @@ namespace GapiCodegen.Generatables
         {
             generationInfo.CurrentType = QualifiedName;
 
-            string asm_name = generationInfo.AssemblyName.Length == 0 ? Namespace.ToLower() + "-sharp" : generationInfo.AssemblyName;
-            DirectoryInfo di = GetDirectoryInfo(generationInfo.Dir, asm_name);
+            var assemblyName = generationInfo.AssemblyName.Length == 0
+                ? $"{Namespace.ToLower()}-sharp"
+                : generationInfo.AssemblyName;
 
-            StreamWriter sw = generationInfo.Writer = generationInfo.OpenStream(Name, Namespace);
+            var directoryInfo = GetDirectoryInfo(generationInfo.Directory, assemblyName);
 
-            sw.WriteLine("namespace " + Namespace + " {");
-            sw.WriteLine();
-            sw.WriteLine("\tusing System;");
-            sw.WriteLine("\tusing System.Collections;");
-            sw.WriteLine("\tusing System.Collections.Generic;");
-            sw.WriteLine("\tusing System.Runtime.InteropServices;");
-            sw.WriteLine();
+            var streamWriter = generationInfo.Writer = generationInfo.OpenStream(Name, Namespace);
 
-            SymbolTable table = SymbolTable.Table;
+            streamWriter.WriteLine($"namespace {Namespace} {{");
+            streamWriter.WriteLine();
+            streamWriter.WriteLine("\tusing System;");
+            streamWriter.WriteLine("\tusing System.Collections;");
+            streamWriter.WriteLine("\tusing System.Collections.Generic;");
+            streamWriter.WriteLine("\tusing System.Runtime.InteropServices;");
+            streamWriter.WriteLine();
 
-            sw.WriteLine("#region Autogenerated code");
+            var table = SymbolTable.Table;
+
+            streamWriter.WriteLine("#region Autogenerated code");
+
             if (IsDeprecated)
-                sw.WriteLine("\t[Obsolete]");
-            foreach (string attr in custom_attrs)
-                sw.WriteLine("\t" + attr);
-            sw.Write("\t{0} {1}partial class " + Name, IsInternal ? "internal" : "public",
-                IsAbstract ? "abstract " : "");
-            string cs_parent = table.GetCsType(Element.GetAttribute("parent"));
-            if (cs_parent != "")
+                streamWriter.WriteLine("\t[Obsolete]");
+
+            foreach (var attribute in _customAttributes)
+                streamWriter.WriteLine($"\t{attribute}");
+
+            streamWriter.Write("\t{0} {1}partial class {2}", IsInternal ? "internal" : "public",
+                IsAbstract ? "abstract " : "", Name);
+
+            var csParent = table.GetCsType(Element.GetAttribute(Constants.Parent));
+
+            if (csParent != "")
             {
-                di.objects.Add(CName, QualifiedName);
-                sw.Write(" : " + cs_parent);
+                directoryInfo.Objects.Add(CName, QualifiedName);
+                streamWriter.Write($" : {csParent}");
             }
 
-            foreach (string iface in interfaces)
+            foreach (var iface in Interfaces)
             {
                 if (Parent != null && Parent.Implements(iface))
                     continue;
-                sw.Write(", " + table.GetCsType(iface));
+
+                streamWriter.Write($", {table.GetCsType(iface)}");
             }
 
-            foreach (string iface in managed_interfaces)
+            foreach (var iface in ManagedInterfaces)
             {
                 if (Parent != null && Parent.Implements(iface))
                     continue;
-                sw.Write(", " + iface);
+
+                streamWriter.Write($", {iface}");
             }
 
-            sw.WriteLine(" {");
-            sw.WriteLine();
+            streamWriter.WriteLine(" {");
+            streamWriter.WriteLine();
 
-            GenCtors(generationInfo);
-            GenProperties(generationInfo, null);
-            GenFields(generationInfo);
-            GenChildProperties(generationInfo);
+            GenerateCtors(generationInfo);
+            GenerateProperties(generationInfo, null);
+            GenerateFields(generationInfo);
+            GenerateChildProperties(generationInfo);
 
-            bool has_sigs = sigs != null && sigs.Count > 0;
-            if (!has_sigs)
+            var hasSignals = Signals != null && Signals.Count > 0;
+
+            if (!hasSignals)
             {
-                foreach (string iface in interfaces)
+                foreach (var iface in Interfaces)
                 {
-                    InterfaceGen igen = table.GetClassGen(iface) as InterfaceGen;
-                    if (igen != null && igen.Signals != null)
-                    {
-                        has_sigs = true;
-                        break;
-                    }
+                    if (!(table.GetClassGen(iface) is InterfaceGen interfaceGen) ||
+                        interfaceGen.Signals == null) continue;
+
+                    hasSignals = true;
+                    break;
                 }
             }
 
-            if (has_sigs && Element.HasAttribute("parent"))
+            if (hasSignals && Element.HasAttribute(Constants.Parent))
             {
-                GenSignals(generationInfo, null);
+                GenerateSignals(generationInfo, null);
             }
 
-            GenConstants(generationInfo);
-            GenClassMembers(generationInfo, cs_parent);
-            GenMethods(generationInfo, null, null);
+            GenerateConstants(generationInfo);
+            GenerateClassMembers(generationInfo);
+            GenerateMethods(generationInfo, null, null);
 
-            if (interfaces.Count != 0)
+            if (Interfaces.Count != 0)
             {
-                var all_methods = new Dictionary<string, Method>();
-                foreach (Method m in Methods.Values)
+                var methods = new Dictionary<string, Method>();
+
+                foreach (var method in Methods.Values)
                 {
-                    all_methods[m.Name] = m;
+                    methods[method.Name] = method;
                 }
 
                 var collisions = new Dictionary<string, bool>();
-                foreach (string iface in interfaces)
+
+                foreach (var iface in Interfaces)
                 {
-                    ClassBase igen = table.GetClassGen(iface);
-                    foreach (Method m in igen.Methods.Values)
+                    var classGen = table.GetClassGen(iface);
+
+                    foreach (var method in classGen.Methods.Values)
                     {
-                        if (m.Name.StartsWith("Get") || m.Name.StartsWith("Set"))
+                        if (method.Name.StartsWith("Get") || method.Name.StartsWith("Set"))
                         {
-                            if (GetProperty(m.Name.Substring(3)) != null)
+                            if (GetProperty(method.Name.Substring(3)) != null)
                             {
-                                collisions[m.Name] = true;
+                                collisions[method.Name] = true;
                                 continue;
                             }
                         }
 
-                        Method collision = null;
-                        all_methods.TryGetValue(m.Name, out collision);
-                        if (collision != null && collision.Signature.Types == m.Signature.Types)
-                            collisions[m.Name] = true;
+                        methods.TryGetValue(method.Name, out var collision);
+
+                        if (collision != null && collision.Signature.Types == method.Signature.Types)
+                        {
+                            collisions[method.Name] = true;
+                        }
                         else
-                            all_methods[m.Name] = m;
+                            methods[method.Name] = method;
                     }
                 }
 
-                foreach (string iface in interfaces)
+                foreach (var iface in Interfaces)
                 {
                     if (Parent != null && Parent.Implements(iface))
                         continue;
-                    InterfaceGen igen = table.GetClassGen(iface) as InterfaceGen;
-                    igen.GenMethods(generationInfo, collisions, this);
-                    igen.GenProperties(generationInfo, this);
-                    igen.GenSignals(generationInfo, this);
-                    igen.GenVirtualMethods(generationInfo, this);
+
+                    var interfaceGen = (InterfaceGen)table.GetClassGen(iface);
+
+                    interfaceGen.GenerateMethods(generationInfo, collisions, this);
+                    interfaceGen.GenerateProperties(generationInfo, this);
+                    interfaceGen.GenerateSignals(generationInfo, this);
+                    interfaceGen.GenerateVirtualMethods(generationInfo, this);
                 }
             }
 
-            foreach (XmlElement str in strings)
+            foreach (var str in _staticStrings)
             {
-                sw.Write("\t\tpublic static string " + str.GetAttribute("name"));
-                sw.WriteLine(" {\n\t\t\t get { return \"" + str.GetAttribute("value") + "\"; }\n\t\t}");
+                streamWriter.Write($"\t\tpublic static string {str.GetAttribute(Constants.Name)}");
+                streamWriter.WriteLine($" {{\n\t\t\t get {{ return \"{str.GetAttribute(Constants.Value)}\"; }}\n\t\t}}");
             }
 
-            if (cs_parent != string.Empty && GetExpected(CName) != QualifiedName)
+            if (csParent != string.Empty && GetExpected(CName) != QualifiedName)
             {
-                sw.WriteLine();
-                sw.WriteLine("\t\tstatic " + Name + " ()");
-                sw.WriteLine("\t\t{");
-                sw.WriteLine("\t\t\tGtkSharp." + Studlify(asm_name) + ".ObjectManager.Initialize ();");
-                sw.WriteLine("\t\t}");
+                streamWriter.WriteLine();
+                streamWriter.WriteLine($"\t\tstatic {Name} ()");
+                streamWriter.WriteLine("\t\t{");
+                streamWriter.WriteLine($"\t\t\tGtkSharp.{Studlify(assemblyName)}.ObjectManager.Initialize ();");
+                streamWriter.WriteLine("\t\t}");
             }
 
-            GenerateStructureABI(generationInfo);
-            sw.WriteLine("#endregion");
+            GenerateStructureAbi(generationInfo);
 
-            sw.WriteLine("\t}");
-            sw.WriteLine("}");
+            streamWriter.WriteLine("#endregion");
+            streamWriter.WriteLine("\t}");
+            streamWriter.WriteLine("}");
 
-            sw.Close();
+            streamWriter.Close();
             generationInfo.Writer = null;
+
             Statistics.ObjectCount++;
         }
 
-        protected override void GenCtors(GenerationInfo gen_info)
+        protected override void GenerateCtors(GenerationInfo generationInfo)
         {
-            if (!Element.HasAttribute("parent"))
+            if (!Element.HasAttribute(Constants.Parent))
                 return;
-            string defaultconstructoraccess = Element.HasAttribute("defaultconstructoraccess")
+
+            var defaultconstructoraccess = Element.HasAttribute("defaultconstructoraccess")
                 ? Element.GetAttribute("defaultconstructoraccess")
                 : "public";
 
-            gen_info.Writer.WriteLine("\t\t" + defaultconstructoraccess + " " + Name + " (IntPtr raw) : base(raw) {}");
+            generationInfo.Writer.WriteLine($"\t\t{defaultconstructoraccess} {Name} (IntPtr raw) : base(raw) {{}}");
+
             if (ctors.Count == 0 && !DisableVoidCtor)
             {
-                gen_info.Writer.WriteLine();
-                gen_info.Writer.WriteLine("\t\tprotected " + Name + "() : base(IntPtr.Zero)");
-                gen_info.Writer.WriteLine("\t\t{");
-                gen_info.Writer.WriteLine("\t\t\tCreateNativeObject (new string [0], new GLib.Value [0]);");
-                gen_info.Writer.WriteLine("\t\t}");
+                generationInfo.Writer.WriteLine();
+                generationInfo.Writer.WriteLine($"\t\tprotected {Name}() : base(IntPtr.Zero)");
+                generationInfo.Writer.WriteLine("\t\t{");
+                generationInfo.Writer.WriteLine("\t\t\tCreateNativeObject (new string [0], new GLib.Value [0]);");
+                generationInfo.Writer.WriteLine("\t\t}");
             }
 
-            gen_info.Writer.WriteLine();
+            generationInfo.Writer.WriteLine();
 
-            base.GenCtors(gen_info);
+            base.GenerateCtors(generationInfo);
         }
 
-        protected void GenChildProperties(GenerationInfo gen_info)
+        protected void GenerateChildProperties(GenerationInfo generationInfo)
         {
-            if (childprops.Count == 0)
+            if (_childProperties.Count == 0)
                 return;
 
-            StreamWriter sw = gen_info.Writer;
+            var streamWriter = generationInfo.Writer;
 
-            ObjectGen child_ancestor = Parent as ObjectGen;
-            while (child_ancestor.CName != "GtkContainer" &&
-                   child_ancestor.childprops.Count == 0)
-                child_ancestor = child_ancestor.Parent as ObjectGen;
+            var childAncestor = Parent as ObjectGen;
 
-            sw.WriteLine("\t\tpublic class " + Name + "Child : " + child_ancestor.Namespace + "." + child_ancestor.Name + "." +
-                         child_ancestor.Name + "Child {");
-            sw.WriteLine("\t\t\tprotected internal " + Name +
-                         "Child (Gtk.Container parent, Gtk.Widget child) : base (parent, child) {}");
-            sw.WriteLine("");
+            while (childAncestor.CName != "GtkContainer" &&
+                   childAncestor._childProperties.Count == 0)
+            {
+                childAncestor = childAncestor.Parent as ObjectGen;
+            }
 
-            foreach (ChildProperty prop in childprops.Values)
-                prop.Generate(gen_info, "\t\t\t", null);
+            streamWriter.WriteLine(
+                $"\t\tpublic class {Name}Child : {childAncestor.Namespace}.{childAncestor.Name}.{childAncestor.Name}Child {{");
+            streamWriter.WriteLine(
+                $"\t\t\tprotected internal {Name}Child (Gtk.Container parent, Gtk.Widget child) : base (parent, child) {{}}");
+            streamWriter.WriteLine("");
 
-            sw.WriteLine("\t\t}");
-            sw.WriteLine("");
+            foreach (var childProperty in _childProperties.Values)
+                childProperty.Generate(generationInfo, "\t\t\t", null);
 
-            sw.WriteLine("\t\tpublic override Gtk.Container.ContainerChild this [Gtk.Widget child] {");
-            sw.WriteLine("\t\t\tget {");
-            sw.WriteLine("\t\t\t\treturn new " + Name + "Child (this, child);");
-            sw.WriteLine("\t\t\t}");
-            sw.WriteLine("\t\t}");
-            sw.WriteLine("");
+            streamWriter.WriteLine("\t\t}");
+            streamWriter.WriteLine("");
+
+            streamWriter.WriteLine("\t\tpublic override Gtk.Container.ContainerChild this [Gtk.Widget child] {");
+            streamWriter.WriteLine("\t\t\tget {");
+            streamWriter.WriteLine($"\t\t\t\treturn new {Name}Child (this, child);");
+            streamWriter.WriteLine("\t\t\t}");
+            streamWriter.WriteLine("\t\t}");
+            streamWriter.WriteLine("");
         }
 
-        void GenClassMembers(GenerationInfo gen_info, string cs_parent)
+        private void GenerateClassMembers(GenerationInfo generationInfo)
         {
-            GenVirtualMethods(gen_info, null);
-            GenerateStructureABI(gen_info, abi_class_members, "class_abi", ClassStructName);
+            GenerateVirtualMethods(generationInfo, null);
+            GenerateStructureAbi(generationInfo, AbiClassMembers, "class_abi", ClassStructName);
         }
 
         /* Keep this in sync with the one in glib/GType.cs */
-        private static string GetExpected(string cname)
+        private static string GetExpected(string cName)
         {
-            for (int i = 1; i < cname.Length; i++)
+            for (var i = 1; i < cName.Length; i++)
             {
-                if (char.IsUpper(cname[i]))
-                {
-                    if (i == 1 && cname[0] == 'G')
-                        return "GLib." + cname.Substring(1);
-                    else
-                        return cname.Substring(0, i) + "." + cname.Substring(i);
-                }
+                if (!char.IsUpper(cName[i])) continue;
+
+                if (i == 1 && cName[0] == 'G')
+                    return $"GLib.{cName.Substring(1)}";
+                
+                return $"{cName.Substring(0, i)}.{cName.Substring(i)}";
             }
 
-            throw new ArgumentException("cname doesn't follow the NamespaceType capitalization style: " + cname);
+            throw new ArgumentException($"cname doesn't follow the NamespaceType capitalization style: {cName}.");
         }
 
-        private static bool NeedsMap(IDictionary<string, string> objs, string assembly_name)
+        private static bool NeedsMap(IDictionary<string, string> objs)
         {
-            foreach (string key in objs.Keys)
-            {
-                if (GetExpected(key) != objs[key])
-                {
-                    return true;
-                }
-            }
-
-            return false;
+            return objs.Keys.Any(key => GetExpected(key) != objs[key]);
         }
 
         private static string Studlify(string name)
         {
-            string result = "";
+            var subs = name.Split('-');
 
-            string[] subs = name.Split('-');
-            foreach (string sub in subs)
-                result += char.ToUpper(sub[0]) + sub.Substring(1);
-
-            return result;
+            return subs.Aggregate("", (current, sub) => $"{current}{char.ToUpper(sub[0]) + sub.Substring(1)}");
         }
 
         public static void GenerateMappers()
         {
-            foreach (string dir in dirs.Keys)
+            foreach (var directory in DirectoriesInfo.Keys)
             {
-                DirectoryInfo di = dirs[dir];
+                var directoryInfo = DirectoriesInfo[directory];
 
-                if (!NeedsMap(di.objects, di.assembly_name))
+                if (!NeedsMap(directoryInfo.Objects))
                     continue;
 
-                GenerationInfo gen_info = new GenerationInfo(dir, di.assembly_name);
+                var generationInfo = new GenerationInfo(directory, directoryInfo.AssemblyName);
 
-                GenerateMapper(di, gen_info);
+                GenerateMapper(directoryInfo, generationInfo);
             }
         }
 
-        private static void GenerateMapper(DirectoryInfo dir_info, GenerationInfo gen_info)
+        private static void GenerateMapper(DirectoryInfo directoryInfo, GenerationInfo generationInfo)
         {
-            StreamWriter sw = gen_info.OpenStream("ObjectManager", "GtkSharp");
+            var streamWriter = generationInfo.OpenStream("ObjectManager", "GtkSharp");
 
-            sw.WriteLine("namespace GtkSharp." + Studlify(dir_info.assembly_name) + " {");
-            sw.WriteLine();
-            sw.WriteLine("\tpublic class ObjectManager {");
-            sw.WriteLine();
-            sw.WriteLine("\t\tstatic bool initialized = false;");
-            sw.WriteLine("\t\t// Call this method from the appropriate module init function.");
-            sw.WriteLine("\t\tpublic static void Initialize ()");
-            sw.WriteLine("\t\t{");
-            sw.WriteLine("\t\t\tif (initialized)");
-            sw.WriteLine("\t\t\t\treturn;");
-            sw.WriteLine("");
-            sw.WriteLine("\t\t\tinitialized = true;");
+            streamWriter.WriteLine($"namespace GtkSharp.{Studlify(directoryInfo.AssemblyName)} {{");
+            streamWriter.WriteLine();
+            streamWriter.WriteLine("\tpublic class ObjectManager {");
+            streamWriter.WriteLine();
+            streamWriter.WriteLine("\t\tstatic bool initialized = false;");
+            streamWriter.WriteLine("\t\t// Call this method from the appropriate module init function.");
+            streamWriter.WriteLine("\t\tpublic static void Initialize ()");
+            streamWriter.WriteLine("\t\t{");
+            streamWriter.WriteLine("\t\t\tif (initialized)");
+            streamWriter.WriteLine("\t\t\t\treturn;");
+            streamWriter.WriteLine("");
+            streamWriter.WriteLine("\t\t\tinitialized = true;");
 
-            foreach (string key in dir_info.objects.Keys)
+            foreach (var key in directoryInfo.Objects.Keys)
             {
-                if (GetExpected(key) != dir_info.objects[key])
+                if (GetExpected(key) != directoryInfo.Objects[key])
                 {
-                    sw.WriteLine("\t\t\tGLib.GType.Register ({0}.GType, typeof ({0}));", dir_info.objects[key]);
+                    streamWriter.WriteLine("\t\t\tGLib.GType.Register ({0}.GType, typeof ({0}));", directoryInfo.Objects[key]);
                 }
             }
 
-            sw.WriteLine("\t\t}");
-            sw.WriteLine("\t}");
-            sw.WriteLine("}");
-            sw.Close();
+            streamWriter.WriteLine("\t\t}");
+            streamWriter.WriteLine("\t}");
+            streamWriter.WriteLine("}");
+            streamWriter.Close();
         }
     }
 }

@@ -38,7 +38,7 @@ namespace GapiCodegen.Generatables
             Element = element;
         }
 
-        public string CName => Element.GetAttribute("cname");
+        public string CName => Element.GetAttribute(Constants.CName);
 
         public XmlElement Element { get; }
 
@@ -54,15 +54,15 @@ namespace GapiCodegen.Generatables
             }
         }
 
-        public bool IsInternal => Element.GetAttributeAsBoolean("internal");
+        public bool IsInternal => Element.GetAttributeAsBoolean(Constants.Internal);
 
-        public string LibraryName => _namespaceElement.GetAttribute("library");
+        public string LibraryName => _namespaceElement.GetAttribute(Constants.Library);
 
         public abstract string MarshalType { get; }
 
-        public virtual string Name => Element.GetAttribute("name");
+        public virtual string Name => Element.GetAttribute(Constants.Name);
 
-        public string Namespace => _namespaceElement.GetAttribute("name");
+        public string Namespace => _namespaceElement.GetAttribute(Constants.Name);
 
         public abstract string DefaultValue { get; }
 
@@ -70,7 +70,7 @@ namespace GapiCodegen.Generatables
 
         public abstract string CallByName(string var);
 
-        public abstract string FromNative(string var);
+        public abstract string FromNative(string varName);
 
         public abstract bool Validate();
 

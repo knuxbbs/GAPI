@@ -49,7 +49,7 @@ namespace GapiCodegen.Generatables {
 			return string.Empty;
 		}
 
-		public override string FromNative (string var)
+		public override string FromNative (string varName)
 		{
 			return string.Empty;
 		}
@@ -73,9 +73,9 @@ namespace GapiCodegen.Generatables {
 			sw.WriteLine (" {");
 			sw.WriteLine ();
 
-			GenConstants (generationInfo);
-			GenProperties (generationInfo, null);
-			GenMethods (generationInfo, null, null);
+			GenerateConstants (generationInfo);
+			GenerateProperties (generationInfo, null);
+			GenerateMethods (generationInfo, null, null);
 
 			sw.WriteLine ("#endregion");
 

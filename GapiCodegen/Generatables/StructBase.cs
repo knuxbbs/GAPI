@@ -86,12 +86,12 @@ namespace GapiCodegen.Generatables {
 			return var + "_as_native";
 		}
 
-		public override string FromNative (string var)
+		public override string FromNative (string varName)
 		{
 			if (DisableNew)
-				return var + " == IntPtr.Zero ? " + QualifiedName + ".Zero : (" + QualifiedName + ") System.Runtime.InteropServices.Marshal.PtrToStructure (" + var + ", typeof (" + QualifiedName + "))";
+				return varName + " == IntPtr.Zero ? " + QualifiedName + ".Zero : (" + QualifiedName + ") System.Runtime.InteropServices.Marshal.PtrToStructure (" + varName + ", typeof (" + QualifiedName + "))";
 			else
-				return QualifiedName + ".New (" + var + ")";
+				return QualifiedName + ".New (" + varName + ")";
 		}
 		
 		public string AllocNative (string var)
@@ -210,8 +210,8 @@ namespace GapiCodegen.Generatables {
 			return base.Validate ();
 		}
 
-		public override bool CanGenerateABIStruct(LogWriter log) {
-			log.Info("Not generating any ABI structs for managed structures");
+		public override bool CanGenerateAbiStruct(LogWriter logWriter) {
+			logWriter.Info("Not generating any ABI structs for managed structures");
 
 			return false;
 		}
@@ -249,8 +249,8 @@ namespace GapiCodegen.Generatables {
 			need_read_native = false;
 			GenFields (generationInfo);
 			sw.WriteLine ();
-			GenCtors (generationInfo);
-			GenMethods (generationInfo, null, this);
+			GenerateCtors (generationInfo);
+			GenerateMethods (generationInfo, null, this);
 			if (need_read_native)
 				GenReadNative (sw);
 			GenEqualsAndHash (sw);
@@ -266,9 +266,9 @@ namespace GapiCodegen.Generatables {
 			generationInfo.Writer = null;
 		}
 		
-		protected override void GenCtors (GenerationInfo gen_info)
+		protected override void GenerateCtors (GenerationInfo generationInfo)
 		{
-			StreamWriter sw = gen_info.Writer;
+			StreamWriter sw = generationInfo.Writer;
 
 			sw.WriteLine ("\t\tpublic static {0} Zero = new {0} ();", QualifiedName);
 			sw.WriteLine();
@@ -284,7 +284,7 @@ namespace GapiCodegen.Generatables {
 			foreach (Ctor ctor in Ctors)
 				ctor.IsStatic = true;
 
-			base.GenCtors (gen_info);
+			base.GenerateCtors (generationInfo);
 		}
 
 		void GenReadNative (StreamWriter sw)

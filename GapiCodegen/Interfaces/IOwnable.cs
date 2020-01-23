@@ -18,6 +18,6 @@ namespace GapiCodegen.Interfaces
 {
     public interface IOwnable
     {
-        string FromNative(string var, bool owned);
+        string FromNative(string varName, bool owned);
     }
 }

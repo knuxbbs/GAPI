@@ -36,19 +36,19 @@ namespace GapiCodegen
         {
             var nsName = namespaceElement.GetAttribute("name");
             var separatorChar = Path.DirectorySeparatorChar;
-            Dir = $"..{separatorChar}{nsName.ToLower()}{separatorChar}generated";
+            Directory = $"..{separatorChar}{nsName.ToLower()}{separatorChar}generated";
             AssemblyName = $"{nsName.ToLower()}-sharp";
         }
 
-        public GenerationInfo(string dir, string assemblyName) :
-            this(dir, assemblyName, "", "", "", "", "", "")
+        public GenerationInfo(string directory, string assemblyName) :
+            this(directory, assemblyName, "", "", "", "", "", "")
         { }
 
-        public GenerationInfo(string dir, string assemblyName, string glueFilename,
+        public GenerationInfo(string directory, string assemblyName, string glueFilename,
                 string glueIncludes, string glueLibName, string abiCFile,
                 string abiCsFile, string abiCsUsings)
         {
-            Dir = dir;
+            Directory = directory;
             AssemblyName = assemblyName;
             GlueLibName = glueLibName;
             _abiCFile = abiCFile;
@@ -147,7 +147,7 @@ namespace GapiCodegen
 
         public StreamWriter CAbiWriter { get; private set; }
 
-        public string Dir { get; }
+        public string Directory { get; }
 
         public string GlueLibName { get; }
 
@@ -183,10 +183,10 @@ namespace GapiCodegen
 
         public string CurrentType { get; set; }
 
-        public StreamWriter OpenStream(string name, string namespce)
+        public StreamWriter OpenStream(string name, string @namespace)
         {
-            var genDir = Path.Combine(Dir, namespce);
-            Directory.CreateDirectory(genDir);
+            var genDir = Path.Combine(Directory, @namespace);
+            System.IO.Directory.CreateDirectory(genDir);
 
             var filename = Path.Combine(genDir, $"{name}.cs");
 
