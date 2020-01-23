@@ -28,8 +28,8 @@ namespace GapiCodegen
     /// </summary>
     public abstract class PropertyBase
     {
-        protected XmlElement Element;
-        public ClassBase ContainerType;
+        protected readonly XmlElement Element;
+        protected readonly ClassBase ContainerType;
 
         protected PropertyBase(XmlElement element, ClassBase containerType)
         {
@@ -53,10 +53,10 @@ namespace GapiCodegen
 
                 return _cType;
             }
-            set => _cType = value;
+            protected set => _cType = value;
         }
 
-        public string CsType
+        protected string CsType
         {
             get
             {

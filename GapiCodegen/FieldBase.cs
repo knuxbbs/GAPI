@@ -30,8 +30,8 @@ namespace GapiCodegen
     public abstract class FieldBase : PropertyBase
     {
         public FieldBase AbiField = null;
-        private string _getterName, _setterName;
-        protected string GetOffsetName, OffsetName;
+        private string _getterName, _setterName, _offsetName;
+        protected string GetOffsetName;
 
         protected FieldBase(XmlElement element, ClassBase containerType) : base(element, containerType)
         {
@@ -84,7 +84,8 @@ namespace GapiCodegen
             ? Element.GetAttribute(Constants.Access)
             : DefaultAccess;
 
-        public bool IsArray => Element.HasAttribute(Constants.ArrayLen) || Element.GetAttributeAsBoolean(Constants.Array);
+        public bool IsArray =>
+            Element.HasAttribute(Constants.ArrayLen) || Element.GetAttributeAsBoolean(Constants.Array);
 
         public bool IsBitfield => Element.HasAttribute(Constants.Bits);
 
@@ -120,8 +121,8 @@ namespace GapiCodegen
             if (UseAbiStruct(generationInfo))
             {
                 GetOffsetName = AbiField.GetOffsetName;
-                OffsetName = ((StructAbiField)AbiField).abi_info_name + ".GetFieldOffset(\"" +
-                             ((StructField)AbiField).CName + "\")";
+                _offsetName = ((StructAbiField) AbiField).abi_info_name + ".GetFieldOffset(\"" +
+                              ((StructField) AbiField).CName + "\")";
 
                 return;
             }
@@ -144,8 +145,8 @@ namespace GapiCodegen
             {
                 if ((!Readable || Getter != null) && (!Writable || Setter != null)) return;
 
-                OffsetName = $"{CName}_offset";
-                GetOffsetName = $"{prefix}_get_{OffsetName}";
+                _offsetName = $"{CName}_offset";
+                GetOffsetName = $"{prefix}_get_{_offsetName}";
             }
         }
 
@@ -180,7 +181,7 @@ namespace GapiCodegen
                 streamWriter.WriteLine(indent + "[DllImport (\"{0}\")]", generationInfo.GlueLibName);
                 streamWriter.WriteLine(indent + "extern static uint {0} ();", GetOffsetName);
                 streamWriter.WriteLine();
-                streamWriter.WriteLine($"{indent}static uint {OffsetName} = {GetOffsetName} ();");
+                streamWriter.WriteLine($"{indent}static uint {_offsetName} = {GetOffsetName} ();");
             }
 
             base.GenerateImports(generationInfo, indent);
@@ -195,7 +196,7 @@ namespace GapiCodegen
 
             GenerateImports(generationInfo, indent);
 
-            if (Getter == null && _getterName == null && OffsetName == null &&
+            if (Getter == null && _getterName == null && _offsetName == null &&
                 Setter == null && _setterName == null)
             {
                 return;
@@ -221,21 +222,23 @@ namespace GapiCodegen
                 ContainerType.Prepare(streamWriter, $"{indent}\t\t");
 
                 streamWriter.WriteLine(indent + "\t\t" + CsType + " result = " +
-                             table.FromNative(CType, _getterName + " (" + ContainerType.CallByName() + ")") + ";");
+                                       table.FromNative(CType, _getterName + " (" + ContainerType.CallByName() + ")") +
+                                       ";");
 
                 ContainerType.Finish(streamWriter, $"{indent}\t\t");
                 streamWriter.WriteLine($"{indent}\t\treturn result;");
                 streamWriter.WriteLine($"{indent}\t}}");
             }
-            else if (Readable && OffsetName != null)
+            else if (Readable && _offsetName != null)
             {
                 streamWriter.WriteLine($"{indent}\tget {{");
                 streamWriter.WriteLine($"{indent}\t\tunsafe {{");
 
                 if (generatable is CallbackGen)
                 {
-                    streamWriter.WriteLine(indent + "\t\t\tIntPtr* raw_ptr = (IntPtr*)(((byte*)" + ContainerType.CallByName() +
-                                 ") + " + OffsetName + ");");
+                    streamWriter.WriteLine(indent + "\t\t\tIntPtr* raw_ptr = (IntPtr*)(((byte*)" +
+                                           ContainerType.CallByName() +
+                                           ") + " + _offsetName + ");");
 
                     streamWriter.WriteLine(
                         indent + "\t\t\t {0} del = ({0})Marshal.GetDelegateForFunctionPointer(*raw_ptr, typeof({0}));",
@@ -246,8 +249,9 @@ namespace GapiCodegen
                 else
                 {
                     streamWriter.WriteLine(indent + "\t\t\t" + table.GetMarshalType(CType) + "* raw_ptr = (" +
-                                 table.GetMarshalType(CType) + "*)(((byte*)" + ContainerType.CallByName() + ") + " +
-                                 OffsetName + ");");
+                                           table.GetMarshalType(CType) + "*)(((byte*)" + ContainerType.CallByName() +
+                                           ") + " +
+                                           _offsetName + ");");
 
                     streamWriter.WriteLine($"{indent}\t\t\treturn {table.FromNative(CType, "(*raw_ptr)")};");
                 }
@@ -277,7 +281,7 @@ namespace GapiCodegen
                 ContainerType.Finish(streamWriter, $"{indent}\t\t");
                 streamWriter.WriteLine($"{indent}\t}}");
             }
-            else if (Writable && OffsetName != null)
+            else if (Writable && _offsetName != null)
             {
                 streamWriter.WriteLine($"{indent}\tset {{");
                 streamWriter.WriteLine($"{indent}\t\tunsafe {{");
@@ -286,15 +290,16 @@ namespace GapiCodegen
                 {
                     streamWriter.WriteLine(indent + "\t\t\t{0} wrapper = new {0} (value);", callbackGen.WrapperName);
                     streamWriter.WriteLine(
-                        $"{indent}\t\t\tIntPtr* raw_ptr = (IntPtr*)(((byte*){ContainerType.CallByName()}) + {OffsetName});");
+                        $"{indent}\t\t\tIntPtr* raw_ptr = (IntPtr*)(((byte*){ContainerType.CallByName()}) + {_offsetName});");
                     streamWriter.WriteLine(
                         $"{indent}\t\t\t*raw_ptr = Marshal.GetFunctionPointerForDelegate (wrapper.NativeDelegate);");
                 }
                 else
                 {
                     streamWriter.WriteLine(indent + "\t\t\t" + table.GetMarshalType(CType) + "* raw_ptr = (" +
-                                 table.GetMarshalType(CType) + "*)(((byte*)" + ContainerType.CallByName() + ") + " +
-                                 OffsetName + ");");
+                                           table.GetMarshalType(CType) + "*)(((byte*)" + ContainerType.CallByName() +
+                                           ") + " +
+                                           _offsetName + ");");
                     streamWriter.WriteLine($"{indent}\t\t\t*raw_ptr = {toNative};");
                 }
 
@@ -305,7 +310,8 @@ namespace GapiCodegen
             streamWriter.WriteLine($"{indent}}}");
             streamWriter.WriteLine("");
 
-            if ((_getterName != null || _setterName != null || GetOffsetName != null) && generationInfo.GlueWriter != null)
+            if ((_getterName != null || _setterName != null || GetOffsetName != null) &&
+                generationInfo.GlueWriter != null)
                 GenerateGlue(generationInfo);
         }
 

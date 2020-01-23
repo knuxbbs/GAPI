@@ -31,8 +31,8 @@ namespace GapiCodegen
     /// </summary>
     public abstract class MethodBase
     {
-        protected XmlElement Element;
-        protected ClassBase ContainerType;
+        protected readonly XmlElement Element;
+        protected readonly ClassBase ContainerType;
 
         protected MethodBase(XmlElement element, ClassBase containerType)
         {
@@ -81,7 +81,7 @@ namespace GapiCodegen
 
         private MethodBody _body;
 
-        public MethodBody Body
+        protected MethodBody Body
         {
             get
             {
@@ -127,7 +127,7 @@ namespace GapiCodegen
             set => Parameters.Static = value;
         }
 
-        public string LibraryName => Element.HasAttribute(Constants.Library)
+        protected string LibraryName => Element.HasAttribute(Constants.Library)
             ? Element.GetAttribute(Constants.Library)
             : ContainerType.LibraryName;
 
@@ -135,7 +135,7 @@ namespace GapiCodegen
 
         public string Name { get; set; }
 
-        public Parameters Parameters { get; set; }
+        public Parameters Parameters { get; protected set; }
         
         public string Protection { get; set; }
 

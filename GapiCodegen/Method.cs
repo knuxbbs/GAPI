@@ -69,7 +69,9 @@ namespace GapiCodegen
             }
 
             var parameters = Parameters;
-            IsGetter = (parameters.IsAccessor && _returnValue.IsVoid || parameters.Count == 0 && !_returnValue.IsVoid) && HasGetterName;
+            IsGetter =
+                (parameters.IsAccessor && _returnValue.IsVoid || parameters.Count == 0 && !_returnValue.IsVoid) &&
+                HasGetterName;
             IsSetter = (parameters.IsAccessor || parameters.VisibleCount == 1 && _returnValue.IsVoid) && HasSetterName;
 
             _call =
@@ -112,15 +114,15 @@ namespace GapiCodegen
                     textWriter.Write("new ");
                     break;
                 default:
-                    {
-                        if (Modifiers == "new " || dup != null &&
-                            (dup.Signature != null && Signature != null &&
-                             dup.Signature.ToString() == Signature.ToString() || 
-                             dup.Signature == null && Signature == null))
-                            textWriter.Write("new ");
+                {
+                    if (Modifiers == "new " || dup != null &&
+                        (dup.Signature != null && Signature != null &&
+                         dup.Signature.ToString() == Signature.ToString() ||
+                         dup.Signature == null && Signature == null))
+                        textWriter.Write("new ");
 
-                        break;
-                    }
+                    break;
+                }
             }
 
             if (Name.StartsWith(ContainerType.Name))
@@ -143,6 +145,7 @@ namespace GapiCodegen
                     else
                         textWriter.Write(Name);
                 }
+
                 textWriter.WriteLine(" { ");
             }
             else if (IsAccessor)
@@ -151,7 +154,8 @@ namespace GapiCodegen
             }
             else
             {
-                textWriter.Write(_returnValue.CsType + " " + Name + "(" + (Signature != null ? Signature.ToString() : "") + ")");
+                textWriter.Write(_returnValue.CsType + " " + Name + "(" +
+                                 (Signature != null ? Signature.ToString() : "") + ")");
             }
         }
 
@@ -201,7 +205,8 @@ namespace GapiCodegen
                 sw.WriteLine("\t\tdelegate " + _returnValue.CsType + " d_" + CName + "(" + import_sig + ");");
             else
                 sw.WriteLine("\t\tdelegate " + _returnValue.MarshalType + " d_" + CName + "(" + import_sig + ");");
-            sw.WriteLine("\t\tstatic d_" + CName + " " + CName + " = FuncLoader.LoadFunction<d_" + CName + ">(FuncLoader.GetProcAddress(GLibrary.Load(" + LibraryName + "), \"" + CName + "\"));");
+            sw.WriteLine("\t\tstatic d_" + CName + " " + CName + " = FuncLoader.LoadFunction<d_" + CName +
+                         ">(FuncLoader.GetProcAddress(GLibrary.Load(" + LibraryName + "), \"" + CName + "\"));");
             sw.WriteLine();
         }
 
@@ -211,8 +216,10 @@ namespace GapiCodegen
             sw.Write("\t\tpublic ");
             if (IsStatic)
                 sw.Write("static ");
-            sw.WriteLine(_returnValue.CsType + " " + Name + "(" + (Signature != null ? Signature.WithoutOptional() : "") + ") {");
-            sw.WriteLine("\t\t\t{0}{1} ({2});", !_returnValue.IsVoid ? "return " : string.Empty, Name, Signature.CallWithoutOptionals());
+            sw.WriteLine(_returnValue.CsType + " " + Name + "(" +
+                         (Signature != null ? Signature.WithoutOptional() : "") + ") {");
+            sw.WriteLine("\t\t\t{0}{1} ({2});", !_returnValue.IsVoid ? "return " : string.Empty, Name,
+                Signature.CallWithoutOptionals());
             sw.WriteLine("\t\t}");
         }
 
@@ -235,17 +242,20 @@ namespace GapiCodegen
                     else
                     {
                         IsSetter = false;
-                        _call = "(" + (IsStatic ? "" : ContainerType.CallByName() + (Parameters.Count > 0 ? ", " : "")) + Body.GetCallString(false) + ")";
+                        _call =
+                            "(" + (IsStatic ? "" : ContainerType.CallByName() + (Parameters.Count > 0 ? ", " : "")) +
+                            Body.GetCallString(false) + ")";
                         comp = null;
                     }
                 }
+
                 /* some setters take more than one arg */
                 if (comp != null && !comp.IsSetter)
                     comp = null;
             }
 
             GenerateImport(gen_info.Writer);
-            if (comp != null && _returnValue.CsType == ((MethodBase)comp).Parameters.AccessorReturnType)
+            if (comp != null && _returnValue.CsType == ((MethodBase) comp).Parameters.AccessorReturnType)
                 comp.GenerateImport(gen_info.Writer);
 
             if (IsDeprecated)
@@ -266,12 +276,13 @@ namespace GapiCodegen
 
             if (IsGetter || IsSetter)
             {
-                if (comp != null && _returnValue.CsType == ((MethodBase)comp).Parameters.AccessorReturnType)
+                if (comp != null && _returnValue.CsType == ((MethodBase) comp).Parameters.AccessorReturnType)
                 {
                     gen_info.Writer.WriteLine();
                     gen_info.Writer.Write("\t\t\tset");
                     comp.GenerateBody(gen_info, implementor, "\t");
                 }
+
                 gen_info.Writer.WriteLine();
                 gen_info.Writer.WriteLine("\t\t}");
             }
@@ -302,7 +313,8 @@ namespace GapiCodegen
             else
             {
                 sw.WriteLine(_returnValue.MarshalType + " raw_ret = " + CName + _call + ";");
-                sw.WriteLine(indent + "\t\t\t" + _returnValue.CsType + " ret = " + _returnValue.FromNative("raw_ret") + ";");
+                sw.WriteLine(indent + "\t\t\t" + _returnValue.CsType + " ret = " + _returnValue.FromNative("raw_ret") +
+                             ";");
             }
 
             if (!IsStatic && implementor != null)
