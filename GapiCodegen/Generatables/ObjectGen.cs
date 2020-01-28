@@ -144,7 +144,7 @@ namespace GapiCodegen.Generatables
                 ? $"{Namespace.ToLower()}-sharp"
                 : generationInfo.AssemblyName;
 
-            var directoryInfo = GetDirectoryInfo(generationInfo.Directory, assemblyName);
+            var directoryInfo = GetDirectoryInfo(generationInfo.DirectoryPath, assemblyName);
 
             var streamWriter = generationInfo.Writer = generationInfo.OpenStream(Name, Namespace);
 
@@ -196,7 +196,7 @@ namespace GapiCodegen.Generatables
             streamWriter.WriteLine(" {");
             streamWriter.WriteLine();
 
-            GenerateCtors(generationInfo);
+            GenerateConstructors(generationInfo);
             GenerateProperties(generationInfo, null);
             GenerateFields(generationInfo);
             GenerateChildProperties(generationInfo);
@@ -302,7 +302,7 @@ namespace GapiCodegen.Generatables
             Statistics.ObjectCount++;
         }
 
-        protected override void GenerateCtors(GenerationInfo generationInfo)
+        protected override void GenerateConstructors(GenerationInfo generationInfo)
         {
             if (!Element.HasAttribute(Constants.Parent))
                 return;
@@ -313,7 +313,7 @@ namespace GapiCodegen.Generatables
 
             generationInfo.Writer.WriteLine($"\t\t{defaultconstructoraccess} {Name} (IntPtr raw) : base(raw) {{}}");
 
-            if (ctors.Count == 0 && !DisableVoidCtor)
+            if (Ctors.Count == 0 && !DisableVoidCtor)
             {
                 generationInfo.Writer.WriteLine();
                 generationInfo.Writer.WriteLine($"\t\tprotected {Name}() : base(IntPtr.Zero)");
@@ -324,7 +324,7 @@ namespace GapiCodegen.Generatables
 
             generationInfo.Writer.WriteLine();
 
-            base.GenerateCtors(generationInfo);
+            base.GenerateConstructors(generationInfo);
         }
 
         protected void GenerateChildProperties(GenerationInfo generationInfo)

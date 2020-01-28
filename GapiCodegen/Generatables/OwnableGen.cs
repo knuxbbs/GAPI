@@ -25,7 +25,7 @@ using GapiCodegen.Interfaces;
 namespace GapiCodegen.Generatables {
 	public class OwnableGen : SimpleBase, IOwnable {
 		
-		public OwnableGen (string cType, string type) : base (cType, type, "null") {}
+		public OwnableGen (string cName, string type) : base (cName, type, "null") {}
 
 		public override string MarshalType {
 			get { return "IntPtr"; }

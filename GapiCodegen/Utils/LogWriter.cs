@@ -29,13 +29,13 @@ namespace GapiCodegen.Utils
 
         public LogWriter()
         {
-            var l = Environment.GetEnvironmentVariable("CODEGEN_DEBUG");
+            var level = Environment.GetEnvironmentVariable("CODEGEN_DEBUG");
 
             _level = 1;
 
-            if (l != null)
+            if (level != null)
             {
-                _level = int.Parse(l);
+                _level = int.Parse(level);
             }
         }
 

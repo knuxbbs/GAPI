@@ -26,14 +26,14 @@ namespace GapiCodegen.Generatables {
 		string call_fmt;
 		string from_fmt;
 
-		public MarshalGen (string cType, string type, string mtype, string call_fmt, string from_fmt, string default_value) : base (cType, type, default_value)
+		public MarshalGen (string cName, string type, string mtype, string call_fmt, string from_fmt, string default_value) : base (cName, type, default_value)
 		{
 			this.mtype = mtype;
 			this.call_fmt = call_fmt;
 			this.from_fmt = from_fmt;
 		}
 		
-		public MarshalGen (string cType, string type, string mtype, string call_fmt, string from_fmt) : this (cType, type, mtype, call_fmt, from_fmt, "null") { }
+		public MarshalGen (string cName, string type, string mtype, string call_fmt, string from_fmt) : this (cName, type, mtype, call_fmt, from_fmt, "null") { }
 
 		public override string MarshalType {
 			get {

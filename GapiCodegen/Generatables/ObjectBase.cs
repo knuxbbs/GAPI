@@ -221,7 +221,7 @@ namespace GapiCodegen.Generatables
 
         public override bool CanGenerateAbiStruct(LogWriter logWriter)
         {
-            if (!abi_fields_valid)
+            if (!IsAbiFieldsValid)
             {
                 logWriter.Info($"{CName} has invalid fields.");
 

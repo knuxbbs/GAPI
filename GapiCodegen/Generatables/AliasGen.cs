@@ -20,9 +20,12 @@
 
 namespace GapiCodegen.Generatables
 {
+    /// <summary>
+    /// Handles 'alias' elements.
+    /// "Generates" type aliases by ignoring them (eg, outputting Gdk.Rectangle wherever the API calls for a GtkAllocation
+    /// </summary>
     public class AliasGen : SimpleBase
     {
-        public AliasGen(string cType, string type) : base(cType, type, string.Empty) { }
+        public AliasGen(string cName, string type) : base(cName, type, string.Empty) { }
     }
 }
-

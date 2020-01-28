@@ -190,17 +190,17 @@ namespace GapiCodegen
             AddType(new SimpleGen("GHookFinalizeFunc", "IntPtr", "IntPtr.Zero"));
         }
 
-        public void AddType(IGeneratable gen)
+        public void AddType(IGeneratable generatable)
         {
-            Log.Info($"Adding {gen.CName} = {gen}");
+            Log.Info($"Adding {generatable.CName} = {generatable}");
 
-            _types[gen.CName] = gen;
+            _types[generatable.CName] = generatable;
         }
 
-        public void AddTypes(IGeneratable[] gens)
+        public void AddTypes(IGeneratable[] generatables)
         {
-            foreach (var gen in gens)
-                AddType(gen);
+            foreach (var generatable in generatables)
+                AddType(generatable);
         }
 
         public IGeneratable this[string ctype] => DeAlias(ctype);

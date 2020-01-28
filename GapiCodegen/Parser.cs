@@ -35,7 +35,7 @@ namespace GapiCodegen
     /// </summary>
     public class Parser
     {
-        private const int CurrentParserVersion = 3;
+        private const int DefaultParserVersion = 3;
 
         public IGeneratable[] Parse(string filename)
         {
@@ -49,16 +49,16 @@ namespace GapiCodegen
 
         public IGeneratable[] Parse(string filename, string schemaUri, string gapiDir)
         {
-            var doc = Load(filename, schemaUri);
+            var document = Load(filename, schemaUri);
 
-            if (doc == null)
+            if (document == null)
                 return null;
 
-            var root = doc.DocumentElement;
+            var root = document.DocumentElement;
 
             if (root == null || !root.HasChildNodes)
             {
-                Console.WriteLine("No Namespaces found.");
+                Console.WriteLine("No namespaces found.");
                 return null;
             }
 
@@ -82,7 +82,7 @@ namespace GapiCodegen
             else
                 parserVersion = 1;
 
-            if (parserVersion > CurrentParserVersion)
+            if (parserVersion > DefaultParserVersion)
                 Console.WriteLine(
                     "WARNING: The input file {0} was created by a parser that was released after this version of the generator. Consider updating the code generator if you experience problems.",
                     filename);
@@ -100,9 +100,13 @@ namespace GapiCodegen
                         string xmlPath;
 
                         if (File.Exists(Path.Combine(gapiDir, element.GetAttribute("xml"))))
+                        {
                             xmlPath = Path.Combine(gapiDir, element.GetAttribute("xml"));
+                        }
                         else if (File.Exists(element.GetAttribute("xml")))
+                        {
                             xmlPath = element.GetAttribute("xml");
+                        }
                         else
                         {
                             Console.WriteLine($"Parser: Could not find include {element.GetAttribute("xml")}");
@@ -114,11 +118,11 @@ namespace GapiCodegen
 
                         break;
 
-                    case "namespace":
+                    case Constants.Namespace:
                         generatables.AddRange(ParseNamespace(element));
                         break;
 
-                    case "symbol":
+                    case Constants.Symbol:
                         generatables.Add(ParseSymbol(element));
                         break;
 
@@ -140,7 +144,7 @@ namespace GapiCodegen
 
         private static XmlDocument Load(string filename, string schemaUri)
         {
-            var doc = new XmlDocument();
+            var document = new XmlDocument();
 
             try
             {
@@ -151,12 +155,25 @@ namespace GapiCodegen
                     settings.Schemas.Add(null, schemaUri);
                     settings.ValidationType = ValidationType.Schema;
                     settings.ValidationFlags |= XmlSchemaValidationFlags.ReportValidationWarnings;
-                    settings.ValidationEventHandler += ValidationEventHandler;
+                    settings.ValidationEventHandler += (sender, args) =>
+                    {
+                        switch (args.Severity)
+                        {
+                            case XmlSeverityType.Error:
+                                Console.WriteLine($"Error: {args.Message}");
+                                break;
+                            case XmlSeverityType.Warning:
+                                Console.WriteLine($"Warning: {args.Message}");
+                                break;
+                            default:
+                                throw new ArgumentOutOfRangeException();
+                        }
+                    };
                 }
 
                 Stream stream = File.OpenRead(filename);
                 var reader = XmlReader.Create(stream, settings);
-                doc.Load(reader);
+                document.Load(reader);
 
                 stream.Close();
             }
@@ -164,140 +181,125 @@ namespace GapiCodegen
             {
                 Console.WriteLine("Invalid XML file.");
                 Console.WriteLine(e);
-                doc = null;
+                document = null;
             }
 
-            return doc;
-        }
-
-        private static void ValidationEventHandler(object sender, ValidationEventArgs e)
-        {
-            switch (e.Severity)
-            {
-                case XmlSeverityType.Error:
-                    Console.WriteLine($"Error: {e.Message}");
-                    break;
-                case XmlSeverityType.Warning:
-                    Console.WriteLine($"Warning: {e.Message}");
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException();
-            }
+            return document;
         }
 
         private static IEnumerable<IGeneratable> ParseNamespace(XmlElement namespaceElement)
         {
-            var result = new List<IGeneratable>();
+            var results = new List<IGeneratable>();
 
-            foreach (XmlElement elem in namespaceElement.ChildNodes)
+            foreach (XmlElement element in namespaceElement.ChildNodes)
             {
-                if (elem == null)
+                if (element == null)
                     continue;
 
-                if (elem.GetAttributeAsBoolean("hidden"))
+                if (element.GetAttributeAsBoolean(Constants.Hidden))
                     continue;
 
-                var isOpaque = elem.GetAttributeAsBoolean("opaque");
+                var isOpaque = element.GetAttributeAsBoolean(Constants.Opaque);
 
-                switch (elem.Name)
+                switch (element.Name)
                 {
-                    case "alias":
+                    case Constants.Alias:
                         {
-                            var aname = elem.GetAttribute("cname");
-                            var atype = elem.GetAttribute("type");
+                            var cName = element.GetAttribute(Constants.CName);
+                            var type = element.GetAttribute(Constants.Type);
 
-                            if (aname == "" || atype == "") continue;
+                            if (cName == "" || type == "") continue;
 
-                            result.Add(new AliasGen(aname, atype));
+                            results.Add(new AliasGen(cName, type));
                             break;
                         }
 
-                    case "boxed":
+                    case Constants.Boxed:
                         {
                             if (isOpaque)
                             {
-                                result.Add(new OpaqueGen(namespaceElement, elem));
+                                results.Add(new OpaqueGen(namespaceElement, element));
                             }
                             else
                             {
-                                result.Add(new BoxedGen(namespaceElement, elem));
+                                results.Add(new BoxedGen(namespaceElement, element));
                             }
 
                             break;
                         }
 
-                    case "callback":
-                        result.Add(new CallbackGen(namespaceElement, elem));
+                    case Constants.Callback:
+                        results.Add(new CallbackGen(namespaceElement, element));
                         break;
 
-                    case "enum":
-                        result.Add(new EnumGen(namespaceElement, elem));
+                    case Constants.Enumeration:
+                        results.Add(new EnumGen(namespaceElement, element));
                         break;
 
-                    case "interface":
-                        result.Add(new InterfaceGen(namespaceElement, elem));
+                    case Constants.Interface:
+                        results.Add(new InterfaceGen(namespaceElement, element));
                         break;
-                    case "object":
-                        result.Add(new ObjectGen(namespaceElement, elem));
+                    case Constants.Object:
+                        results.Add(new ObjectGen(namespaceElement, element));
                         break;
 
-                    case "class":
-                        result.Add(new ClassGen(namespaceElement, elem));
+                    case Constants.Class:
+                        results.Add(new ClassGen(namespaceElement, element));
                         break;
 
                     case "union":
-                        result.Add(new UnionGen(namespaceElement, elem));
+                        results.Add(new UnionGen(namespaceElement, element));
                         break;
 
-                    case "struct":
+                    case Constants.Struct:
                         {
-                            var isNativeStruct = elem.GetAttributeAsBoolean("native");
+                            var isNativeStruct = element.GetAttributeAsBoolean("native");
 
                             if (isOpaque)
                             {
-                                result.Add(new OpaqueGen(namespaceElement, elem));
+                                results.Add(new OpaqueGen(namespaceElement, element));
                             }
                             else if (isNativeStruct)
                             {
-                                result.Add(new NativeStructGen(namespaceElement, elem));
+                                results.Add(new NativeStructGen(namespaceElement, element));
                             }
                             else
                             {
-                                result.Add(new StructGen(namespaceElement, elem));
+                                results.Add(new StructGen(namespaceElement, element));
                             }
 
                             break;
                         }
 
                     default:
-                        Console.WriteLine($"Parser::ParseNamespace - Unexpected node: {elem.Name}");
+                        Console.WriteLine($"Parser::ParseNamespace - Unexpected node: {element.Name}");
                         break;
                 }
             }
 
-            return result;
+            return results;
         }
 
         private static IGeneratable ParseSymbol(XmlElement symbol)
         {
-            var type = symbol.GetAttribute("type");
-            var cName = symbol.GetAttribute("cname");
-            var name = symbol.GetAttribute("name");
+            var type = symbol.GetAttribute(Constants.Type);
+            var cName = symbol.GetAttribute(Constants.CName);
+            var name = symbol.GetAttribute(Constants.Name);
 
             IGeneratable result = null;
 
             switch (type)
             {
-                case "simple" when symbol.HasAttribute("default_value"):
-                    result = new SimpleGen(cName, name, symbol.GetAttribute("default_value"));
+                case Constants.Simple when symbol.HasAttribute(Constants.DefaultValue):
+                    result = new SimpleGen(cName, name, symbol.GetAttribute(Constants.DefaultValue));
                     break;
 
-                case "simple":
+                case Constants.Simple:
                     Console.WriteLine($"Simple type element {cName} has no specified default value");
                     result = new SimpleGen(cName, name, string.Empty);
                     break;
 
-                case "manual":
+                case Constants.Manual:
                     result = new ManualGen(cName, name);
                     break;
 
@@ -305,20 +307,20 @@ namespace GapiCodegen
                     result = new OwnableGen(cName, name);
                     break;
 
-                case "alias":
+                case Constants.Alias:
                     result = new AliasGen(cName, name);
                     break;
 
-                case "marshal":
-                    var mtype = symbol.GetAttribute("marshal_type");
-                    var call = symbol.GetAttribute("call_fmt");
-                    var from = symbol.GetAttribute("from_fmt");
+                case Constants.Marshal:
+                    var marshalType = symbol.GetAttribute(Constants.MarshalType);
+                    var call = symbol.GetAttribute(Constants.CallFmt);
+                    var from = symbol.GetAttribute(Constants.FromFmt);
 
-                    result = new MarshalGen(cName, name, mtype, call, @from);
+                    result = new MarshalGen(cName, name, marshalType, call, from);
                     break;
 
-                case "struct":
-                    result = new ByRefGen(symbol.GetAttribute("cname"), symbol.GetAttribute("name"));
+                case Constants.Struct:
+                    result = new ByRefGen(symbol.GetAttribute(Constants.CName), symbol.GetAttribute(Constants.Name));
                     break;
 
                 default:

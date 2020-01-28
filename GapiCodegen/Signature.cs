@@ -18,145 +18,150 @@
 // Free Software Foundation, Inc., 59 Temple Place - Suite 330,
 // Boston, MA 02111-1307, USA.
 
-
 using System.Collections.Generic;
+using System.Linq;
 
-namespace GapiCodegen {
-	public class Signature  {
-		
-		private IList<Parameter> parms = new List<Parameter> ();
+namespace GapiCodegen
+{
+    /// <summary>
+    /// Represents the signature of a method.
+    /// </summary>
+    public class Signature
+    {
+        private readonly IList<Parameter> _parameters = new List<Parameter>();
 
-		public Signature (Parameters parms)
-		{
-			foreach (Parameter p in parms) {
-				if (!parms.IsHidden (p))
-					this.parms.Add (p);
-			}
-		}
+        public Signature(Parameters parameters)
+        {
+            foreach (var parameter in parameters)
+            {
+                if (!parameters.IsHidden(parameter))
+                    _parameters.Add(parameter);
+            }
+        }
 
-		public override string ToString ()
-		{
-			if (parms.Count == 0)
-				return "";
+        public string Types
+        {
+            get
+            {
+                if (_parameters.Count == 0)
+                    return string.Empty;
 
-			string[] result = new string [parms.Count];
-			int i = 0;
+                var results = new string[_parameters.Count];
+                var i = 0;
 
-			foreach (Parameter p in parms) {
-				result [i] = p.PassAs != "" ? p.PassAs + " " : "";
-				result [i++] += p.CsType + " " + p.Name;
-			}
+                foreach (var parameter in _parameters)
+                    results[i++] = parameter.CsType;
 
-			return string.Join (", ", result);
-		}
+                return string.Join(":", results);
+            }
+        }
 
-		public string Types {
-			get {
-				if (parms.Count == 0)
-					return "";
+        public bool IsAccessor
+        {
+            get
+            {
+                var count = 0;
 
-				string[] result = new string [parms.Count];
-				int i = 0;
+                foreach (var parameter in _parameters)
+                {
+                    if (parameter.PassAs == "out")
+                        count++;
 
-				foreach (Parameter p in parms)
-					result [i++] = p.CsType;
+                    if (count > 1)
+                        return false;
+                }
 
-				return string.Join (":", result);
-			}
-		}
+                return count == 1;
+            }
+        }
 
-		public bool IsAccessor {
-			get {
-				int count = 0;
-				foreach (Parameter p in parms) {
-					if (p.PassAs == "out")
-						count++;
-					
-					if (count > 1)
-						return false;
-				}
-				return count == 1;
-			}
-		}
+        public string AccessorType =>
+            (from parameter in _parameters where parameter.PassAs == "out" select parameter.CsType).FirstOrDefault();
 
-		public string AccessorType {
-			get {
-				foreach (Parameter p in parms)
-					if (p.PassAs == "out")
-						return p.CsType;
-				
-				return null;
-			}
-		}
+        public string AccessorName =>
+            (from parameter in _parameters where parameter.PassAs == "out" select parameter.Name).FirstOrDefault();
 
-		public string AccessorName {
-			get {
-				foreach (Parameter p in parms)
-					if (p.PassAs == "out")
-						return p.Name;
-				
-				return null;
-			}
-		}
+        public string AsAccessor
+        {
+            get
+            {
+                var results = new string[_parameters.Count - 1];
+                var i = 0;
 
-		public string AsAccessor {
-			get {
-				string[] result = new string [parms.Count - 1];
-				int i = 0;
+                foreach (var parameter in _parameters)
+                {
+                    if (parameter.PassAs == "out")
+                        continue;
 
-				foreach (Parameter p in parms) {
-					if (p.PassAs == "out")
-						continue;
+                    results[i] = parameter.PassAs != string.Empty ? $"{parameter.PassAs} " : string.Empty;
+                    results[i++] += $"{parameter.CsType} {parameter.Name}";
+                }
 
-					result [i] = p.PassAs != "" ? p.PassAs + " " : "";
-					result [i++] += p.CsType + " " + p.Name;
-				}
-				
-				return string.Join (", ", result);
-			}
-		}
+                return string.Join(", ", results);
+            }
+        }
 
-		public string WithoutOptional ()
-		{
-			if (parms.Count == 0)
-				return string.Empty;
+        public string WithoutOptional()
+        {
+            if (_parameters.Count == 0)
+                return string.Empty;
 
-			var result = new string [parms.Count];
-			int i = 0;
+            var results = new string[_parameters.Count];
+            var i = 0;
 
-			foreach (Parameter p in parms) {
-				if (p.IsOptional && p.PassAs == string.Empty)
-					continue;
-				result [i] = p.PassAs != string.Empty ? p.PassAs + " " : string.Empty;
-				result [i++] += p.CsType + " " + p.Name;
-			}
+            foreach (var parameter in _parameters)
+            {
+                if (parameter.IsOptional && parameter.PassAs == string.Empty)
+                    continue;
 
-			return string.Join (", ", result, 0, i);
-		}
+                results[i] = parameter.PassAs != string.Empty ? $"{parameter.PassAs} " : string.Empty;
+                results[i++] += $"{parameter.CsType} {parameter.Name}";
+            }
 
-		public string CallWithoutOptionals ()
-		{
-			if (parms.Count == 0)
-				return string.Empty;
+            return string.Join(", ", results, 0, i);
+        }
 
-			var result = new string [parms.Count];
-			int i = 0;
+        public string CallWithoutOptionals()
+        {
+            if (_parameters.Count == 0)
+                return string.Empty;
 
-			foreach (Parameter p in parms) {
+            var results = new string[_parameters.Count];
+            var i = 0;
 
-				result [i] = p.PassAs != "" ? p.PassAs + " " : "";
-				if (p.IsOptional && p.PassAs == string.Empty) {
-					if (p.IsArray)
-						result [i++] += "null";
-					else
-						result [i++] += p.Generatable.DefaultValue;
-				}
-				else
-					result [i++] += p.Name;
-			}
+            foreach (var parameter in _parameters)
+            {
+                results[i] = parameter.PassAs != string.Empty ? $"{parameter.PassAs} " : string.Empty;
 
-			return string.Join (", ", result);
-		}
-	}
+                if (parameter.IsOptional && parameter.PassAs == string.Empty)
+                {
+                    if (parameter.IsArray)
+                        results[i++] += "null";
+                    else
+                        results[i++] += parameter.Generatable.DefaultValue;
+                }
+                else
+                    results[i++] += parameter.Name;
+            }
+
+            return string.Join(", ", results);
+        }
+
+        public override string ToString()
+        {
+            if (_parameters.Count == 0)
+                return string.Empty;
+
+            var results = new string[_parameters.Count];
+            var i = 0;
+
+            foreach (var parameter in _parameters)
+            {
+                results[i] = parameter.PassAs != string.Empty ? $"{parameter.PassAs} " : string.Empty;
+                results[i++] += $"{parameter.CsType} {parameter.Name}";
+            }
+
+            return string.Join(", ", results);
+        }
+    }
 }
-

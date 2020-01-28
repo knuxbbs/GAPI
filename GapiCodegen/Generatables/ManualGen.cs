@@ -26,17 +26,17 @@ namespace GapiCodegen.Generatables {
 		string from_fmt;
 		string abi_type;
 
-		public ManualGen (string cType, string type) : base (cType, type, "null")
+		public ManualGen (string cName, string type) : base (cName, type, "null")
 		{
 			from_fmt = "new " + QualifiedName + "({0})";
 		}
 
-		public ManualGen (string cType, string type, string from_fmt) : base (cType, type, "null")
+		public ManualGen (string cName, string type, string from_fmt) : base (cName, type, "null")
 		{
 			this.from_fmt = from_fmt;
 		}
 
-		public ManualGen (string cType, string type, string from_fmt, string abi_type) : base (cType, type, "null")
+		public ManualGen (string cName, string type, string from_fmt, string abi_type) : base (cName, type, "null")
 		{
 			this.from_fmt = from_fmt;
 			this.abi_type = abi_type;

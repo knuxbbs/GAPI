@@ -249,7 +249,7 @@ namespace GapiCodegen.Generatables {
 			need_read_native = false;
 			GenFields (generationInfo);
 			sw.WriteLine ();
-			GenerateCtors (generationInfo);
+			GenerateConstructors (generationInfo);
 			GenerateMethods (generationInfo, null, this);
 			if (need_read_native)
 				GenReadNative (sw);
@@ -266,7 +266,7 @@ namespace GapiCodegen.Generatables {
 			generationInfo.Writer = null;
 		}
 		
-		protected override void GenerateCtors (GenerationInfo generationInfo)
+		protected override void GenerateConstructors (GenerationInfo generationInfo)
 		{
 			StreamWriter sw = generationInfo.Writer;
 
@@ -284,7 +284,7 @@ namespace GapiCodegen.Generatables {
 			foreach (Ctor ctor in Ctors)
 				ctor.IsStatic = true;
 
-			base.GenerateCtors (generationInfo);
+			base.GenerateConstructors (generationInfo);
 		}
 
 		void GenReadNative (StreamWriter sw)

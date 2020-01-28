@@ -24,7 +24,7 @@ using GapiCodegen.Interfaces;
 namespace GapiCodegen.Generatables {
 	public class ConstFilenameGen : SimpleBase, IManualMarshaler {
 		
-		public ConstFilenameGen (string cType) : base (cType, "string", "null") {}
+		public ConstFilenameGen (string cName) : base (cName, "string", "null") {}
 
 		public override string MarshalType {
 			get {

@@ -105,7 +105,7 @@ namespace GapiCodegen.Generatables
 			GenNativeAccessor (generationInfo);
 			GenFields (generationInfo);
 			sw.WriteLine ();
-			GenerateCtors (generationInfo);
+			GenerateConstructors (generationInfo);
 			GenerateMethods (generationInfo, null, this);
 			GenEqualsAndHash (sw);
 
@@ -143,7 +143,7 @@ namespace GapiCodegen.Generatables
 			sw.WriteLine ();
 		}
 
-		protected override void GenerateCtors (GenerationInfo generationInfo)
+		protected override void GenerateConstructors (GenerationInfo generationInfo)
 		{
 			StreamWriter sw = generationInfo.Writer;
 
@@ -158,7 +158,7 @@ namespace GapiCodegen.Generatables
 
 			sw.WriteLine ();
 
-			base.GenerateCtors (generationInfo);
+			base.GenerateConstructors (generationInfo);
 		}
 
 		protected new void GenFields (GenerationInfo gen_info)

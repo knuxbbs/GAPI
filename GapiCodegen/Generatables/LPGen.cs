@@ -28,7 +28,7 @@ namespace GapiCodegen.Generatables
     /// </summary>
     public class LPGen : SimpleGen, IPropertyAccessor
     {
-        public LPGen(string cType) : base(cType, "long", "0L") { }
+        public LPGen(string cName) : base(cName, "long", "0L") { }
 
         public override string MarshalType => "IntPtr";
 

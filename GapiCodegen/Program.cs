@@ -36,8 +36,7 @@ namespace GapiCodegen
 
         public static int Main(string[] args)
         {
-            var showHelp = false;
-            var dir = "";
+            var outputDir = "";
             var assemblyName = "";
             var gapiDir = "";
             var abiCsUsings = "";
@@ -46,31 +45,32 @@ namespace GapiCodegen
             var glueFilename = "";
             var glueIncludes = "";
             var glueLibName = "";
-            var schemaName = "";
+            var schemaUri = "";
+            var showHelp = false;
 
-            var filenames = new List<string>();
-            var includes = new List<string>();
+            var inputFilePaths = new List<string>();
+            var includedFilePaths = new List<string>();
 
             var options = new OptionSet
             {
                 {
                     "generate=", "Generate the C# code for this GAPI XML file.",
-                    v => { filenames.Add(v); }
+                    v => { inputFilePaths.Add(v); }
                 },
                 {
                     "I|include=", "GAPI XML file that contain symbols used in the main GAPI XML file.",
-                    v => { includes.Add(v); }
+                    v => { includedFilePaths.Add(v); }
                 },
                 {
                     "outdir=", "Directory where the C# files will be generated.",
-                    v => { dir = v; }
+                    v => { outputDir = v; }
                 },
                 {
                     "assembly-name=", "Name of the assembly for which the code is generated.",
                     v => { assemblyName = v; }
                 },
                 {
-                    "gapidir=", "GAPI xml data  folder.",
+                    "gapidir=", "GAPI XML data folder.",
                     v => { gapiDir = v; }
                 },
                 {
@@ -78,7 +78,7 @@ namespace GapiCodegen
                     v => { abiCsFile = v; }
                 },
                 {
-                    "abi-cs-usings=", "Namespaces to use in the CS ABI checker.",
+                    "abi-cs-usings=", "Namespaces to use in the CSharp ABI checker.",
                     v => { abiCsUsings = v; }
                 },
                 {
@@ -100,7 +100,7 @@ namespace GapiCodegen
                 },
                 {
                     "schema=", "Validate all GAPI XML files against this XSD schema.",
-                    v => { schemaName = v; }
+                    v => { schemaUri = v; }
                 },
                 {
                     "h|help", "Show this message and exit",
@@ -114,7 +114,7 @@ namespace GapiCodegen
                 return 0;
             }
 
-            if (filenames.Count == 0)
+            if (inputFilePaths.Count == 0)
             {
                 Console.WriteLine("You need to specify a file to process using the --generate option.");
                 Console.WriteLine("Try `gapi-codegen --help` for more information.");
@@ -141,32 +141,32 @@ namespace GapiCodegen
                 return 64;
             }
 
-            if (!string.IsNullOrEmpty(schemaName) && !File.Exists(schemaName))
+            if (!string.IsNullOrEmpty(schemaUri) && !File.Exists(schemaUri))
             {
                 Console.WriteLine(
-                    $"WARNING: Could not find schema file at '{schemaName}', no validation will be done.");
-                schemaName = null;
+                    $"WARNING: Could not find schema file at '{schemaUri}', no validation will be done.");
+                schemaUri = null;
             }
 
             var parser = new Parser();
             var symbolTable = SymbolTable.Table;
 
-            foreach (var include in includes)
+            foreach (var filePath in includedFilePaths)
             {
-                Log.Info($"Parsing included gapi: {include}");
+                Log.Info($"Parsing included gapi: {filePath}");
 
-                var generatables = parser.Parse(include, schemaName, gapiDir);
+                var generatables = parser.Parse(filePath, schemaUri, gapiDir);
 
                 symbolTable.AddTypes(generatables);
             }
 
             var gens = new List<IGeneratable>();
 
-            foreach (var filename in filenames)
+            foreach (var filename in inputFilePaths)
             {
                 Log.Info($"Parsing included gapi: {filename}");
 
-                var generatables = parser.Parse(filename, schemaName, gapiDir);
+                var generatables = parser.Parse(filename, schemaUri, gapiDir);
 
                 symbolTable.AddTypes(generatables);
                 gens.AddRange(generatables);
@@ -181,9 +181,9 @@ namespace GapiCodegen
 
             GenerationInfo generationInfo = null;
 
-            if (dir != "" || assemblyName != "" || glueFilename != "" || glueIncludes != "" || glueLibName != "")
+            if (outputDir != "" || assemblyName != "" || glueFilename != "" || glueIncludes != "" || glueLibName != "")
             {
-                generationInfo = new GenerationInfo(dir, assemblyName, glueFilename, glueIncludes, glueLibName,
+                generationInfo = new GenerationInfo(outputDir, assemblyName, glueFilename, glueIncludes, glueLibName,
                     abiCFile, abiCsFile, abiCsUsings);
             }
 
@@ -203,12 +203,12 @@ namespace GapiCodegen
             return 0;
         }
 
-        private static void ShowHelp(OptionSet p)
+        private static void ShowHelp(OptionSet optionSet)
         {
             Console.WriteLine("Usage: gapi-codegen [OPTIONS]+");
             Console.WriteLine();
             Console.WriteLine("Options:");
-            p.WriteOptionDescriptions(Console.Out);
+            optionSet.WriteOptionDescriptions(Console.Out);
         }
     }
 }

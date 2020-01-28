@@ -26,7 +26,7 @@ using GapiCodegen.Interfaces;
 namespace GapiCodegen.Generatables {
 	public class ConstStringGen : SimpleBase, IManualMarshaler {
 		
-		public ConstStringGen (string cType) : base (cType, "string", "null") {}
+		public ConstStringGen (string cName) : base (cName, "string", "null") {}
 
 		public override string MarshalType {
 			get {

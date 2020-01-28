@@ -29,9 +29,9 @@ namespace GapiCodegen.Generatables
     {
         private readonly string _namespace = string.Empty;
 
-        protected SimpleBase(string cType, string type, string defaultValue)
+        protected SimpleBase(string cName, string type, string defaultValue)
         {
-            CName = cType;
+            CName = cName;
             DefaultValue = defaultValue;
 
             var toks = type.Split('.');
@@ -49,13 +49,13 @@ namespace GapiCodegen.Generatables
 
         public string Name { get; }
 
-        public string QualifiedName => _namespace == string.Empty ? Name : $"{_namespace}.{Name}";
+        public string QualifiedName => string.IsNullOrEmpty(_namespace) ? Name : $"{_namespace}.{Name}";
 
         public virtual string MarshalType => QualifiedName;
 
-        public virtual string CallByName(string var)
+        public virtual string CallByName(string varName)
         {
-            return var;
+            return varName;
         }
 
         public virtual string FromNative(string varName)

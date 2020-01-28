@@ -28,7 +28,7 @@ namespace GapiCodegen.Generatables
     /// </summary>
     public class LPUGen : SimpleGen, IPropertyAccessor
     {
-        public LPUGen(string cType) : base(cType, "ulong", "0") { }
+        public LPUGen(string cName) : base(cName, "ulong", "0") { }
 
         public override string MarshalType => "UIntPtr";
 
