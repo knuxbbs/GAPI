@@ -1,158 +1,144 @@
 using System.IO;
 using System.Xml;
 using GapiCodegen.Generatables;
-using GapiCodegen.Interfaces;
 using GapiCodegen.Utils;
 
 namespace GapiCodegen
 {
+    /// <summary>
+    /// Handles 'fields' to generate ABI compatible structures.
+    /// </summary>
     public class StructAbiField : StructField
     {
-        protected ClassBase container_type;
-        public string parent_structure_name;
-        public string abi_info_name;
+        public string ParentStructureName;
 
         public StructAbiField(XmlElement element, ClassBase containerType,
                 string infoName) : base(element, containerType)
         {
-            container_type = containerType;
+            AbiInfoName = infoName;
+
             GetOffsetName = null;
-            abi_info_name = infoName;
         }
 
-        public override string CName
-        {
+        public string AbiInfoName;
 
-            get
-            {
-                if (parent_structure_name != null)
-                    return parent_structure_name + '.' + Element.GetAttribute("cname");
-                return Element.GetAttribute("cname");
-            }
-        }
+        public override string CName =>
+            ParentStructureName != null
+                ? $"{ParentStructureName}{'.'}{Element.GetAttribute(Constants.CName)}"
+                : Element.GetAttribute(Constants.CName);
 
         // All field are visible and private
         // as the goal is to respect the ABI
-        protected override string Access
-        {
-            get
-            {
-                return "private";
-            }
-        }
+        protected override string Access => "private";
 
-        public override bool Hidden
-        {
-            get
-            {
-                return false;
-            }
-        }
+        public override bool Hidden => false;
 
         public override bool Validate(LogWriter logWriter)
         {
-            string cstype = SymbolTable.Table.GetCsType(CType, true);
+            var csType = SymbolTable.Table.GetCsType(CType, true);
 
             if (Element.GetAttributeAsBoolean("is_callback"))
                 return true;
 
-            if (cstype == null || cstype == "")
-            {
-                logWriter.Warn(" field \"" + CName + "\" has no cstype, can't generate ABI field.");
-                return false;
-            }
+            if (!string.IsNullOrEmpty(csType)) return base.Validate(logWriter);
 
-            if (!base.Validate(logWriter))
-                return false;
-
-            return true;
+            logWriter.Warn($" field \"{CName}\" has no C# type, can't generate ABI field.");
+            return false;
         }
 
-        public void SetGetOffseName()
+        public void SetGetOffsetName()
         {
-            GetOffsetName = "Get" + CName + "Offset";
+            GetOffsetName = $"Get{CName}Offset";
         }
 
         public override string GenerateGetSizeOf(string indent)
         {
-            return base.GenerateGetSizeOf(indent) + " // " + CName;
+            return $"{base.GenerateGetSizeOf(indent)} // {CName}";
         }
 
-        public virtual StructAbiField Generate(GenerationInfo gen_info, string indent,
-                StructAbiField prev_field, StructAbiField next_field, string parent_name,
-                TextWriter structw)
+        public virtual StructAbiField Generate(GenerationInfo generationInfo, string indent,
+            StructAbiField previousField, StructAbiField nextField, string parentName,
+            TextWriter textWriter)
         {
-            StreamWriter sw = gen_info.Writer;
-            IGeneratable gen = SymbolTable.Table[CType];
+            var streamWriter = generationInfo.Writer;
 
-            sw.WriteLine("{0}\tnew GLib.AbiField(\"{1}\"", indent, CName);
+            streamWriter.WriteLine("{0}\tnew GLib.AbiField(\"{1}\"", indent, CName);
 
-            indent = indent + "\t\t";
-            if (prev_field != null)
+            indent = $"{indent}\t\t";
+
+            if (previousField != null)
             {
-                sw.WriteLine(indent + ", -1");
+                streamWriter.WriteLine($"{indent}, -1");
             }
             else
             {
-                if (parent_name != "")
-                    sw.WriteLine(indent + ", " + parent_name + "." + abi_info_name + ".Fields");
-                else
-                    sw.WriteLine(indent + ", 0");
+                streamWriter.WriteLine(parentName != ""
+                    ? $"{indent}, {parentName}.{AbiInfoName}.Fields"
+                    : $"{indent}, 0");
             }
 
-            sw.WriteLine(indent + ", " + GenerateGetSizeOf(""));
+            streamWriter.WriteLine($"{indent}, {GenerateGetSizeOf(string.Empty)}");
 
-            var prev_field_name = prev_field != null ? "\"" + prev_field.CName + "\"" : "null";
-            sw.WriteLine(indent + ", " + prev_field_name);
+            var previousFieldName = previousField != null ? $"\"{previousField.CName}\"" : "null";
+            streamWriter.WriteLine($"{indent}, {previousFieldName}");
+            
+            var nextFieldName = nextField != null ? $"\"{nextField.CName}\"" : "null";
+            streamWriter.WriteLine($"{indent}, {nextFieldName}");
 
-            var container_name = container_type.CName.Replace(".", "_");
-            var sanitized_name = CName.Replace(".", "_");
-            var alig_struct_name = container_name + "_" + sanitized_name + "Align";
-            var next_field_name = next_field != null ? "\"" + next_field.CName + "\"" : "null";
-            sw.WriteLine(indent + ", " + next_field_name);
+            var generatable = SymbolTable.Table[CType];
 
-            if (structw != null)
+            var containerName = ContainerType.CName.Replace(".", "_");
+            var sanitizedName = CName.Replace(".", "_");
+            var alignStructName = $"{containerName}_{sanitizedName}Align";
+
+            if (textWriter != null)
             {
-                string min_align = gen != null ? gen.GenerateAlign() : null;
+                var minAlign = generatable?.GenerateAlign();
 
                 // Do not generate structs if the type is a simple pointer.
                 if (IsCPointer())
-                    min_align = "(uint) Marshal.SizeOf(typeof(IntPtr))";
+                    minAlign = "(uint) Marshal.SizeOf(typeof(IntPtr))";
 
                 if (IsBitfield)
-                    min_align = "1";
+                    minAlign = "1";
 
-                if (min_align == null)
+                if (minAlign == null)
                 {
-                    var tmpindent = "\t\t";
-                    structw.WriteLine(tmpindent + "[StructLayout(LayoutKind.Sequential)]");
-                    structw.WriteLine(tmpindent + "public struct " + alig_struct_name);
-                    structw.WriteLine(tmpindent + "{");
-                    structw.WriteLine(tmpindent + "\tsbyte f1;");
-                    Generate(gen_info, tmpindent + "\t", true, structw);
-                    structw.WriteLine(tmpindent + "}");
-                    structw.WriteLine();
+                    const string fixedIndent = "\t\t";
+                    textWriter.WriteLine($"{fixedIndent}[StructLayout(LayoutKind.Sequential)]");
+                    textWriter.WriteLine($"{fixedIndent}public struct {alignStructName}");
+                    textWriter.WriteLine($"{fixedIndent}{{");
+                    textWriter.WriteLine($"{fixedIndent}\tsbyte f1;");
+                    
+                    Generate(generationInfo, $"{fixedIndent}\t", true, textWriter);
+
+                    textWriter.WriteLine($"{fixedIndent}}}");
+                    textWriter.WriteLine();
 
                     var fieldname = SymbolTable.Table.MangleName(CName).Replace(".", "_");
+
                     if (IsArray && IsNullTermArray)
                         fieldname += "Ptr";
-                    sw.WriteLine(indent + ", (long) Marshal.OffsetOf(typeof(" + alig_struct_name + "), \"" + fieldname + "\")");
+
+                    streamWriter.WriteLine(
+                        $"{indent}, (long) Marshal.OffsetOf(typeof({alignStructName}), \"{fieldname}\")");
                 }
                 else
                 {
-                    sw.WriteLine(indent + ", " + min_align);
+                    streamWriter.WriteLine($"{indent}, {minAlign}");
                 }
             }
 
-            gen_info.Writer = sw;
+            generationInfo.Writer = streamWriter;
 
+            var bitsstr = Element.GetAttribute(Constants.Bits);
             uint bits = 0;
-            var bitsstr = Element.GetAttribute("bits");
-            if (bitsstr != null && bitsstr != "")
-                bits = (uint)int.Parse(bitsstr);
+            
+            if (!string.IsNullOrEmpty(bitsstr))
+                bits = uint.Parse(bitsstr);
 
-            sw.WriteLine(indent + ", " + bits);
-            sw.WriteLine(indent + "),");
+            streamWriter.WriteLine($"{indent}, {bits}");
+            streamWriter.WriteLine($"{indent}),");
 
             return this;
         }

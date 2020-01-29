@@ -18,38 +18,37 @@
 // Free Software Foundation, Inc., 59 Temple Place - Suite 330,
 // Boston, MA 02111-1307, USA.
 
+namespace GapiCodegen.Generatables
+{
+    /// <summary>
+    /// Handles types that must be manually marshalled between managed and unmanaged code via special CallByName/FromNative syntax.
+    /// </summary>
+    public class MarshalGen : SimpleBase
+    {
+        private readonly string _callFmt;
+        private readonly string _fromFmt;
 
-namespace GapiCodegen.Generatables {
-	public class MarshalGen : SimpleBase {
-		
-		string mtype;
-		string call_fmt;
-		string from_fmt;
+        public MarshalGen(string cName, string type, string mtype, string callFmt, string fromFmt, string defaultValue)
+            : base(cName, type, defaultValue)
+        {
+            MarshalType = mtype;
+            _callFmt = callFmt;
+            _fromFmt = fromFmt;
+        }
 
-		public MarshalGen (string cName, string type, string mtype, string call_fmt, string from_fmt, string default_value) : base (cName, type, default_value)
-		{
-			this.mtype = mtype;
-			this.call_fmt = call_fmt;
-			this.from_fmt = from_fmt;
-		}
-		
-		public MarshalGen (string cName, string type, string mtype, string call_fmt, string from_fmt) : this (cName, type, mtype, call_fmt, from_fmt, "null") { }
+        public MarshalGen(string cName, string type, string mtype, string callFmt, string fromFmt)
+            : this(cName, type, mtype, callFmt, fromFmt, "null") { }
 
-		public override string MarshalType {
-			get {
-				return mtype;
-			}
-		}
+        public override string MarshalType { get; }
 
-		public override string CallByName (string var)
-		{
-			return string.Format (call_fmt, var);
-		}
-		
-		public override string FromNative (string varName)
-		{
-			return string.Format (from_fmt, varName);
-		}
-	}
+        public override string CallByName(string varName)
+        {
+            return string.Format(_callFmt, varName);
+        }
+
+        public override string FromNative(string varName)
+        {
+            return string.Format(_fromFmt, varName);
+        }
+    }
 }
-

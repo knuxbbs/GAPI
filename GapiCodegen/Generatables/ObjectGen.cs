@@ -290,7 +290,7 @@ namespace GapiCodegen.Generatables
                 streamWriter.WriteLine("\t\t}");
             }
 
-            GenerateStructureAbi(generationInfo);
+            GenerateStructAbi(generationInfo);
 
             streamWriter.WriteLine("#endregion");
             streamWriter.WriteLine("\t}");
@@ -313,7 +313,7 @@ namespace GapiCodegen.Generatables
 
             generationInfo.Writer.WriteLine($"\t\t{defaultconstructoraccess} {Name} (IntPtr raw) : base(raw) {{}}");
 
-            if (Ctors.Count == 0 && !DisableVoidCtor)
+            if (Constructors.Count == 0 && !DisableVoidCtor)
             {
                 generationInfo.Writer.WriteLine();
                 generationInfo.Writer.WriteLine($"\t\tprotected {Name}() : base(IntPtr.Zero)");
@@ -365,7 +365,7 @@ namespace GapiCodegen.Generatables
         private void GenerateClassMembers(GenerationInfo generationInfo)
         {
             GenerateVirtualMethods(generationInfo, null);
-            GenerateStructureAbi(generationInfo, AbiClassMembers, "class_abi", ClassStructName);
+            GenerateStructAbi(generationInfo, AbiClassMembers, "class_abi", ClassStructName);
         }
 
         /* Keep this in sync with the one in glib/GType.cs */

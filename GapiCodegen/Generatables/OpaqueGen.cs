@@ -206,7 +206,7 @@ namespace GapiCodegen.Generatables
                 streamWriter.WriteLine();
             }
 
-            GenerateStructureAbi(generationInfo);
+            GenerateStructAbi(generationInfo);
             streamWriter.WriteLine("#endregion");
 
             streamWriter.WriteLine("\t}");

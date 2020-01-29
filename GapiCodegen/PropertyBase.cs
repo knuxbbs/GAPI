@@ -37,9 +37,9 @@ namespace GapiCodegen
             ContainerType = containerType;
         }
 
-        public string Name => Element.GetAttribute("name");
+        public string Name => Element.GetAttribute(Constants.Name);
 
-        public virtual string CName => Element.GetAttribute("cname");
+        public virtual string CName => Element.GetAttribute(Constants.CName);
 
         private string _cType;
 
@@ -49,7 +49,9 @@ namespace GapiCodegen
             {
                 if (_cType != null) return _cType;
 
-                _cType = Element.GetAttribute("bits") == "1" ? "gboolean" : Element.GetAttribute("type");
+                _cType = Element.GetAttribute(Constants.Bits) == "1"
+                    ? "gboolean"
+                    : Element.GetAttribute(Constants.Type);
 
                 return _cType;
             }
@@ -67,9 +69,9 @@ namespace GapiCodegen
             }
         }
 
-        public virtual bool Hidden => Element.GetAttributeAsBoolean("hidden");
+        public virtual bool Hidden => Element.GetAttributeAsBoolean(Constants.Hidden);
 
-        protected bool IsNew => Element.GetAttributeAsBoolean("new_flag");
+        protected bool IsNew => Element.GetAttributeAsBoolean(Constants.NewFlag);
 
         protected Method Getter
         {

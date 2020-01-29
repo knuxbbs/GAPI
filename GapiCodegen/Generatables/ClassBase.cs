@@ -22,37 +22,28 @@
 // Free Software Foundation, Inc., 59 Temple Place - Suite 330,
 // Boston, MA 02111-1307, USA.
 
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Xml;
 using GapiCodegen.Utils;
 
 namespace GapiCodegen.Generatables
 {
     /// <summary>
-    /// Abstract base class for types that will be converted to C# classes, structs, or interfaces.
+    /// Abstract base class for types that will be converted to C# classes, structs or interfaces.
     /// </summary>
     public abstract class ClassBase : GenBase
     {
-        private IDictionary<string, ObjectField> fields = new Dictionary<string, ObjectField>();
-        private IDictionary<string, Constant> constants = new Dictionary<string, Constant>();
-        protected IList<string> Interfaces = new List<string>();
-        protected IList<string> ManagedInterfaces = new List<string>();
-
-        protected List<StructAbiField> AbiFields = new List<StructAbiField>();
-        // false if the instance structure contains a bitfield or fields of unknown types
-        protected bool IsAbiFieldsValid;
-
-        private bool ctors_initted;
-        private Dictionary<string, Ctor> clash_map;
+        private readonly IDictionary<string, ObjectField> _fields = new Dictionary<string, ObjectField>();
+        private readonly IDictionary<string, Constant> _constants = new Dictionary<string, Constant>();
 
         protected ClassBase(XmlElement namespaceElement, XmlElement element) : base(namespaceElement, element)
         {
             IsDeprecated = element.GetAttributeAsBoolean(Constants.Deprecated);
             IsAbstract = element.GetAttributeAsBoolean(Constants.Abstract);
-
             IsAbiFieldsValid = true;
+
             var parentType = Element.GetAttribute(Constants.Parent);
 
             var abiFieldsCount = 0;
@@ -94,11 +85,11 @@ namespace GapiCodegen.Generatables
 
                 string name;
 
-                switch (node.Name)
+                switch (member.Name)
                 {
                     case Constants.Method:
                         name = member.GetAttribute(Constants.Name);
-                        
+
                         while (Methods.ContainsKey(name))
                             name += "mangled";
 
@@ -107,7 +98,7 @@ namespace GapiCodegen.Generatables
 
                     case Constants.Property:
                         name = member.GetAttribute(Constants.Name);
-                        
+
                         while (Properties.ContainsKey(name))
                             name += "mangled";
 
@@ -115,18 +106,18 @@ namespace GapiCodegen.Generatables
                         break;
 
                     case Constants.Field:
-                        //TODO: FIXME Generate callbacks.
+                        //TODO: Generate callbacks.
                         if (member.GetAttributeAsBoolean("is_callback"))
                             continue;
 
                         name = member.GetAttribute(Constants.Name);
-                        
-                        while (fields.ContainsKey(name))
+
+                        while (_fields.ContainsKey(name))
                             name += "mangled";
 
                         var field = new ObjectField(member, this);
                         field.AbiField = abiField;
-                        fields.Add(name, field);
+                        _fields.Add(name, field);
                         break;
 
                     case Constants.Implements:
@@ -134,16 +125,24 @@ namespace GapiCodegen.Generatables
                         break;
 
                     case Constants.Constructor:
-                        Ctors.Add(new Ctor(member, this));
+                        Constructors.Add(new Ctor(member, this));
                         break;
 
                     case "constant":
                         name = member.GetAttribute(Constants.Name);
-                        constants.Add(name, new Constant(member));
+                        _constants.Add(name, new Constant(member));
                         break;
                 }
             }
         }
+
+        public bool IsDeprecated { get; }
+
+        public bool IsAbstract { get; }
+
+        public abstract string AssignToName { get; }
+
+        public override string DefaultValue => "null";
 
         public IDictionary<string, Method> Methods { get; } = new Dictionary<string, Method>();
 
@@ -153,309 +152,224 @@ namespace GapiCodegen.Generatables
         {
             get
             {
-                string parent = Element.GetAttribute("parent");
+                var parent = Element.GetAttribute(Constants.Parent);
 
-                if (parent == "")
-                    return null;
-                else
-                    return SymbolTable.Table.GetClassGen(parent);
+                return parent != "" ? SymbolTable.Table.GetClassGen(parent) : null;
             }
         }
+
+        public IList<Ctor> Constructors = new List<Ctor>();
+        protected IList<string> Interfaces = new List<string>();
+        protected IList<string> ManagedInterfaces = new List<string>();
+        protected IList<StructAbiField> AbiFields = new List<StructAbiField>();
+
+        // false if the instance structure contains a bitfield or fields of unknown types
+        protected bool IsAbiFieldsValid;
+
+        public abstract string CallByName();
 
         public virtual bool CanGenerateAbiStruct(LogWriter logWriter)
         {
             return IsAbiFieldsValid;
         }
 
-        bool CheckABIStructParent(LogWriter log, out string cs_parent_struct)
+        protected void GenerateStructAbi(GenerationInfo generationInfo)
         {
-            cs_parent_struct = null;
-
-            if (!CanGenerateAbiStruct(log))
-                return false;
-
-            var parent = SymbolTable.Table[Element.GetAttribute("parent")];
-            string cs_parent = SymbolTable.Table.GetCsType(Element.GetAttribute("parent"));
-            var parent_can_generate = true;
-
-            cs_parent_struct = null;
-            if (parent != null)
-            {
-                // FIXME Add that information to ManualGen and use it.
-                if (parent.CName == "GInitiallyUnowned" || parent.CName == "GObject")
-                {
-                    cs_parent_struct = "GLib.Object";
-                }
-                else
-                {
-                    parent_can_generate = false;
-                    var _parent = parent as ClassBase;
-
-                    if (_parent != null)
-                    {
-                        string tmp;
-                        parent_can_generate = _parent.CheckABIStructParent(log, out tmp);
-                    }
-
-                    if (parent_can_generate)
-                        cs_parent_struct = cs_parent;
-                }
-
-                if (!parent_can_generate)
-                {
-                    log.Warn("Can't generate ABI structrure as the parent structure '" +
-                            parent.CName + "' can't be generated.");
-                    return false;
-                }
-            }
-            else
-            {
-                cs_parent_struct = "";
-            }
-            return parent_can_generate;
+            GenerateStructAbi(generationInfo, null, "abi_info", CName);
         }
 
-        protected void GenerateStructureAbi(GenerationInfo gen_info)
+        protected void GenerateStructAbi(GenerationInfo generationInfo, IList<StructAbiField> fields,
+                string infoName, string structName)
         {
-            GenerateStructureAbi(gen_info, null, "abi_info", CName);
-        }
+            if (fields == null)
+                fields = AbiFields;
 
-        protected void GenerateStructureAbi(GenerationInfo gen_info, IList<StructAbiField> _fields,
-                string info_name, string structname)
-        {
-            string cs_parent_struct = null;
+            var logWriter = new LogWriter(QualifiedName);
 
-            if (_fields == null)
-                _fields = AbiFields;
-
-            LogWriter log = new LogWriter(QualifiedName);
-            if (!CheckABIStructParent(log, out cs_parent_struct))
+            if (!CheckStructAbiParent(logWriter, out var csParentStruct))
                 return;
 
-            StreamWriter sw = gen_info.Writer;
+            var streamWriter = generationInfo.Writer;
 
-            var _new = "";
-            if (cs_parent_struct != "")
-                _new = "new ";
-
-            sw.WriteLine();
-            sw.WriteLine("\t\t// Internal representation of the wrapped structure ABI.");
-            sw.WriteLine("\t\tstatic GLib.AbiStruct _" + info_name + " = null;");
-            sw.WriteLine("\t\tstatic public " + _new + "GLib.AbiStruct " + info_name + " {");
-            sw.WriteLine("\t\t\tget {");
-            sw.WriteLine("\t\t\t\tif (_" + info_name + " == null)");
+            streamWriter.WriteLine();
+            streamWriter.WriteLine("\t\t// Internal representation of the wrapped structure ABI.");
+            streamWriter.WriteLine($"\t\tstatic GLib.AbiStruct _{infoName} = null;");
+            streamWriter.WriteLine(
+                $"\t\tstatic public {(!string.IsNullOrEmpty(csParentStruct) ? "new " : "")}GLib.AbiStruct {infoName} {{");
+            streamWriter.WriteLine("\t\t\tget {");
+            streamWriter.WriteLine($"\t\t\t\tif (_{infoName} == null)");
 
             // Generate Tests
-            var using_parent_fields = false;
-            if (_fields.Count > 0)
-            {
-                sw.WriteLine("\t\t\t\t\t_" + info_name + " = new GLib.AbiStruct (new List<GLib.AbiField>{ ");
+            var usingParentFields = false;
 
-                if (gen_info.CAbiWriter != null)
+            if (fields.Count > 0)
+            {
+                streamWriter.WriteLine($"\t\t\t\t\t_{infoName} = new GLib.AbiStruct (new List<GLib.AbiField>{{ ");
+
+                if (generationInfo.CAbiWriter != null)
                 {
-                    gen_info.CAbiWriter.WriteLine("\tg_print(\"\\\"sizeof({0})\\\": \\\"%\" G_GUINT64_FORMAT \"\\\"\\n\", (guint64) sizeof({0}));", structname);
-                    gen_info.AbiWriter.WriteLine("\t\t\tConsole.WriteLine(\"\\\"sizeof({0})\\\": \\\"\" + {1}.{2}." + info_name + ".Size + \"\\\"\");", structname, Namespace, Name);
+                    generationInfo.CAbiWriter.WriteLine(
+                        "\tg_print(\"\\\"sizeof({0})\\\": \\\"%\" G_GUINT64_FORMAT \"\\\"\\n\", (guint64) sizeof({0}));",
+                        structName);
+                    generationInfo.AbiWriter.WriteLine(
+                        "\t\t\tConsole.WriteLine(\"\\\"sizeof({0})\\\": \\\"\" + {1}.{2}.{3}.Size + \"\\\"\");",
+                        structName, Namespace, Name, infoName);
                 }
             }
             else
             {
-                if (cs_parent_struct != "")
+                if (!string.IsNullOrEmpty(csParentStruct))
                 {
-                    sw.WriteLine("\t\t\t\t\t_" + info_name + " = new GLib.AbiStruct ({0}.{1}.Fields);", cs_parent_struct, info_name);
-                    using_parent_fields = true;
+                    streamWriter.WriteLine("\t\t\t\t\t_{1} = new GLib.AbiStruct ({0}.{1}.Fields);", csParentStruct, infoName);
+                    usingParentFields = true;
                 }
                 else
                 {
-                    sw.WriteLine("\t\t\t\t\t_" + info_name + " = new GLib.AbiStruct (new List<GLib.AbiField>{ ");
-                    using_parent_fields = false;
+                    streamWriter.WriteLine("\t\t\t\t\t_{0} = new GLib.AbiStruct (new List<GLib.AbiField>{{ ", infoName);
                 }
             }
 
-            StructAbiField prev = null;
-            StructAbiField next = null;
+            StructAbiField previous = null;
+            var fieldAlignmentStructuresWriter = new StringWriter();
 
-            StringWriter field_alignment_structures_writer = new StringWriter();
-            for (int i = 0; i < _fields.Count; i++)
+            for (var i = 0; i < fields.Count; i++)
             {
-                var field = _fields[i];
-                next = _fields.Count > i + 1 ? _fields[i + 1] : null;
+                var field = fields[i];
+                var next = fields.Count > i + 1 ? fields[i + 1] : null;
 
-                prev = field.Generate(gen_info, "\t\t\t\t\t", prev, next, cs_parent_struct,
-                        field_alignment_structures_writer);
-                var union = field as UnionAbiField;
-                if (union == null && gen_info.CAbiWriter != null && !field.IsBitfield)
-                {
-                    gen_info.AbiWriter.WriteLine("\t\t\tConsole.WriteLine(\"\\\"{0}.{3}\\\": \\\"\" + {1}.{2}." + info_name + ".GetFieldOffset(\"{3}\") + \"\\\"\");", structname, Namespace, Name, field.CName);
-                    gen_info.CAbiWriter.WriteLine("\tg_print(\"\\\"{0}.{1}\\\": \\\"%\" G_GUINT64_FORMAT \"\\\"\\n\", (guint64) G_STRUCT_OFFSET({0}, {1}));", structname, field.CName);
-                }
+                previous = field.Generate(generationInfo, "\t\t\t\t\t", previous, next, csParentStruct,
+                    fieldAlignmentStructuresWriter);
 
+                if (field is UnionAbiField || generationInfo.CAbiWriter == null || field.IsBitfield) continue;
+
+                generationInfo.CAbiWriter.WriteLine(
+                    "\tg_print(\"\\\"{0}.{1}\\\": \\\"%\" G_GUINT64_FORMAT \"\\\"\\n\", (guint64) G_STRUCT_OFFSET({0}, {1}));",
+                    structName, field.CName);
+                generationInfo.AbiWriter.WriteLine(
+                    "\t\t\tConsole.WriteLine(\"\\\"{0}.{3}\\\": \\\"\" + {1}.{2}.{4}.GetFieldOffset(\"{3}\") + \"\\\"\");",
+                    structName, Namespace, Name, field.CName, infoName);
             }
 
-            if (_fields.Count > 0 && gen_info.CAbiWriter != null)
+            if (fields.Count > 0 && generationInfo.CAbiWriter != null)
             {
-                gen_info.AbiWriter.Flush();
-                gen_info.CAbiWriter.Flush();
+                generationInfo.AbiWriter.Flush();
+                generationInfo.CAbiWriter.Flush();
             }
 
-            if (!using_parent_fields)
-                sw.WriteLine("\t\t\t\t\t});");
-            sw.WriteLine();
-            sw.WriteLine("\t\t\t\treturn _" + info_name + ";");
-            sw.WriteLine("\t\t\t}");
-            sw.WriteLine("\t\t}");
-            sw.WriteLine();
+            if (!usingParentFields)
+                streamWriter.WriteLine("\t\t\t\t\t});");
 
-            sw.WriteLine(field_alignment_structures_writer.ToString());
-            sw.WriteLine("\t\t// End of the ABI representation.");
-            sw.WriteLine();
+            streamWriter.WriteLine();
+            streamWriter.WriteLine($"\t\t\t\treturn _{infoName};");
+            streamWriter.WriteLine("\t\t\t}");
+            streamWriter.WriteLine("\t\t}");
+            streamWriter.WriteLine();
+
+            streamWriter.WriteLine(fieldAlignmentStructuresWriter.ToString());
+            streamWriter.WriteLine("\t\t// End of the ABI representation.");
+            streamWriter.WriteLine();
         }
 
         public override bool Validate()
         {
-            LogWriter log = new LogWriter(QualifiedName);
+            var logWriter = new LogWriter(QualifiedName);
 
-            foreach (string iface in Interfaces)
+            foreach (var @interface in Interfaces)
             {
-                InterfaceGen igen = SymbolTable.Table[iface] as InterfaceGen;
-                if (igen == null)
+                if (SymbolTable.Table[@interface] is InterfaceGen interfaceGen)
                 {
-                    log.Warn("implements unknown GInterface " + iface);
+                    if (interfaceGen.ValidateForSubclass()) continue;
+
+                    logWriter.Warn($"implements invalid GInterface {@interface}");
                     return false;
                 }
-                if (!igen.ValidateForSubclass())
-                {
-                    log.Warn("implements invalid GInterface " + iface);
-                    return false;
-                }
+
+                logWriter.Warn($"implements unknown GInterface {@interface}");
+                return false;
             }
 
-            foreach (StructAbiField abi_field in AbiFields)
+            foreach (var field in AbiFields)
             {
-                if (!abi_field.Validate(log))
+                if (field.Validate(logWriter))
+                {
+                    field.SetGetOffsetName();
+                }
+                else
+                {
                     IsAbiFieldsValid = false;
-            }
-            if (IsAbiFieldsValid)
-                foreach (StructAbiField abi_field in AbiFields)
-                {
-                    abi_field.SetGetOffseName();
                 }
-
-            ArrayList invalids = new ArrayList();
-
-            foreach (Property prop in Properties.Values)
-            {
-                if (!prop.Validate(log))
-                    invalids.Add(prop);
             }
-            foreach (Property prop in invalids)
-                Properties.Remove(prop.Name);
-            invalids.Clear();
 
-            foreach (ObjectField field in fields.Values)
-            {
-                if (!field.Validate(log))
-                    invalids.Add(field);
-            }
-            foreach (ObjectField field in invalids)
-                fields.Remove(field.Name);
-            invalids.Clear();
+            var invalidProperties =
+                Properties.Values.Where(property => !property.Validate(logWriter)).ToArray();
 
-            foreach (Method method in Methods.Values)
-            {
-                if (!method.Validate(log))
-                    invalids.Add(method);
-            }
-            foreach (Method method in invalids)
+            foreach (var property in invalidProperties)
+                Properties.Remove(property.Name);
+
+            var invalidFields =
+                _fields.Values.Where(field => !field.Validate(logWriter)).ToArray();
+
+            foreach (var field in invalidFields)
+                _fields.Remove(field.Name);
+
+            var invalidMethods =
+                Methods.Values.Where(method => !method.Validate(logWriter)).ToArray();
+
+            foreach (var method in invalidMethods)
                 Methods.Remove(method.Name);
-            invalids.Clear();
 
-            foreach (Constant con in constants.Values)
-            {
-                if (!con.Validate(log))
-                    invalids.Add(con);
-            }
-            foreach (Constant con in invalids)
-                constants.Remove(con.Name);
-            invalids.Clear();
+            var invalidConstants =
+                _constants.Values.Where(con => !con.Validate(logWriter)).ToArray();
 
-            foreach (Ctor ctor in Ctors)
-            {
-                if (!ctor.Validate(log))
-                    invalids.Add(ctor);
-            }
-            foreach (Ctor ctor in invalids)
-                Ctors.Remove(ctor);
-            invalids.Clear();
+            foreach (var con in invalidConstants)
+                _constants.Remove(con.Name);
+
+            var invalidConstructors =
+                Constructors.Where(ctor => !ctor.Validate(logWriter)).ToArray();
+
+            foreach (var ctor in invalidConstructors)
+                Constructors.Remove(ctor);
 
             return true;
         }
-
-        public bool IsDeprecated { get; } = false;
-
-        public bool IsAbstract { get; } = false;
-
-        public abstract string AssignToName { get; }
-
-        public abstract string CallByName();
-
-        public override string DefaultValue => "null";
 
         protected virtual bool IsNodeNameHandled(string name)
         {
             switch (name)
             {
-                case "method":
-                case "property":
-                case "field":
-                case "signal":
-                case "implements":
-                case "constructor":
-                case "disabledefaultconstructor":
+                case Constants.Method:
+                case Constants.Property:
+                case Constants.Field:
+                case Constants.Signal:
+                case Constants.Implements:
+                case Constants.Constructor:
+                case Constants.DisableDefaultConstructor:
                 case "constant":
                     return true;
-
                 default:
                     return false;
             }
         }
 
-        public void GenerateProperties(GenerationInfo gen_info, ClassBase implementor)
+        public void GenerateProperties(GenerationInfo generationInfo, ClassBase implementor)
         {
             if (Properties.Count == 0)
                 return;
 
-            foreach (Property prop in Properties.Values)
-                prop.Generate(gen_info, "\t\t", implementor);
+            foreach (var property in Properties.Values)
+                property.Generate(generationInfo, "\t\t", implementor);
         }
 
-        protected void GenerateFields(GenerationInfo gen_info)
+        protected void GenerateFields(GenerationInfo generationInfo)
         {
-            foreach (ObjectField field in fields.Values)
-            {
-                field.Generate(gen_info, "\t\t");
-            }
+            foreach (var field in _fields.Values)
+                field.Generate(generationInfo, "\t\t");
         }
 
-        protected void GenerateConstants(GenerationInfo gen_info)
+        protected void GenerateConstants(GenerationInfo generationInfo)
         {
-            foreach (Constant con in constants.Values)
-                con.Generate(gen_info, "\t\t");
-        }
-
-        private void ParseImplements(XmlElement member)
-        {
-            foreach (XmlNode node in member.ChildNodes)
-            {
-                if (node.Name != "interface")
-                    continue;
-                XmlElement element = (XmlElement)node;
-                if (element.GetAttributeAsBoolean("hidden"))
-                    continue;
-                if (element.HasAttribute("cname"))
-                    Interfaces.Add(element.GetAttribute("cname"));
-                else if (element.HasAttribute("name"))
-                    ManagedInterfaces.Add(element.GetAttribute("name"));
-            }
+            foreach (var con in _constants.Values)
+                con.Generate(generationInfo, "\t\t");
         }
 
         protected bool IgnoreMethod(Method method, ClassBase implementor)
@@ -463,50 +377,47 @@ namespace GapiCodegen.Generatables
             if (implementor != null && implementor.QualifiedName != QualifiedName && method.IsStatic)
                 return true;
 
-            string mname = method.Name;
-            return (method.IsSetter || method.IsGetter && mname.StartsWith("Get")) &&
-                   (Properties != null && Properties.ContainsKey(mname.Substring(3)) ||
-                    fields != null && fields.ContainsKey(mname.Substring(3)));
+            var methodName = method.Name;
+
+            return (method.IsSetter || method.IsGetter && methodName.StartsWith("Get")) &&
+                   (Properties != null && Properties.ContainsKey(methodName.Substring(3)) ||
+                    _fields != null && _fields.ContainsKey(methodName.Substring(3)));
         }
 
-        public void GenerateMethods(GenerationInfo gen_info, IDictionary<string, bool> collisions, ClassBase implementor)
+        public void GenerateMethods(GenerationInfo generationInfo, IDictionary<string, bool> collisions, ClassBase implementor)
         {
             if (Methods == null)
                 return;
 
-            foreach (Method method in Methods.Values)
+            foreach (var method in Methods.Values)
             {
                 if (IgnoreMethod(method, implementor))
                     continue;
 
-                string oname = null, oprotection = null;
+                string methodName = null, methodProtection = null;
+
                 if (collisions != null && collisions.ContainsKey(method.Name))
                 {
-                    oname = method.Name;
-                    oprotection = method.Protection;
-                    method.Name = QualifiedName + "." + method.Name;
-                    method.Protection = "";
+                    methodName = method.Name;
+                    methodProtection = method.Protection;
+                    method.Name = $"{QualifiedName}.{method.Name}";
+                    method.Protection = string.Empty;
                 }
-                method.Generate(gen_info, implementor);
-                if (oname != null)
-                {
-                    method.Name = oname;
-                    method.Protection = oprotection;
-                }
+
+                method.Generate(generationInfo, implementor);
+
+                if (methodName == null) continue;
+
+                method.Name = methodName;
+                method.Protection = methodProtection;
             }
         }
 
         public Method GetMethod(string name)
         {
             Methods.TryGetValue(name, out var method);
-            return method;
-        }
 
-        public Property GetProperty(string name)
-        {
-            Property prop = null;
-            Properties.TryGetValue(name, out prop);
-            return prop;
+            return method;
         }
 
         public Method GetMethodRecursively(string name)
@@ -514,113 +425,83 @@ namespace GapiCodegen.Generatables
             return GetMethodRecursively(name, false);
         }
 
-        public virtual Method GetMethodRecursively(string name, bool check_self)
+        public virtual Method GetMethodRecursively(string name, bool selfCheck)
         {
-            Method p = null;
-            if (check_self)
-                p = GetMethod(name);
-            if (p == null && Parent != null)
-                p = Parent.GetMethodRecursively(name, true);
+            Method method = null;
 
-            if (check_self && p == null)
+            if (selfCheck)
+                method = GetMethod(name);
+
+            if (method == null && Parent != null)
+                method = Parent.GetMethodRecursively(name, true);
+
+            if (!selfCheck || method != null) return method;
+
+            foreach (var @interface in Interfaces)
             {
-                foreach (string iface in Interfaces)
-                {
-                    ClassBase igen = SymbolTable.Table.GetClassGen(iface);
-                    if (igen == null)
-                        continue;
-                    p = igen.GetMethodRecursively(name, true);
-                    if (p != null)
-                        break;
-                }
+                var classGen = SymbolTable.Table.GetClassGen(@interface);
+
+                if (classGen == null)
+                    continue;
+
+                method = classGen.GetMethodRecursively(name, true);
+
+                if (method != null)
+                    break;
             }
 
-            return p;
+            return method;
+        }
+
+        public Property GetProperty(string name)
+        {
+            Properties.TryGetValue(name, out var property);
+
+            return property;
         }
 
         public virtual Property GetPropertyRecursively(string name)
         {
-            ClassBase klass = this;
-            Property p = null;
-            while (klass != null && p == null)
+            var classBase = this;
+            Property property = null;
+
+            while (classBase != null && property == null)
             {
-                p = (Property)klass.GetProperty(name);
-                klass = klass.Parent;
+                property = classBase.GetProperty(name);
+                classBase = classBase.Parent;
             }
-            if (p == null)
+
+            if (property != null) return property;
+
+            foreach (var @interface in Interfaces)
             {
-                foreach (string iface in Interfaces)
-                {
-                    ClassBase igen = SymbolTable.Table.GetClassGen(iface);
-                    if (igen == null)
-                        continue;
-                    p = igen.GetPropertyRecursively(name);
-                    if (p != null)
-                        break;
-                }
+                var classGen = SymbolTable.Table.GetClassGen(@interface);
+
+                if (classGen == null)
+                    continue;
+
+                property = classGen.GetPropertyRecursively(name);
+
+                if (property != null)
+                    break;
             }
-            return p;
+
+            return property;
         }
 
-        public bool Implements(string iface)
+        public bool Implements(string @interface)
         {
-            if (Interfaces.Contains(iface))
-                return true;
-            else if (Parent != null)
-                return Parent.Implements(iface);
-            else
-                return false;
-        }
-
-        public IList<Ctor> Ctors = new List<Ctor>();
-
-        bool HasStaticCtor(string name)
-        {
-            if (Parent != null && Parent.HasStaticCtor(name))
+            if (Interfaces.Contains(@interface))
                 return true;
 
-            foreach (Ctor ctor in Ctors)
-                if (ctor.StaticName == name)
-                    return true;
-
-            return false;
-        }
-
-        private void InitializeCtors()
-        {
-            if (ctors_initted)
-                return;
-
-            if (Parent != null)
-                Parent.InitializeCtors();
-
-            var valid_ctors = new List<Ctor>();
-            clash_map = new Dictionary<string, Ctor>();
-
-            foreach (Ctor ctor in Ctors)
-            {
-                if (clash_map.ContainsKey(ctor.Signature.Types))
-                {
-                    Ctor clash = clash_map[ctor.Signature.Types];
-                    Ctor alter = ctor.Preferred ? clash : ctor;
-                    alter.IsStatic = true;
-                    if (Parent != null && Parent.HasStaticCtor(alter.StaticName))
-                        alter.Modifiers = "new ";
-                }
-                else
-                    clash_map[ctor.Signature.Types] = ctor;
-
-                valid_ctors.Add(ctor);
-            }
-
-            Ctors = valid_ctors;
-            ctors_initted = true;
+            return Parent != null && Parent.Implements(@interface);
         }
 
         protected virtual void GenerateConstructors(GenerationInfo generationInfo)
         {
-            InitializeCtors();
-            foreach (Ctor ctor in Ctors)
+            InitializeConstructors();
+
+            foreach (var ctor in Constructors)
                 ctor.Generate(generationInfo);
         }
 
@@ -630,6 +511,113 @@ namespace GapiCodegen.Generatables
 
         public virtual void Prepare(StreamWriter sw, string indent)
         {
+        }
+
+        private bool CheckStructAbiParent(LogWriter logWriter, out string csParentStruct)
+        {
+            csParentStruct = null;
+
+            if (!CanGenerateAbiStruct(logWriter))
+                return false;
+
+            var parent = SymbolTable.Table[Element.GetAttribute(Constants.Parent)];
+            var csParent = SymbolTable.Table.GetCsType(Element.GetAttribute(Constants.Parent));
+
+            var parentCanBeGenerated = true;
+
+            if (parent != null)
+            {
+                //TODO: Add that information to ManualGen and use it.
+                if (parent.CName == "GInitiallyUnowned" || parent.CName == "GObject")
+                {
+                    csParentStruct = "GLib.Object";
+                }
+                else
+                {
+                    parentCanBeGenerated = false;
+
+                    if (parent is ClassBase classBase)
+                    {
+                        parentCanBeGenerated = classBase.CheckStructAbiParent(logWriter, out _);
+                    }
+
+                    if (parentCanBeGenerated)
+                        csParentStruct = csParent;
+                }
+
+                if (parentCanBeGenerated) return true;
+
+                logWriter.Warn($"Can't generate ABI structrure as the parent structure '{parent.CName}' can't be generated.");
+
+                return false;
+            }
+
+            csParentStruct = string.Empty;
+
+            return true;
+        }
+
+        private void ParseImplements(XmlNode member)
+        {
+            foreach (XmlNode node in member.ChildNodes)
+            {
+                if (node.Name != Constants.Interface)
+                    continue;
+
+                var element = (XmlElement)node;
+
+                if (element.GetAttributeAsBoolean(Constants.Hidden))
+                    continue;
+
+                if (element.HasAttribute(Constants.CName))
+                {
+                    Interfaces.Add(element.GetAttribute(Constants.CName));
+                }
+                else if (element.HasAttribute(Constants.Name))
+                {
+                    ManagedInterfaces.Add(element.GetAttribute(Constants.Name));
+                }
+            }
+        }
+
+        private bool HasStaticConstructor(string name)
+        {
+            if (Parent != null && Parent.HasStaticConstructor(name))
+                return true;
+
+            return Constructors.Any(ctor => ctor.StaticName == name);
+        }
+
+        private bool _constructorsInitialized;
+        
+        private void InitializeConstructors()
+        {
+            if (_constructorsInitialized)
+                return;
+
+            Parent?.InitializeConstructors();
+
+            var validCtors = new List<Ctor>();
+            var clashMap = new Dictionary<string, Ctor>();
+
+            foreach (var ctor in Constructors)
+            {
+                if (clashMap.TryGetValue(ctor.Signature.Types, out var clash))
+                {
+                    var alter = ctor.Preferred ? clash : ctor;
+                    alter.IsStatic = true;
+
+                    if (Parent != null && Parent.HasStaticConstructor(alter.StaticName))
+                        alter.Modifiers = "new ";
+                }
+                else
+                    clashMap[ctor.Signature.Types] = ctor;
+
+                validCtors.Add(ctor);
+            }
+
+            Constructors = validCtors;
+            _constructorsInitialized = true;
         }
     }
 }

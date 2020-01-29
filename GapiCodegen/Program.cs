@@ -74,11 +74,11 @@ namespace GapiCodegen
                     v => { gapiDir = v; }
                 },
                 {
-                    "abi-cs-filename=", "Filename for the generated CSharp ABI checker.",
+                    "abi-cs-filename=", "Filename for the generated C# ABI checker.",
                     v => { abiCsFile = v; }
                 },
                 {
-                    "abi-cs-usings=", "Namespaces to use in the CSharp ABI checker.",
+                    "abi-cs-usings=", "Namespaces to use in the C# ABI checker.",
                     v => { abiCsUsings = v; }
                 },
                 {

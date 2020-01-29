@@ -19,15 +19,15 @@ namespace GapiCodegen
             is_valid = true;
             foreach (XmlElement union_child in element.ChildNodes)
             {
-                substructs.Add(new UnionSubstruct(union_child, container_type, abi_info_name));
+                substructs.Add(new UnionSubstruct(union_child, container_type, AbiInfoName));
             }
         }
 
-        public override StructAbiField Generate(GenerationInfo gen_info, string indent,
-                StructAbiField prev_field, StructAbiField next_field, string parent_name,
-                TextWriter tw)
+        public override StructAbiField Generate(GenerationInfo generationInfo, string indent,
+                StructAbiField previousField, StructAbiField nextField, string parent_name,
+                TextWriter textWriter)
         {
-            StreamWriter sw = gen_info.Writer;
+            StreamWriter sw = generationInfo.Writer;
             var name = _element.GetAttribute("name");
             var cname = _element.GetAttribute("cname");
 
@@ -36,11 +36,11 @@ namespace GapiCodegen
 
             foreach (UnionSubstruct _struct in substructs)
             {
-                _struct.Generate(gen_info, indent + "\t", cname, prev_field,
-                        next_field, parent_name, tw);
+                _struct.Generate(generationInfo, indent + "\t", cname, previousField,
+                        nextField, parent_name, textWriter);
             }
 
-            base.Generate(gen_info, indent, prev_field, next_field, parent_name, null);
+            base.Generate(generationInfo, indent, previousField, nextField, parent_name, null);
 
             return this;
         }
@@ -135,7 +135,7 @@ namespace GapiCodegen
 
             foreach (var field in fields)
             {
-                field.parent_structure_name = parent_name;
+                field.ParentStructureName = parent_name;
             }
         }
 
@@ -160,7 +160,7 @@ namespace GapiCodegen
                 var field = fields[i];
                 next_field = fields.Count > i + 1 ? fields[i + 1] : null;
 
-                field.parent_structure_name = parent_name;
+                field.ParentStructureName = parent_name;
 
                 field.Generate(gen_info, indent, prev_field, next_field, struct_parent_name,
                         tw);

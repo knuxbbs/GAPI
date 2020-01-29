@@ -80,7 +80,7 @@ namespace GapiCodegen
             return true;
         }
 
-        public void GenerateDecl(StreamWriter streamWriter)
+        public void GenerateDeclaration(StreamWriter streamWriter)
         {
             if (IsStatic) return;
 
@@ -120,7 +120,7 @@ namespace GapiCodegen
             importSignature += !IsStatic && Parameters.Count > 0 ? ", " : "";
             importSignature += Parameters.ImportSignature;
 
-            streamWriter.WriteLine("\t\t[UnmanagedFunctionPointer (CallingConvention.Cdecl)]");
+            streamWriter.WriteLine("\t\t[UnmanagedFunctionPointer(CallingConvention.Cdecl)]");
 
             streamWriter.WriteLine(_returnValue.MarshalType.StartsWith("[return:")
                 ? $"\t\tdelegate {_returnValue.CsType} d_{CName}({importSignature});"

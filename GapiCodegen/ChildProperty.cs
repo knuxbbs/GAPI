@@ -16,27 +16,31 @@
 // Free Software Foundation, Inc., 59 Temple Place - Suite 330,
 // Boston, MA 02111-1307, USA.
 
-
 using System.Xml;
 using GapiCodegen.Generatables;
 
-namespace GapiCodegen {
-	public class ChildProperty : Property {
+namespace GapiCodegen
+{
+    /// <summary>
+    /// Handles 'childprop' elements.
+    /// </summary>
+    public class ChildProperty : Property
+    {
+        public ChildProperty(XmlElement element, ClassBase containerType) : base(element, containerType) { }
 
-		public ChildProperty (XmlElement element, ClassBase container_type) : base (element, container_type) {}
+        protected override string PropertyAttribute(string name)
+        {
+            return $"[Gtk.ChildProperty({name})]";
+        }
 
-		protected override string PropertyAttribute (string qpname) {
-			return "[Gtk.ChildProperty (" + qpname + ")]";
-		}
+        protected override string RawGetter(string name)
+        {
+            return $"parent.ChildGetProperty(child, {name})";
+        }
 
-		protected override string RawGetter (string qpname) {
-			return "parent.ChildGetProperty (child, " + qpname + ")";
-		}
-
-		protected override string RawSetter (string qpname) {
-			return "parent.ChildSetProperty(child, " + qpname + ", val)";
-		}
-
-	}
+        protected override string RawSetter(string name)
+        {
+            return $"parent.ChildSetProperty(child, {name}, val)";
+        }
+    }
 }
-

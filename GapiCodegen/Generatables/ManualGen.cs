@@ -19,54 +19,48 @@
 // Free Software Foundation, Inc., 59 Temple Place - Suite 330,
 // Boston, MA 02111-1307, USA.
 
+namespace GapiCodegen.Generatables
+{
+    /// <summary>
+    /// Handles types that must be manually marshalled between managed and unmanaged code (by handwritten classes such as GLib.List).
+    /// </summary>
+    public class ManualGen : SimpleBase
+    {
+        private readonly string _fromFmt;
 
-namespace GapiCodegen.Generatables {
-	public class ManualGen : SimpleBase {
-		
-		string from_fmt;
-		string abi_type;
+        public ManualGen(string cName, string type) : base(cName, type, "null")
+        {
+            _fromFmt = $"new {QualifiedName}({{0}})";
+        }
 
-		public ManualGen (string cName, string type) : base (cName, type, "null")
-		{
-			from_fmt = "new " + QualifiedName + "({0})";
-		}
+        public ManualGen(string cName, string type, string fromFmt) : base(cName, type, "null")
+        {
+            _fromFmt = fromFmt;
+        }
 
-		public ManualGen (string cName, string type, string from_fmt) : base (cName, type, "null")
-		{
-			this.from_fmt = from_fmt;
-		}
+        public ManualGen(string cName, string type, string fromFmt, string abiType) : base(cName, type, "null")
+        {
+            _fromFmt = fromFmt;
+            AbiType = abiType;
+        }
 
-		public ManualGen (string cName, string type, string from_fmt, string abi_type) : base (cName, type, "null")
-		{
-			this.from_fmt = from_fmt;
-			this.abi_type = abi_type;
-		}
+        public override string MarshalType => "IntPtr";
 
-		public override string MarshalType {
-			get {
-				return "IntPtr";
-			}
-		}
+        public string AbiType { get; }
 
-		public string AbiType {
-			get {
-				return abi_type;
-			}
-		}
+        public override string CallByName(string varName)
+        {
+            return $"{varName} == null ? IntPtr.Zero : {varName}.Handle";
+        }
 
-		public override string CallByName (string varName)
-		{
-			return varName + " == null ? IntPtr.Zero : " + varName + ".Handle";
-		}
-		
-		public override string FromNative(string varName)
-		{
-			return string.Format (from_fmt, varName);
-		}
+        public override string FromNative(string varName)
+        {
+            return string.Format(_fromFmt, varName);
+        }
 
-		public override string GenerateGetSizeOf () {
-			return "(uint) Marshal.SizeOf(typeof(" + abi_type + "))";
-		}
-	}
+        public override string GenerateGetSizeOf()
+        {
+            return $"(uint) Marshal.SizeOf(typeof({AbiType}))";
+        }
+    }
 }
-

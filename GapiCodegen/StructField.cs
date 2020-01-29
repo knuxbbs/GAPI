@@ -115,18 +115,6 @@ namespace GapiCodegen
             return IsArray && !IsNullTermArray && ArrayLength != 0;
         }
 
-        public virtual bool IsCPointer()
-        {
-            var generatable = SymbolTable.Table[CType];
-
-            return CType.EndsWith("*") ||
-                   CType.EndsWith("pointer") ||
-                   generatable is CallbackGen ||
-                   CsType == "string" ||
-                   CType == "guint8" && IsArray && IsNullTermArray ||
-                   Element.GetAttributeAsBoolean("is_callback");
-        }
-
         public virtual string GenerateGetSizeOf(string indent)
         {
             var generatable = SymbolTable.Table[CType];
@@ -154,11 +142,11 @@ namespace GapiCodegen
 
             if (generatable is EnumGen && !isPointer)
             {
-                size = $"(uint) Marshal.SizeOf(System.Enum.GetUnderlyingType(typeof({csType})))";
+                size = $"(uint)Marshal.SizeOf(System.Enum.GetUnderlyingType(typeof({csType})))";
             }
             else
             {
-                size = $"(uint) Marshal.SizeOf(typeof({csType}))";
+                size = $"(uint)Marshal.SizeOf(typeof({csType}))";
             }
 
             if (IsFixedSizeArray())
@@ -180,6 +168,18 @@ namespace GapiCodegen
         }
 
         public bool IsPointer => IsCPointer();
+
+        public virtual bool IsCPointer()
+        {
+            var generatable = SymbolTable.Table[CType];
+
+            return CType.EndsWith("*") ||
+                   CType.EndsWith("pointer") ||
+                   generatable is CallbackGen ||
+                   CsType == "string" ||
+                   CType == "guint8" && IsArray && IsNullTermArray ||
+                   Element.GetAttributeAsBoolean("is_callback");
+        }
 
         public new string Name
         {
@@ -256,21 +256,21 @@ namespace GapiCodegen
             }
             else if (IsArray && IsNullTermArray)
             {
-                textWriter.WriteLine(indent + "private {0} {1};", "IntPtr", studlyName + "Ptr");
+                textWriter.WriteLine(indent + "private IntPtr {0}Ptr;", studlyName);
 
-                if (!Readable && !Writable || Access != "public") return;
+                if (!Readable && !Writeable || Access != "public") return;
 
                 textWriter.WriteLine(indent + "public {0} {1} {{", csType, studlyName);
 
                 if (Readable)
                 {
-                    textWriter.WriteLine(indent + "\tget {{ return GLib.Marshaller.StructArrayFromNullTerminatedIntPtr<{0}> ({1}); }}",
-                        base.CsType, studlyName + "Ptr");
+                    textWriter.WriteLine(indent + "\tget {{ return GLib.Marshaller.StructArrayFromNullTerminatedIntPtr<{0}> ({1}Ptr); }}",
+                        base.CsType, studlyName);
                 }
-                if (Writable)
+                if (Writeable)
                 {
-                    textWriter.WriteLine(indent + "\tset {{ {0} = GLib.Marshaller.StructArrayToNullTerminatedStructArrayIntPtr<{1}> (value); }}",
-                        studlyName + "Ptr", base.CsType);
+                    textWriter.WriteLine(indent + "\tset {{ {0}Ptr = GLib.Marshaller.StructArrayToNullTerminatedStructArrayIntPtr<{1}> (value); }}",
+                        studlyName, base.CsType);
                 }
 
                 textWriter.WriteLine($"{indent}}}");
@@ -303,7 +303,7 @@ namespace GapiCodegen
             }
             else if (IsPointer && csType != "string")
             {
-                //TODO: FIXME: probably some fields here which should be visible.
+                //TODO: probably some fields here which should be visible.
                 Visible = false;
                 textWriter.WriteLine(indent + "private {0} {1};", csType, name);
             }

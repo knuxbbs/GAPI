@@ -19,181 +19,212 @@
 // Free Software Foundation, Inc., 59 Temple Place - Suite 330,
 // Boston, MA 02111-1307, USA.
 
-
 using System.IO;
 using System.Xml;
 using GapiCodegen.Generatables;
 using GapiCodegen.Utils;
 
-namespace GapiCodegen {
-	public class Property : PropertyBase {
+namespace GapiCodegen
+{
+    /// <summary>
+    /// Handles 'property' elements.
+    /// </summary>
+    public class Property : PropertyBase
+    {
+        public Property(XmlElement element, ClassBase containerType) : base(element, containerType) { }
 
-		public Property (XmlElement element, ClassBase container_type) : base (element, container_type) {}
+        public bool Validate(LogWriter logWriter)
+        {
+            if (CsType != "" || Hidden) return true;
 
-		public bool Validate (LogWriter log)
-		{
-			if (CsType == "" && !Hidden) {
-				log.Member = Name;
-				log.Warn ("property has unknown type '{0}' ", CType);
-				Statistics.ThrottledCount++;
-				return false;
-			}
+            logWriter.Member = Name;
+            logWriter.Warn($"Property has unknown type '{CType}'.");
 
-			return true;
-		}
+            Statistics.ThrottledCount++;
+            return false;
+        }
 
-		bool Readable {
-			get {
-				return Element.GetAttributeAsBoolean ("readable");
-			}
-		}
+        private bool Readable => Element.GetAttributeAsBoolean(Constants.Readable);
 
-		bool Writable {
-			get {
-				return Element.GetAttributeAsBoolean ("writeable") &&
-					!Element.GetAttributeAsBoolean ("construct-only");
-			}
-		}
+        private bool Writeable =>
+            Element.GetAttributeAsBoolean(Constants.Writeable) &&
+            !Element.GetAttributeAsBoolean(Constants.ConstructOnly);
 
-		bool IsDeprecated {
-			get {
-				return !ContainerType.IsDeprecated &&
-					Element.GetAttributeAsBoolean ("deprecated");
-			}
-		}
+        private bool IsDeprecated =>
+            !ContainerType.IsDeprecated &&
+            Element.GetAttributeAsBoolean(Constants.Deprecated);
 
-		protected virtual string PropertyAttribute (string qpname) {
-			return "[GLib.Property (" + qpname + ")]";
-		}
+        protected virtual string PropertyAttribute(string name)
+        {
+            return $"[GLib.Property({name})]";
+        }
 
-		protected virtual string RawGetter (string qpname) {
-            if (ContainerType is InterfaceGen)
-                return "implementor.GetProperty (" + qpname + ")";
-			return "GetProperty (" + qpname + ")";
-		}
+        protected virtual string RawGetter(string name)
+        {
+            return ContainerType is InterfaceGen
+                ? $"implementor.GetProperty({name})"
+                : $"GetProperty({name})";
+        }
 
-		protected virtual string RawSetter (string qpname) {
-            if (ContainerType is InterfaceGen)
-                return "implementor.SetProperty(" + qpname + ", val)";
-			return "SetProperty(" + qpname + ", val)";
-		}
+        protected virtual string RawSetter(string name)
+        {
+            return ContainerType is InterfaceGen
+                ? $"implementor.SetProperty({name}, val)"
+                : $"SetProperty({name}, val)";
+        }
 
-		public void GenerateDecl (StreamWriter sw, string indent)
-		{
-			if (Hidden || !Readable && !Writable)
-				return;
+        public void GenerateDeclaration(StreamWriter streamWriter, string indent)
+        {
+            if (Hidden || !Readable && !Writeable)
+                return;
 
-			string name = Name;
-			if (name == ContainerType.Name)
-				name += "Prop";
+            var name = Name;
 
-			sw.WriteLine (indent + CsType + " " + name + " {");
-			sw.Write (indent + "\t");
-			if (Readable || Getter != null)
-				sw.Write ("get; ");
-			if (Writable || Setter != null)
-				sw.Write ("set;");
-			sw.WriteLine ();
-			sw.WriteLine (indent + "}");
-		}
+            if (name == ContainerType.Name)
+                name += "Prop";
 
-		public void Generate (GenerationInfo gen_info, string indent, ClassBase implementor)
-		{
-			SymbolTable table = SymbolTable.Table;
-			StreamWriter sw = gen_info.Writer;
+            streamWriter.WriteLine($"{indent}{CsType} {name} {{");
+            streamWriter.Write($"{indent}\t");
 
-			if (Hidden || !Readable && !Writable)
-				return;
+            if (Readable || Getter != null)
+                streamWriter.Write("get; ");
 
-			string modifiers = "";
+            if (Writeable || Setter != null)
+                streamWriter.Write("set;");
 
-			if (IsNew || ContainerType.Parent != null && ContainerType.Parent.GetPropertyRecursively (Name) != null)
-				modifiers = "new ";
-			else if (implementor != null && implementor.Parent != null && implementor.Parent.GetPropertyRecursively (Name) != null)
-				modifiers = "new ";
+            streamWriter.WriteLine();
+            streamWriter.WriteLine($"{indent}}}");
+        }
 
-			string name = Name;
-			if (name == ContainerType.Name) {
-				name += "Prop";
-			}
-			string qpname = "\"" + CName + "\"";
+        public void Generate(GenerationInfo generationInfo, string indent, ClassBase implementor)
+        {
+            if (Hidden || !Readable && !Writeable)
+                return;
 
-			string v_type = "";
-			if (table.IsInterface (CType)) {
-				v_type = "(GLib.Object)";
-			} else if (table.IsOpaque (CType)) {
-				v_type = "(GLib.Opaque)";
-			} else if (table.IsEnum (CType)) {
-				v_type = "(Enum)";
-			}
+            var name = Name;
 
-			GenerateImports (gen_info, indent);
+            if (name == ContainerType.Name)
+            {
+                name += "Prop";
+            }
 
-			if (IsDeprecated ||
-			    Getter != null && Getter.IsDeprecated ||
-			    Setter != null && Setter.IsDeprecated)
-				sw.WriteLine (indent + "[Obsolete]");
-			sw.WriteLine (indent + PropertyAttribute (qpname));
-			sw.WriteLine (indent + "public " + modifiers + CsType + " " + name + " {");
-			indent += "\t";
+            GenerateImports(generationInfo, indent);
 
-			if (Getter != null) {
-				sw.Write(indent + "get ");
-				Getter.GenerateBody(gen_info, implementor, "\t");
-				sw.WriteLine();
-			} else if (Readable) {
-				sw.WriteLine(indent + "get {");
-				sw.WriteLine(indent + "\tGLib.Value val = " + RawGetter (qpname) + ";");
-				if (table.IsOpaque (CType) || table.IsBoxed (CType)) {
-					sw.WriteLine(indent + "\t" + CsType + " ret = (" + CsType + ") val;");
-				} else if (table.IsInterface (CType)) {
-					var igen = table.GetInterfaceGen (CType);
+            var streamWriter = generationInfo.Writer;
+            var qpname = $"\"{CName}\"";
+            var modifiers = "";
 
-					// Do we have to dispose the GLib.Object from the GLib.Value?
-					sw.WriteLine (indent + "\t{0} ret = {1}.GetObject ((GLib.Object) val);",
-					              igen.QualifiedName, igen.QualifiedAdapterName);
-				} else {
-					sw.Write(indent + "\t" + CsType + " ret = ");
-					sw.Write ("(" + CsType + ") ");
-					if (v_type != "") {
-						sw.Write(v_type + " ");
-					}
-					sw.WriteLine("val;");
-				}
+            if (IsNew || ContainerType.Parent?.GetPropertyRecursively(Name) != null ||
+                implementor?.Parent?.GetPropertyRecursively(Name) != null)
+                modifiers = "new ";
 
-				sw.WriteLine(indent + "\tval.Dispose ();");
-				sw.WriteLine(indent + "\treturn ret;");
-				sw.WriteLine(indent + "}");
-			}
+            if (IsDeprecated || Getter != null && Getter.IsDeprecated ||
+                Setter != null && Setter.IsDeprecated)
+            {
+                streamWriter.WriteLine($"{indent}[Obsolete]");
+            }
 
-			if (Setter != null) {
-				sw.Write(indent + "set ");
-				Setter.GenerateBody(gen_info, implementor, "\t");
-				sw.WriteLine();
-			} else if (Writable) {
-				sw.WriteLine(indent + "set {");
-				sw.Write(indent + "\tGLib.Value val = ");
-				if (table.IsBoxed (CType)) {
-					sw.WriteLine("(GLib.Value) value;");
-				} else if (table.IsOpaque (CType)) {
-					sw.WriteLine("new GLib.Value(value, \"{0}\");", CType);
-				} else {
-					sw.Write("new GLib.Value(");
-					if (v_type != "" && !(table.IsObject (CType) || table.IsInterface (CType) || table.IsOpaque (CType))) {
-						sw.Write(v_type + " ");
-					}
-					sw.WriteLine("value);");
-				}
-				sw.WriteLine(indent + "\t" + RawSetter (qpname) + ";");
-				sw.WriteLine(indent + "\tval.Dispose ();");
-				sw.WriteLine(indent + "}");
-			}
+            streamWriter.WriteLine("{0}{1}", indent, PropertyAttribute(qpname));
+            streamWriter.WriteLine($"{indent}public {modifiers}{CsType} {name} {{");
+            indent += "\t";
 
-			sw.WriteLine(indent.Substring (1) + "}");
-			sw.WriteLine();
+            var table = SymbolTable.Table;
+            var vType = "";
 
-			Statistics.PropCount++;
-		}
-	}
+            if (table.IsInterface(CType))
+            {
+                vType = "(GLib.Object)";
+            }
+            else if (table.IsOpaque(CType))
+            {
+                vType = "(GLib.Opaque)";
+            }
+            else if (table.IsEnum(CType))
+            {
+                vType = "(Enum)";
+            }
+
+            if (Getter != null)
+            {
+                streamWriter.Write($"{indent}get ");
+                Getter.GenerateBody(generationInfo, implementor, "\t");
+                streamWriter.WriteLine();
+            }
+            else if (Readable)
+            {
+                streamWriter.WriteLine($"{indent}get {{");
+                streamWriter.WriteLine($"{indent}\tGLib.Value val = {RawGetter(qpname)};");
+
+                if (table.IsOpaque(CType) || table.IsBoxed(CType))
+                {
+                    streamWriter.WriteLine($"{indent}\t{CsType} ret = ({CsType})val;");
+                }
+                else if (table.IsInterface(CType))
+                {
+                    var interfaceGen = table.GetInterfaceGen(CType);
+
+                    // Do we have to dispose the GLib.Object from the GLib.Value?
+                    streamWriter.WriteLine("{2}\t{0} ret = {1}.GetObject((GLib.Object)val);",
+                        interfaceGen.QualifiedName, interfaceGen.QualifiedAdapterName, indent);
+                }
+                else
+                {
+                    streamWriter.Write($"{indent}\t{CsType} ret = ");
+                    streamWriter.Write($"({CsType}) ");
+
+                    if (vType != "")
+                    {
+                        streamWriter.Write($"{vType} ");
+                    }
+
+                    streamWriter.WriteLine("val;");
+                }
+
+                streamWriter.WriteLine($"{indent}\tval.Dispose();");
+                streamWriter.WriteLine($"{indent}\treturn ret;");
+                streamWriter.WriteLine($"{indent}}}");
+            }
+
+            if (Setter != null)
+            {
+                streamWriter.Write($"{indent}set ");
+                Setter.GenerateBody(generationInfo, implementor, "\t");
+                streamWriter.WriteLine();
+            }
+            else if (Writeable)
+            {
+                streamWriter.WriteLine($"{indent}set {{");
+                streamWriter.Write($"{indent}\tGLib.Value val = ");
+
+                if (table.IsBoxed(CType))
+                {
+                    streamWriter.WriteLine("(GLib.Value)value;");
+                }
+                else if (table.IsOpaque(CType))
+                {
+                    streamWriter.WriteLine("new GLib.Value(value, \"{0}\");", CType);
+                }
+                else
+                {
+                    streamWriter.Write("new GLib.Value(");
+
+                    if (vType != "" && !(table.IsObject(CType) || table.IsInterface(CType) || table.IsOpaque(CType)))
+                    {
+                        streamWriter.Write($"{vType} ");
+                    }
+
+                    streamWriter.WriteLine("value);");
+                }
+
+                streamWriter.WriteLine($"{indent}\t{RawSetter(qpname)};");
+                streamWriter.WriteLine($"{indent}\tval.Dispose();");
+                streamWriter.WriteLine($"{indent}}}");
+            }
+
+            streamWriter.WriteLine($"{indent.Substring(1)}}}");
+            streamWriter.WriteLine();
+
+            Statistics.PropCount++;
+        }
+    }
 }
-

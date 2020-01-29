@@ -281,7 +281,7 @@ namespace GapiCodegen.Generatables {
 				sw.WriteLine ();
 			}
 
-			foreach (Ctor ctor in Ctors)
+			foreach (Ctor ctor in Constructors)
 				ctor.IsStatic = true;
 
 			base.GenerateConstructors (generationInfo);

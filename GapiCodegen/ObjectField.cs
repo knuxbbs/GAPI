@@ -25,7 +25,7 @@ namespace GapiCodegen
     /// <summary>
     ///  Handles 'field' elements in objects.
     /// </summary>
-    public class ObjectField : FieldBase
+    public sealed class ObjectField : FieldBase
     {
         public ObjectField(XmlElement element, ClassBase containerType) : base(element, containerType)
         {
@@ -33,7 +33,7 @@ namespace GapiCodegen
                 CType = $"const-{CType}";
         }
 
-        internal override bool Writable => Element.GetAttributeAsBoolean("writeable");
+        internal override bool Writeable => Element.GetAttributeAsBoolean(Constants.Writeable);
 
         protected override string DefaultAccess => "private";
     }

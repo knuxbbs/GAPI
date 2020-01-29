@@ -29,8 +29,8 @@ namespace GapiCodegen
 
         public override string StudlyName => Name;
 
-        public override string CName => parent_structure_name != null
-            ? $"{parent_structure_name}{'.'}{Name}"
+        public override string CName => ParentStructureName != null
+            ? $"{ParentStructureName}{'.'}{Name}"
             : Name;
     }
 }

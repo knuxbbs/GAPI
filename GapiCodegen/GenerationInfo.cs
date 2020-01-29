@@ -131,7 +131,7 @@ namespace GapiCodegen
                 }
                 catch (Exception)
                 {
-                    Console.Error.WriteLine("Unable to create specified glue file.  Glue will not be generated.");
+                    Console.Error.WriteLine("Unable to create specified glue file. Glue will not be generated.");
                     return;
                 }
 

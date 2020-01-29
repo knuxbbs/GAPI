@@ -65,7 +65,7 @@ namespace GapiCodegen
             }
         }
 
-        internal virtual bool Writable
+        internal virtual bool Writeable
         {
             get
             {
@@ -121,8 +121,8 @@ namespace GapiCodegen
             if (UseAbiStruct(generationInfo))
             {
                 GetOffsetName = AbiField.GetOffsetName;
-                _offsetName = ((StructAbiField) AbiField).abi_info_name + ".GetFieldOffset(\"" +
-                              ((StructField) AbiField).CName + "\")";
+                _offsetName =
+                    $"{((StructAbiField)AbiField).AbiInfoName}.GetFieldOffset(\"{((StructField)AbiField).CName}\")";
 
                 return;
             }
@@ -138,12 +138,12 @@ namespace GapiCodegen
                 if (Readable && Getter == null)
                     _getterName = $"{prefix}_get_{CName}";
 
-                if (Writable && Setter == null)
+                if (Writeable && Setter == null)
                     _setterName = $"{prefix}_set_{CName}";
             }
             else
             {
-                if ((!Readable || Getter != null) && (!Writable || Setter != null)) return;
+                if ((!Readable || Getter != null) && (!Writeable || Setter != null)) return;
 
                 _offsetName = $"{CName}_offset";
                 GetOffsetName = $"{prefix}_get_{_offsetName}";
@@ -281,7 +281,7 @@ namespace GapiCodegen
                 ContainerType.Finish(streamWriter, $"{indent}\t\t");
                 streamWriter.WriteLine($"{indent}\t}}");
             }
-            else if (Writable && _offsetName != null)
+            else if (Writeable && _offsetName != null)
             {
                 streamWriter.WriteLine($"{indent}\tset {{");
                 streamWriter.WriteLine($"{indent}\t\tunsafe {{");
