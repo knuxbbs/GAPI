@@ -89,8 +89,10 @@ namespace GapiCodegen
 
             var generatables = new List<IGeneratable>();
 
-            foreach (XmlElement element in root.ChildNodes)
+            foreach (XmlNode child in root.ChildNodes)
             {
+                var element = child as XmlElement;
+
                 if (element == null)
                     continue;
 
