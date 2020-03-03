@@ -108,19 +108,6 @@ namespace GapiCodegen
                 }
             };
 
-            if (showHelp)
-            {
-                ShowHelp(options);
-                return 0;
-            }
-
-            if (inputFilePaths.Count == 0)
-            {
-                Console.WriteLine("You need to specify a file to process using the --generate option.");
-                Console.WriteLine("Try `gapi-codegen --help` for more information.");
-                return 64;
-            }
-
             List<string> extra;
 
             try
@@ -135,9 +122,22 @@ namespace GapiCodegen
                 return 64;
             }
 
+            if (showHelp)
+            {
+                ShowHelp(options);
+                return 0;
+            }
+
             if (extra.Exists(v => v.StartsWith("--customdir")))
             {
                 Console.WriteLine("Using .custom files is not supported anymore, use partial classes instead.");
+                return 64;
+            }
+
+            if (inputFilePaths.Count == 0)
+            {
+                Console.WriteLine("You need to specify a file to process using the --generate option.");
+                Console.WriteLine("Try `gapi-codegen --help` for more information.");
                 return 64;
             }
 

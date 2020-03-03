@@ -40,11 +40,11 @@ namespace GapiCodegen
             ContainerType = containerType;
 
             Name = element.GetAttribute(Constants.Name);
+            Parameters = new Parameters(element[Constants.Parameters]);
             IsStatic = element.GetAttribute(Constants.Shared) == "true";
+
             Protection = "public";
             Modifiers = string.Empty;
-
-            Parameters = new Parameters(element[Constants.Parameters]);
 
             if (element.GetAttributeAsBoolean(Constants.NewFlag))
                 Modifiers = "new ";
@@ -136,7 +136,7 @@ namespace GapiCodegen
         public string Name { get; set; }
 
         public Parameters Parameters { get; protected set; }
-        
+
         public string Protection { get; set; }
 
         protected string Safety => Body.ThrowsException && !(ContainerType is InterfaceGen) ? "unsafe " : "";
