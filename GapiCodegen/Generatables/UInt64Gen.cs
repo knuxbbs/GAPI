@@ -1,4 +1,4 @@
-// GtkSharp.Generation.LPGen.cs - long/pointer Generatable.
+// GtkSharp.Generation.LPUGen.cs - unsigned long/pointer generatable.
 //
 // Author: Mike Kestner <mkestner@novell.com>
 //
@@ -24,22 +24,22 @@ using GapiCodegen.Interfaces;
 namespace GapiCodegen.Generatables
 {
     /// <summary>
-    /// Marshals system specific long and "size" types.
+    /// Marshals system specific unsigned long and "size" types.
     /// </summary>
-    public class LPGen : SimpleGen, IPropertyAccessor
+    public class UInt64Gen : SimpleGen, IPropertyAccessor
     {
-        public LPGen(string cName) : base(cName, "long", "0L") { }
+        public UInt64Gen(string cName) : base(cName, "ulong", "0") { }
 
-        public override string MarshalType => "IntPtr";
+        public override string MarshalType => "UIntPtr";
 
         public override string CallByName(string varName)
         {
-            return $"new IntPtr ({varName})";
+            return $"new UIntPtr ({varName})";
         }
 
         public override string FromNative(string varName)
         {
-            return $"(long) {varName}";
+            return $"(ulong) {varName}";
         }
 
         public void WriteAccessors(TextWriter textWriter, string indent, string fieldName)

@@ -50,7 +50,7 @@ namespace GapiCodegen
         {
             get
             {
-                var type = _element.GetAttribute("type");
+                var type = _element.GetAttribute(Constants.Type);
 
                 if (type == "void*")
                     type = "gpointer";
@@ -63,7 +63,7 @@ namespace GapiCodegen
         {
             get
             {
-                var csType = SymbolTable.Table.GetCsType(_element.GetAttribute("type"));
+                var csType = SymbolTable.Table.GetCsType(_element.GetAttribute(Constants.Type));
 
                 if (csType == "void")
                     csType = "System.IntPtr";
@@ -82,9 +82,9 @@ namespace GapiCodegen
 
         public IGeneratable Generatable => SymbolTable.Table[CType];
 
-        public bool IsArray => _element.GetAttributeAsBoolean("array") || _element.GetAttributeAsBoolean("null_term_array");
+        public bool IsArray => _element.GetAttributeAsBoolean(Constants.Array) || _element.GetAttributeAsBoolean(Constants.NullTermArray);
 
-        public bool IsEllipsis => _element.GetAttributeAsBoolean("ellipsis");
+        public bool IsEllipsis => _element.GetAttributeAsBoolean(Constants.Ellipsis);
 
         internal bool IsOptional => _element.GetAttributeAsBoolean("allow-none");
 
@@ -143,7 +143,7 @@ namespace GapiCodegen
             }
         }
 
-        public bool IsParams => _element.HasAttribute("params");
+        public bool IsParams => _element.HasAttribute(Constants.Params);
 
         public bool IsString => CsType == "string";
 
@@ -153,7 +153,7 @@ namespace GapiCodegen
         {
             get
             {
-                var type = SymbolTable.Table.GetMarshalType(_element.GetAttribute("type"));
+                var type = SymbolTable.Table.GetMarshalType(_element.GetAttribute(Constants.Type));
 
                 if (type == "void" || Generatable is IManualMarshaler)
                     type = "IntPtr";
@@ -167,11 +167,11 @@ namespace GapiCodegen
             }
         }
 
-        public string Name => SymbolTable.Table.MangleName(_element.GetAttribute("name"));
+        public string Name => SymbolTable.Table.MangleName(_element.GetAttribute(Constants.Name));
 
         public bool IsOwnable => Generatable is OwnableGen;
 
-        public bool Owned => _element.GetAttribute("owned") == "true";
+        public bool Owned => _element.GetAttribute(Constants.Owned) == "true";
 
         public virtual string NativeSignature
         {
@@ -186,7 +186,7 @@ namespace GapiCodegen
             }
         }
 
-        public string PropertyName => _element.GetAttribute("property_name");
+        public string PropertyName => _element.GetAttribute(Constants.PropertyName);
 
         private string _passAs;
 
@@ -197,8 +197,8 @@ namespace GapiCodegen
                 if (!string.IsNullOrEmpty(_passAs))
                     return _passAs;
 
-                if (_element.HasAttribute("pass_as"))
-                    return _element.GetAttribute("pass_as");
+                if (_element.HasAttribute(Constants.PassAs))
+                    return _element.GetAttribute(Constants.PassAs);
 
                 if (IsArray || CsType.EndsWith("IntPtr"))
                     return "";
@@ -215,7 +215,7 @@ namespace GapiCodegen
 
         public string Scope
         {
-            get => _scope ?? (_scope = _element.GetAttribute("scope"));
+            get => _scope ?? (_scope = _element.GetAttribute(Constants.Scope));
             set => _scope = value;
         }
 
@@ -251,7 +251,7 @@ namespace GapiCodegen
             set => _destroyNotify = value;
         }
 
-        public bool IsHidden => _element.GetAttributeAsBoolean("hidden");
+        public bool IsHidden => _element.GetAttributeAsBoolean(Constants.Hidden);
 
         public virtual string[] Prepare
         {
@@ -307,17 +307,17 @@ namespace GapiCodegen
                     callParam += CallName;
                 }
                 else switch (Generatable)
-                    {
-                        case IManualMarshaler _:
-                            callParam = $"native_{CallName}";
-                            break;
-                        case ObjectBase objectBase:
-                            callParam = objectBase.CallByName(CallName, Owned);
-                            break;
-                        default:
-                            callParam = Generatable.CallByName(CallName);
-                            break;
-                    }
+                {
+                    case IManualMarshaler _:
+                        callParam = $"native_{CallName}";
+                        break;
+                    case ObjectBase objectBase:
+                        callParam = objectBase.CallByName(CallName, Owned);
+                        break;
+                    default:
+                        callParam = Generatable.CallByName(CallName);
+                        break;
+                }
 
                 return callParam;
             }
@@ -371,7 +371,7 @@ namespace GapiCodegen
         {
             get
             {
-                var name = _element.GetAttribute("name");
+                var name = _element.GetAttribute(Constants.Name);
                 var segments = name.Split('_');
                 var studly = "";
 

@@ -1,4 +1,4 @@
-// GtkSharp.Generation.SimpleGen.cs - The Simple type Generatable.
+﻿// GtkSharp.Generation.SimpleGen.cs - The Simple type Generatable.
 //
 // Author: Mike Kestner <mkestner@speakeasy.net>
 //
@@ -18,19 +18,25 @@
 // Free Software Foundation, Inc., 59 Temple Place - Suite 330,
 // Boston, MA 02111-1307, USA.
 
+namespace GapiCodegen.Generatables
+{
+    /// <summary>
+    /// Handles types that can be simply converted from an unmanaged type to a managed type (int, byte, short, etc…​)
+    /// </summary>
+    public class SimpleGen : SimpleBase
+    {
+        private readonly string _size;
 
-namespace GapiCodegen.Generatables {
-	public class SimpleGen : SimpleBase {
-		string size_of;
+        public SimpleGen(string cName, string type, string defaultValue) : base(cName, type, defaultValue) { }
 
-		public SimpleGen (string cName, string type, string default_value) : base (cName, type, default_value) {}
-		public SimpleGen (string cName, string type, string default_value, string size_of) : base (cName, type, default_value) {
-			this.size_of = size_of;
-		}
+        public SimpleGen(string cName, string type, string defaultValue, string size) : base(cName, type, defaultValue)
+        {
+            _size = size;
+        }
 
-		public override string GenerateGetSizeOf () {
-			return size_of;
-		}
-	}
+        public override string GenerateGetSizeOf()
+        {
+            return _size;
+        }
+    }
 }
-

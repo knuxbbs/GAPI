@@ -86,24 +86,24 @@ namespace GapiCodegen
 			AddType (new SimpleGen ("gintptr", "int", "0"));
 			AddType (new SimpleGen ("guintptr", "uint", "0"));
 #else
-            AddType(new LPGen("long"));
-            AddType(new LPGen("glong"));
-            AddType(new LPGen("gintptr"));
-            AddType(new LPUGen("ulong"));
-            AddType(new LPUGen("gulong"));
-            AddType(new LPUGen("unsigned long"));
-            AddType(new LPUGen("guintptr"));
+            AddType(new Int64Gen("long"));
+            AddType(new Int64Gen("glong"));
+            AddType(new Int64Gen("gintptr"));
+            AddType(new UInt64Gen("ulong"));
+            AddType(new UInt64Gen("gulong"));
+            AddType(new UInt64Gen("unsigned long"));
+            AddType(new UInt64Gen("guintptr"));
 #endif
 
-            AddType(new LPGen("ssize_t"));
-            AddType(new LPGen("gssize"));
-            AddType(new LPUGen("size_t"));
-            AddType(new LPUGen("gsize"));
+            AddType(new Int64Gen("ssize_t"));
+            AddType(new Int64Gen("gssize"));
+            AddType(new UInt64Gen("size_t"));
+            AddType(new UInt64Gen("gsize"));
 
 #if OFF_T_8
 			AddType (new AliasGen ("off_t", "long"));
 #else
-            AddType(new LPGen("off_t"));
+            AddType(new Int64Gen("off_t"));
 #endif
 
             // string types

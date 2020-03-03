@@ -18,34 +18,40 @@
 // Free Software Foundation, Inc., 59 Temple Place - Suite 330,
 // Boston, MA 02111-1307, USA.
 
-
-using System.IO;
 using System.Xml;
 using GapiCodegen.Utils;
 
-namespace GapiCodegen.Generatables {
-	public class StructGen : StructBase {
-		
-		public StructGen (XmlElement namespaceElement, XmlElement element) : base (namespaceElement, element) {}
-		
-		public override void Generate (GenerationInfo generationInfo)
-		{
-			generationInfo.CurrentType = QualifiedName;
+namespace GapiCodegen.Generatables
+{
+    /// <summary>
+    /// Handles non-opaque 'struct' elements.
+    /// </summary>
+    public class StructGen : StructBase
+    {
+        public StructGen(XmlElement namespaceElement, XmlElement element) : base(namespaceElement, element) { }
 
-			StreamWriter sw = generationInfo.Writer = generationInfo.OpenStream (Name, Namespace);
-			base.Generate (generationInfo);
-			if (GetMethod ("GetType") == null && GetMethod ("GetGType") == null) {
-				sw.WriteLine ("\t\tprivate static GLib.GType GType {");
-				sw.WriteLine ("\t\t\tget { return GLib.GType.Pointer; }");
-				sw.WriteLine ("\t\t}");
-			}
-			sw.WriteLine ("#endregion");
-			sw.WriteLine ("\t}");
-			sw.WriteLine ("}");
-			sw.Close ();
-			generationInfo.Writer = null;
-			Statistics.StructCount++;
-		}
-	}
+        public override void Generate(GenerationInfo generationInfo)
+        {
+            generationInfo.CurrentType = QualifiedName;
+
+            var sw = generationInfo.Writer = generationInfo.OpenStream(Name, Namespace);
+
+            base.Generate(generationInfo);
+
+            if (GetMethod("GetType") == null && GetMethod("GetGType") == null)
+            {
+                sw.WriteLine("\t\tprivate static GLib.GType GType {");
+                sw.WriteLine("\t\t\tget { return GLib.GType.Pointer; }");
+                sw.WriteLine("\t\t}");
+            }
+
+            sw.WriteLine("#endregion");
+            sw.WriteLine("\t}");
+            sw.WriteLine("}");
+            sw.Close();
+
+            generationInfo.Writer = null;
+            Statistics.StructCount++;
+        }
+    }
 }
-

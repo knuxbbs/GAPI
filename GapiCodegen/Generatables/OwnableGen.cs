@@ -19,32 +19,32 @@
 // Free Software Foundation, Inc., 59 Temple Place - Suite 330,
 // Boston, MA 02111-1307, USA.
 
-
 using GapiCodegen.Interfaces;
 
-namespace GapiCodegen.Generatables {
-	public class OwnableGen : SimpleBase, IOwnable {
-		
-		public OwnableGen (string cName, string type) : base (cName, type, "null") {}
+namespace GapiCodegen.Generatables
+{
+    /// <summary>
+    /// Handles ownable types.
+    /// </summary>
+    public class OwnableGen : SimpleBase, IOwnable
+    {
+        public OwnableGen(string cName, string type) : base(cName, type, "null") { }
 
-		public override string MarshalType {
-			get { return "IntPtr"; }
-		}
+        public override string MarshalType => "IntPtr";
 
-		public override string CallByName (string varName)
-		{
-			return varName + " == null ? IntPtr.Zero : " + varName + ".Handle";
-		}
-		
-		public override string FromNative (string varName)
-		{
-			return string.Format ("new {0} ({1})", QualifiedName, varName);
-		}
-		
-		public string FromNative (string varName, bool owned)
-		{
-			return string.Format ("new {0} ({1}, {2})", QualifiedName, varName, owned ? "true" : "false");
-		}
-	}
+        public override string CallByName(string varName)
+        {
+            return $"{varName} == null ? IntPtr.Zero : {varName}.Handle";
+        }
+
+        public override string FromNative(string varName)
+        {
+            return $"new {QualifiedName} ({varName})";
+        }
+
+        public string FromNative(string varName, bool owned)
+        {
+            return $"new {QualifiedName} ({varName}, {(owned ? "true" : "false")})";
+        }
+    }
 }
-
