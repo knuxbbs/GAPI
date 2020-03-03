@@ -27,10 +27,6 @@ namespace GapiCodegen.Generatables
 		{
 		}
 
-		public override bool Union {
-			get {
-				return true;
-			}
-		}
-	}
+		public override bool Union => true;
+    }
 }

@@ -160,10 +160,10 @@ namespace GapiCodegen.Generatables
                 return;
 
             sw.WriteLine("#endregion");
-
             sw.WriteLine("\t}");
             sw.WriteLine("}");
             sw.Close();
+
             generationInfo.Writer = null;
         }
 

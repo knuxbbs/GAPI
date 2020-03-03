@@ -19,44 +19,37 @@
 // Free Software Foundation, Inc., 59 Temple Place - Suite 330,
 // Boston, MA 02111-1307, USA.
 
-
 using GapiCodegen.Interfaces;
 
-namespace GapiCodegen.Generatables {
-	public class ByRefGen : SimpleBase, IManualMarshaler {
-		
-		public ByRefGen (string cName, string type) : base (cName, type, type + ".Empty") {}
-		
-		public override string MarshalType {
-			get {
-				return "IntPtr";
-			}
-		}
+namespace GapiCodegen.Generatables
+{
+    /// <summary>
+    /// Handles struct types that must be passed into C code by reference (at the moment, only GValue/GLib.Value).
+    /// </summary>
+    public class ByRefGen : SimpleBase, IManualMarshaler
+    {
+        public ByRefGen(string cName, string type) : base(cName, type, $"{type}.Empty") { }
 
-		public override string CallByName (string varName)
-		{
-			return "native_" + varName;
-		}
-		
-		public string AllocNative ()
-		{
-			return "Marshal.AllocHGlobal (Marshal.SizeOf (typeof (" + QualifiedName + ")))";
-		}
+        public override string MarshalType => "IntPtr";
 
-		public string AllocNative (string var_name)
-		{
-			return "GLib.Marshaller.StructureToPtrAlloc (" + var_name + ")";
-		}
+        public override string CallByName(string varName)
+        {
+            return $"native_{varName}";
+        }
 
-		public override string FromNative (string varName)
-		{
-			return string.Format ("({0}) Marshal.PtrToStructure ({1}, typeof ({0}))", QualifiedName, varName);
-		}
+        public string AllocNative(string varName)
+        {
+            return $"GLib.Marshaller.StructureToPtrAlloc ({varName})";
+        }
 
-		public string ReleaseNative (string var_name)
-		{
-			return "Marshal.FreeHGlobal (" + var_name + ")";
-		}
-	}
+        public override string FromNative(string varName)
+        {
+            return string.Format("({0}) Marshal.PtrToStructure ({1}, typeof ({0}))", QualifiedName, varName);
+        }
+
+        public string ReleaseNative(string varName)
+        {
+            return $"Marshal.FreeHGlobal ({varName})";
+        }
+    }
 }
-

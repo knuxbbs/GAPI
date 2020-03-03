@@ -68,7 +68,7 @@ namespace GapiCodegen.Generatables
 
         public string QualifiedName => $"{Namespace}.{Name}";
 
-        public abstract string CallByName(string var);
+        public abstract string CallByName(string varName);
 
         public abstract string FromNative(string varName);
 

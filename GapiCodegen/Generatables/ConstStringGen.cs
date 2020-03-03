@@ -20,34 +20,32 @@
 // Free Software Foundation, Inc., 59 Temple Place - Suite 330,
 // Boston, MA 02111-1307, USA.
 
-
 using GapiCodegen.Interfaces;
 
-namespace GapiCodegen.Generatables {
-	public class ConstStringGen : SimpleBase, IManualMarshaler {
-		
-		public ConstStringGen (string cName) : base (cName, "string", "null") {}
+namespace GapiCodegen.Generatables
+{
+    /// <summary>
+    /// Handles conversion between "const char *" and System.String
+    /// </summary>
+    public class ConstStringGen : SimpleBase, IManualMarshaler
+    {
+        public ConstStringGen(string cName) : base(cName, "string", "null") { }
 
-		public override string MarshalType {
-			get {
-				return "IntPtr";
-			}
-		}
-		
-		public override string FromNative (string varName)
-		{
-			return "GLib.Marshaller.Utf8PtrToString (" + varName + ")";
-		}
+        public override string MarshalType => "IntPtr";
 
-		public string AllocNative (string managedVar)
-		{
-			return "GLib.Marshaller.StringToPtrGStrdup (" + managedVar + ")";
-		}
+        public override string FromNative(string varName)
+        {
+            return $"GLib.Marshaller.Utf8PtrToString ({varName})";
+        }
 
-		public string ReleaseNative (string nativeVar)
-		{
-			return "GLib.Marshaller.Free (" + nativeVar + ")";
-		}
-	}
+        public string AllocNative(string managedVar)
+        {
+            return $"GLib.Marshaller.StringToPtrGStrdup ({managedVar})";
+        }
+
+        public string ReleaseNative(string nativeVar)
+        {
+            return $"GLib.Marshaller.Free ({nativeVar})";
+        }
+    }
 }
-

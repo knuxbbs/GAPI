@@ -201,12 +201,12 @@ namespace GapiCodegen
                     return _element.GetAttribute(Constants.PassAs);
 
                 if (IsArray || CsType.EndsWith("IntPtr"))
-                    return "";
+                    return string.Empty;
 
                 if (CType.EndsWith("*") && (Generatable is SimpleGen || Generatable is EnumGen))
                     return "out";
 
-                return "";
+                return string.Empty;
             }
             set => _passAs = value;
         }

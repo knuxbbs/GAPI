@@ -19,298 +19,328 @@
 // Free Software Foundation, Inc., 59 Temple Place - Suite 330,
 // Boston, MA 02111-1307, USA.
 
-
 using System.IO;
 using System.Xml;
 using GapiCodegen.Interfaces;
 using GapiCodegen.Utils;
 
-namespace GapiCodegen.Generatables {
-	public class CallbackGen : GenBase, IPropertyAccessor {
+namespace GapiCodegen.Generatables
+{
+    /// <summary>
+    /// Handles 'callback' elements by creating a public delegate type for the public API (in NAME.cs),
+    /// and an internal type that wraps that delegate, to be passed as the actual unmanaged callback (in NAMESPACESharp.NAMENative.cs).
+    /// </summary>
+    public class CallbackGen : GenBase, IPropertyAccessor
+    {
+        private readonly Parameters _parameters;
+        private readonly ReturnValue _returnValue;
+        private Signature _signature;
+        private MethodBody _body;
+        private bool _valid = true;
 
-		private Parameters parms;
-		private Signature sig = null;
-		private ReturnValue retval;
-		private bool valid = true;
+        public CallbackGen(XmlElement namespaceElement, XmlElement element) : base(namespaceElement, element)
+        {
+            _parameters = new Parameters(element[Constants.Parameters])
+            {
+                HideData = true
+            };
 
-		public CallbackGen (XmlElement namespaceElement, XmlElement element) : base (namespaceElement, element) 
-		{
-			retval = new ReturnValue (element ["return-type"]);
-			parms = new Parameters (element ["parameters"]);
-			parms.HideData = true;
-		}
+            _returnValue = new ReturnValue(element[Constants.ReturnType]);
+        }
 
-		public override string DefaultValue {
-			get { return "null"; }
-		}
+        public override string MarshalType => _valid ? $"{Namespace}Sharp.{Name}Native" : string.Empty;
 
-		public override bool Validate ()
-		{
-			valid = true;
-			LogWriter log = new LogWriter (QualifiedName);
-			log.Type = QualifiedName;
-			if (!retval.Validate (log) || !parms.Validate (log)) {
-				Statistics.ThrottledCount++;
-				valid = false;
-			}
+        public override string CallByName(string varName)
+        {
+            return $"{varName}.NativeDelegate";
+        }
 
-			if (!string.IsNullOrEmpty (retval.CountParameterName))
-				retval.CountParameter = parms.GetCountParameter (retval.CountParameterName);
-			if (retval.CountParameterIndex >= 0)
-				retval.CountParameter = parms[retval.CountParameterIndex];
+        public override string FromNative(string varName)
+        {
+            return $"{Namespace}Sharp.{Name}Wrapper.GetManagedDelegate ({varName})";
+        }
 
-			return valid;
-		}
+        public override string DefaultValue => "null";
 
-		public string InvokerName {
-			get {
-				if (!valid)
-					return string.Empty;
-				return Namespace + "Sharp." + Name + "Invoker";
-			}
-		}
+        public string InvokerName => _valid ? $"{Namespace}Sharp.{Name}Invoker" : string.Empty;
 
-		public string WrapperName {
-			get {
-				if (!valid)
-					return string.Empty;
-				return Namespace + "Sharp." + Name + "Wrapper";
-			}
-		}
+        public string WrapperName => _valid ? $"{Namespace}Sharp.{Name}Wrapper" : string.Empty;
 
-		public override string MarshalType {
-			get {
-				if (valid)
-					return Namespace + "Sharp." + Name + "Native";
-				else
-					return "";
-			}
-		}
+        public override void Generate(GenerationInfo generationInfo)
+        {
+            _signature = new Signature(_parameters);
+            generationInfo.CurrentType = QualifiedName;
 
-		public override string CallByName (string varName)
-		{
-			return varName + ".NativeDelegate";
-		}
+            var sw = generationInfo.OpenStream(Name, Namespace);
+            sw.WriteLine($"namespace {Namespace} {{");
+            sw.WriteLine();
+            sw.WriteLine("\tusing System;");
+            sw.WriteLine();
+            sw.WriteLine("\t{0} delegate {1} {2}({3});", IsInternal ? "internal" : "public",
+                _returnValue.CsType, Name, _signature);
+            sw.WriteLine();
+            sw.WriteLine("}");
+            sw.Close();
 
-		public override string FromNative (string varName)
-		{
-			return Namespace + "Sharp." + Name + "Wrapper.GetManagedDelegate (" + varName + ")";
-		}
+            GenerateWrapper(generationInfo);
 
-		public void WriteAccessors (TextWriter textWriter, string indent, string fieldName)
-		{
-			textWriter.WriteLine (indent + "get {");
-			textWriter.WriteLine (indent + "\treturn " + FromNative (fieldName) + ";");
-			textWriter.WriteLine (indent + "}");
-		}
+            Statistics.CallbackCount++;
+        }
 
-		string CastFromInt (string type)
-		{
-			return type != "int" ? "(" + type + ") " : "";
-		}
+        public string GenerateWrapper(GenerationInfo generationInfo)
+        {
+            var wrapper = $"{Name}Native";
 
-		string InvokeString {
-			get {
-				if (parms.Count == 0)
-					return string.Empty;
+            if (!Validate())
+                return string.Empty;
 
-				string[] result = new string [parms.Count];
-				for (int i = 0; i < parms.Count; i++) {
-					Parameter p = parms [i];
-					IGeneratable igen = p.Generatable;
+            var log = new LogWriter(MarshalType);
+            _body = new MethodBody(_parameters, log);
 
-					if (i > 0 && parms [i - 1].IsString && p.IsLength) {
-						string string_name = parms [i - 1].Name;
-						result[i] = igen.CallByName (CastFromInt (p.CsType) + "System.Text.Encoding.UTF8.GetByteCount (" +  string_name + ")");
-						continue;
-					}
+            var savedWriter = generationInfo.Writer;
+            var sw = generationInfo.Writer = generationInfo.OpenStream(MarshalType, Namespace);
 
-					p.CallName = p.Name;
-					result [i] = p.CallString;
-					if (p.IsUserData)
-						result [i] = "__data"; 
-				}
+            sw.WriteLine($"namespace {Namespace}Sharp {{");
+            sw.WriteLine();
+            sw.WriteLine("\tusing System;");
+            sw.WriteLine("\tusing System.Runtime.InteropServices;");
+            sw.WriteLine();
+            sw.WriteLine("#region Autogenerated code");
+            //sw.WriteLine ("\t[UnmanagedFunctionPointer (CallingConvention.Cdecl)]");
+            sw.WriteLine($"\tinternal delegate {_returnValue.MarshalType} {wrapper}({_parameters.ImportSignature});");
+            sw.WriteLine();
 
-				return string.Join (", ", result);
-			}
-		}
+            GenerateInvoker(generationInfo, sw);
 
-		MethodBody body;
+            sw.WriteLine($"\tinternal class {Name}Wrapper {{");
+            sw.WriteLine();
 
-		void GenInvoker (GenerationInfo gen_info, StreamWriter sw)
-		{
-			if (sig == null)
-				sig = new Signature (parms);
+            var managedCall = new ManagedCallString(_parameters);
 
-			sw.WriteLine ("\tinternal class " + Name + "Invoker {");
-			sw.WriteLine ();
-			sw.WriteLine ("\t\t" + Name + "Native native_cb;");
-			sw.WriteLine ("\t\tIntPtr __data;");
-			sw.WriteLine ("\t\tGLib.DestroyNotify __notify;");
-			sw.WriteLine ();
-			sw.WriteLine ("\t\t~" + Name + "Invoker ()");
-			sw.WriteLine ("\t\t{");
-			sw.WriteLine ("\t\t\tif (__notify == null)");
-			sw.WriteLine ("\t\t\t\treturn;");
-			sw.WriteLine ("\t\t\t__notify (__data);");
-			sw.WriteLine ("\t\t}");
-			sw.WriteLine ();
-			sw.WriteLine ("\t\tinternal " + Name + "Invoker (" + Name + "Native native_cb) : this (native_cb, IntPtr.Zero, null) {}");
-			sw.WriteLine ();
-			sw.WriteLine ("\t\tinternal " + Name + "Invoker (" + Name + "Native native_cb, IntPtr data) : this (native_cb, data, null) {}");
-			sw.WriteLine ();
-			sw.WriteLine ("\t\tinternal " + Name + "Invoker (" + Name + "Native native_cb, IntPtr data, GLib.DestroyNotify notify)");
-			sw.WriteLine ("\t\t{");
-			sw.WriteLine ("\t\t\tthis.native_cb = native_cb;");
-			sw.WriteLine ("\t\t\t__data = data;");
-			sw.WriteLine ("\t\t\t__notify = notify;");
-			sw.WriteLine ("\t\t}");
-			sw.WriteLine ();
-			sw.WriteLine ("\t\tinternal " + QualifiedName + " Handler {");
-			sw.WriteLine ("\t\t\tget {");
-			sw.WriteLine ("\t\t\t\treturn new " + QualifiedName + "(InvokeNative);");
-			sw.WriteLine ("\t\t\t}");
-			sw.WriteLine ("\t\t}");
-			sw.WriteLine ();
-			sw.WriteLine ("\t\t" + retval.CsType + " InvokeNative (" + sig + ")");
-			sw.WriteLine ("\t\t{");
-			body.Initialize (gen_info);
-			string call = "native_cb (" + InvokeString + ")";
-			if (retval.IsVoid)
-				sw.WriteLine ("\t\t\t" + call + ";");
-			else
-				sw.WriteLine ("\t\t\t" + retval.CsType + " __result = " + retval.FromNative (call) + ";");
-			body.Finish (sw, string.Empty);
-			if (!retval.IsVoid)
-				sw.WriteLine ("\t\t\treturn __result;");
-			sw.WriteLine ("\t\t}");
-			sw.WriteLine ("\t}");
-			sw.WriteLine ();
-		}
+            sw.WriteLine($"\t\tpublic {_returnValue.MarshalType} NativeCallback ({_parameters.ImportSignature})");
+            sw.WriteLine("\t\t{");
 
-		public string GenWrapper (GenerationInfo gen_info)
-		{
-			string wrapper = Name + "Native";
-			string qualname = MarshalType;
+            var unconditional = managedCall.Unconditional("\t\t\t");
 
-			if (!Validate ())
-				return string.Empty;
+            if (unconditional.Length > 0)
+                sw.WriteLine(unconditional);
 
-			LogWriter log = new LogWriter (qualname);
-			body = new MethodBody (parms, log);
+            sw.WriteLine("\t\t\ttry {");
 
-			StreamWriter save_sw = gen_info.Writer;
-			StreamWriter sw = gen_info.Writer = gen_info.OpenStream (qualname, Namespace);
+            var setup = managedCall.Setup("\t\t\t\t");
 
-			sw.WriteLine ("namespace " + Namespace + "Sharp {");
-			sw.WriteLine ();
-			sw.WriteLine ("\tusing System;");
-			sw.WriteLine ("\tusing System.Runtime.InteropServices;");
-			sw.WriteLine ();
-			sw.WriteLine ("#region Autogenerated code");
-			//sw.WriteLine ("\t[UnmanagedFunctionPointer (CallingConvention.Cdecl)]");
-			sw.WriteLine ("\tinternal delegate " + retval.MarshalType + " " + wrapper + "(" + parms.ImportSignature + ");");
-			sw.WriteLine ();
-			GenInvoker (gen_info, sw);
-			sw.WriteLine ("\tinternal class " + Name + "Wrapper {");
-			sw.WriteLine ();
-			ManagedCallString call = new ManagedCallString (parms);
-			sw.WriteLine ("\t\tpublic " + retval.MarshalType + " NativeCallback (" + parms.ImportSignature + ")");
-			sw.WriteLine ("\t\t{");
-			string unconditional = call.Unconditional ("\t\t\t");
-			if (unconditional.Length > 0)
-				sw.WriteLine (unconditional);
-			sw.WriteLine ("\t\t\ttry {");
-			string call_setup = call.Setup ("\t\t\t\t");
-			if (call_setup.Length > 0)
-				sw.WriteLine (call_setup);
-			if (retval.CsType == "void")
-				sw.WriteLine ("\t\t\t\tmanaged ({0});", call);
-			else
-				sw.WriteLine ("\t\t\t\t{0} __ret = managed ({1});", retval.CsType, call);
-			string finish = call.Finish ("\t\t\t\t");
-			if (finish.Length > 0)
-				sw.WriteLine (finish);
-			sw.WriteLine ("\t\t\t\tif (release_on_call)\n\t\t\t\t\tgch.Free ();");
-			Parameter cnt = retval.CountParameter;
-			if (cnt != null)
-				sw.WriteLine ("\t\t\t\t{0} = {1}{2};", cnt.Name, cnt.CsType == "int" ? string.Empty : "(" + cnt.MarshalType + ")(" + cnt.CsType + ")", "__ret.Length");
-			if (retval.CsType != "void")
-				sw.WriteLine ("\t\t\t\treturn {0};", retval.ToNative ("__ret"));
+            if (setup.Length > 0)
+                sw.WriteLine(setup);
 
-			/* If the function expects one or more "out" parameters(error parameters are excluded) or has a return value different from void and bool, exceptions
-			*  thrown in the managed function have to be considered fatal meaning that an exception is to be thrown and the function call cannot not return
-			*/
-			bool fatal = retval.MarshalType != "void" && retval.MarshalType != "bool" || call.HasOutParam;
-			sw.WriteLine ("\t\t\t} catch (Exception e) {");
-			sw.WriteLine ("\t\t\t\tGLib.ExceptionManager.RaiseUnhandledException (e, " + (fatal ? "true" : "false") + ");");
-			if (fatal) {
-				sw.WriteLine ("\t\t\t\t// NOTREACHED: Above call does not return.");
-				sw.WriteLine ("\t\t\t\tthrow e;");
-			} else if (retval.MarshalType == "bool") {
-				sw.WriteLine ("\t\t\t\treturn false;");
-			}
-			sw.WriteLine ("\t\t\t}");
-			sw.WriteLine ("\t\t}");
-			sw.WriteLine ();
-			sw.WriteLine ("\t\tbool release_on_call = false;");
-			sw.WriteLine ("\t\tGCHandle gch;");
-			sw.WriteLine ();
-			sw.WriteLine ("\t\tpublic void PersistUntilCalled ()");
-			sw.WriteLine ("\t\t{");
-			sw.WriteLine ("\t\t\trelease_on_call = true;");
-			sw.WriteLine ("\t\t\tgch = GCHandle.Alloc (this);");
-			sw.WriteLine ("\t\t}");
-			sw.WriteLine ();
-			sw.WriteLine ("\t\tinternal " + wrapper + " NativeDelegate;");
-			sw.WriteLine ("\t\t" + Namespace + "." + Name + " managed;");
-			sw.WriteLine ();
-			sw.WriteLine ("\t\tpublic " + Name + "Wrapper (" + Namespace + "." + Name + " managed)");
-			sw.WriteLine ("\t\t{");
-			sw.WriteLine ("\t\t\tthis.managed = managed;");
-			sw.WriteLine ("\t\t\tif (managed != null)");
-			sw.WriteLine ("\t\t\t\tNativeDelegate = new " + wrapper + " (NativeCallback);");
-			sw.WriteLine ("\t\t}");
-			sw.WriteLine ();
-			sw.WriteLine ("\t\tpublic static " + Namespace + "." + Name + " GetManagedDelegate (" + wrapper + " native)");
-			sw.WriteLine ("\t\t{");
-			sw.WriteLine ("\t\t\tif (native == null)");
-			sw.WriteLine ("\t\t\t\treturn null;");
-			sw.WriteLine ("\t\t\t" + Name + "Wrapper wrapper = (" + Name + "Wrapper) native.Target;");
-			sw.WriteLine ("\t\t\tif (wrapper == null)");
-			sw.WriteLine ("\t\t\t\treturn null;");
-			sw.WriteLine ("\t\t\treturn wrapper.managed;");
-			sw.WriteLine ("\t\t}");
-			sw.WriteLine ("\t}");
-			sw.WriteLine ("#endregion");
-			sw.WriteLine ("}");
-			sw.Close ();
-			gen_info.Writer = save_sw;
-			return Namespace + "Sharp." + Name + "Wrapper";
-		}
-		
-		public override void Generate (GenerationInfo generationInfo)
-		{
-			generationInfo.CurrentType = QualifiedName;
+            if (_returnValue.CsType == "void")
+                sw.WriteLine("\t\t\t\tmanaged ({0});", managedCall);
+            else
+                sw.WriteLine("\t\t\t\t{0} __ret = managed ({1});", _returnValue.CsType, managedCall);
 
-			sig = new Signature (parms);
+            var finish = managedCall.Finish("\t\t\t\t");
 
-			StreamWriter sw = generationInfo.OpenStream (Name, Namespace);
+            if (finish.Length > 0)
+                sw.WriteLine(finish);
 
-			sw.WriteLine ("namespace " + Namespace + " {");
-			sw.WriteLine ();
-			sw.WriteLine ("\tusing System;");
-			sw.WriteLine ();
-			sw.WriteLine ("\t{0} delegate " + retval.CsType + " " + Name + "(" + sig.ToString() + ");", IsInternal ? "internal" : "public");
-			sw.WriteLine ();
-			sw.WriteLine ("}");
+            sw.WriteLine("\t\t\t\tif (release_on_call)\n\t\t\t\t\tgch.Free ();");
 
-			sw.Close ();
-			
-			GenWrapper (generationInfo);
+            var countParameter = _returnValue.CountParameter;
 
-			Statistics.CallbackCount++;
-		}
-	}
+            if (countParameter != null)
+                sw.WriteLine("\t\t\t\t{0} = {1}{2};", countParameter.Name,
+                    countParameter.CsType == "int"
+                        ? string.Empty
+                        : $"({countParameter.MarshalType})({countParameter.CsType})", "__ret.Length");
+
+            if (_returnValue.CsType != "void")
+                sw.WriteLine("\t\t\t\treturn {0};", _returnValue.ToNative("__ret"));
+
+            /*
+             If the function expects one or more "out" parameters (error parameters are excluded)
+             or has a return value different from void and bool, exceptions thrown in the managed function
+             have to be considered fatal meaning that an exception is to be thrown and the function call cannot not return
+            */
+
+            var fatal = _returnValue.MarshalType != "void" && _returnValue.MarshalType != "bool" || managedCall.HasOutParam;
+
+            sw.WriteLine("\t\t\t} catch (Exception e) {");
+            sw.WriteLine($"\t\t\t\tGLib.ExceptionManager.RaiseUnhandledException (e, {(fatal ? "true" : "false")});");
+            
+            if (fatal)
+            {
+                sw.WriteLine("\t\t\t\t// NOTREACHED: Above call does not return.");
+                sw.WriteLine("\t\t\t\tthrow e;");
+            }
+            else if (_returnValue.MarshalType == "bool")
+            {
+                sw.WriteLine("\t\t\t\treturn false;");
+            }
+
+            sw.WriteLine("\t\t\t}");
+            sw.WriteLine("\t\t}");
+            sw.WriteLine();
+            sw.WriteLine("\t\tbool release_on_call = false;");
+            sw.WriteLine("\t\tGCHandle gch;");
+            sw.WriteLine();
+            sw.WriteLine("\t\tpublic void PersistUntilCalled ()");
+            sw.WriteLine("\t\t{");
+            sw.WriteLine("\t\t\trelease_on_call = true;");
+            sw.WriteLine("\t\t\tgch = GCHandle.Alloc (this);");
+            sw.WriteLine("\t\t}");
+            sw.WriteLine();
+            sw.WriteLine($"\t\tinternal {wrapper} NativeDelegate;");
+            sw.WriteLine($"\t\t{Namespace}.{Name} managed;");
+            sw.WriteLine();
+            sw.WriteLine($"\t\tpublic {Name}Wrapper ({Namespace}.{Name} managed)");
+            sw.WriteLine("\t\t{");
+            sw.WriteLine("\t\t\tthis.managed = managed;");
+            sw.WriteLine("\t\t\tif (managed != null)");
+            sw.WriteLine($"\t\t\t\tNativeDelegate = new {wrapper} (NativeCallback);");
+            sw.WriteLine("\t\t}");
+            sw.WriteLine();
+            sw.WriteLine($"\t\tpublic static {Namespace}.{Name} GetManagedDelegate ({wrapper} native)");
+            sw.WriteLine("\t\t{");
+            sw.WriteLine("\t\t\tif (native == null)");
+            sw.WriteLine("\t\t\t\treturn null;");
+            sw.WriteLine($"\t\t\t{Name}Wrapper wrapper = ({Name}Wrapper) native.Target;");
+            sw.WriteLine("\t\t\tif (wrapper == null)");
+            sw.WriteLine("\t\t\t\treturn null;");
+            sw.WriteLine("\t\t\treturn wrapper.managed;");
+            sw.WriteLine("\t\t}");
+            sw.WriteLine("\t}");
+            sw.WriteLine("#endregion");
+            sw.WriteLine("}");
+            sw.Close();
+
+            generationInfo.Writer = savedWriter;
+
+            return $"{Namespace}Sharp.{Name}Wrapper";
+        }
+
+        private void GenerateInvoker(GenerationInfo generationInfo, StreamWriter sw)
+        {
+            if (_signature == null)
+                _signature = new Signature(_parameters);
+
+            sw.WriteLine($"\tinternal class {Name}Invoker {{");
+            sw.WriteLine();
+            sw.WriteLine($"\t\t{Name}Native native_cb;");
+            sw.WriteLine("\t\tIntPtr __data;");
+            sw.WriteLine("\t\tGLib.DestroyNotify __notify;");
+            sw.WriteLine();
+            sw.WriteLine($"\t\t~{Name}Invoker ()");
+            sw.WriteLine("\t\t{");
+            sw.WriteLine("\t\t\tif (__notify == null)");
+            sw.WriteLine("\t\t\t\treturn;");
+            sw.WriteLine("\t\t\t__notify (__data);");
+            sw.WriteLine("\t\t}");
+            sw.WriteLine();
+            sw.WriteLine(
+                $"\t\tinternal {Name}Invoker ({Name}Native native_cb) : this (native_cb, IntPtr.Zero, null) {{}}");
+            sw.WriteLine();
+            sw.WriteLine(
+                $"\t\tinternal {Name}Invoker ({Name}Native native_cb, IntPtr data) : this (native_cb, data, null) {{}}");
+            sw.WriteLine();
+            sw.WriteLine($"\t\tinternal {Name}Invoker ({Name}Native native_cb, IntPtr data, GLib.DestroyNotify notify)");
+            sw.WriteLine("\t\t{");
+            sw.WriteLine("\t\t\tthis.native_cb = native_cb;");
+            sw.WriteLine("\t\t\t__data = data;");
+            sw.WriteLine("\t\t\t__notify = notify;");
+            sw.WriteLine("\t\t}");
+            sw.WriteLine();
+            sw.WriteLine($"\t\tinternal {QualifiedName} Handler {{");
+            sw.WriteLine("\t\t\tget {");
+            sw.WriteLine($"\t\t\t\treturn new {QualifiedName}(InvokeNative);");
+            sw.WriteLine("\t\t\t}");
+            sw.WriteLine("\t\t}");
+            sw.WriteLine();
+            sw.WriteLine($"\t\t{_returnValue.CsType} InvokeNative ({_signature})");
+            sw.WriteLine("\t\t{");
+
+            _body.Initialize(generationInfo);
+
+            var call = $"native_cb ({InvokeString})";
+
+            sw.WriteLine(_returnValue.IsVoid
+                ? $"\t\t\t{call};"
+                : $"\t\t\t{_returnValue.CsType} __result = {_returnValue.FromNative(call)};");
+
+
+            _body.Finish(sw, string.Empty);
+            
+            if (!_returnValue.IsVoid)
+                sw.WriteLine("\t\t\treturn __result;");
+
+            sw.WriteLine("\t\t}");
+            sw.WriteLine("\t}");
+            sw.WriteLine();
+        }
+
+        private string InvokeString
+        {
+            get
+            {
+                if (_parameters.Count == 0)
+                    return string.Empty;
+
+                var result = new string[_parameters.Count];
+                for (var i = 0; i < _parameters.Count; i++)
+                {
+                    var parameter = _parameters[i];
+                    var generatable = parameter.Generatable;
+
+                    if (i > 0 && _parameters[i - 1].IsString && parameter.IsLength)
+                    {
+                        result[i] = generatable.CallByName(
+                            $"{CastFromInt(parameter.CsType)}System.Text.Encoding.UTF8.GetByteCount ({_parameters[i - 1].Name})");
+
+                        continue;
+                    }
+
+                    parameter.CallName = parameter.Name;
+                    result[i] = parameter.CallString;
+                    if (parameter.IsUserData)
+                        result[i] = "__data";
+                }
+
+                return string.Join(", ", result);
+            }
+        }
+
+        private static string CastFromInt(string type)
+        {
+            return type != "int" ? $"({type}) " : string.Empty;
+        }
+
+        public override bool Validate()
+        {
+            _valid = true;
+
+            var log = new LogWriter(QualifiedName)
+            {
+                Type = QualifiedName
+            };
+
+            if (!_returnValue.Validate(log) || !_parameters.Validate(log))
+            {
+                Statistics.ThrottledCount++;
+                _valid = false;
+            }
+
+            if (!string.IsNullOrEmpty(_returnValue.CountParameterName))
+                _returnValue.CountParameter = _parameters.GetCountParameter(_returnValue.CountParameterName);
+
+            if (_returnValue.CountParameterIndex >= 0)
+                _returnValue.CountParameter = _parameters[_returnValue.CountParameterIndex];
+
+            return _valid;
+        }
+
+        public void WriteAccessors(TextWriter textWriter, string indent, string fieldName)
+        {
+            textWriter.WriteLine($"{indent}get {{");
+            textWriter.WriteLine($"{indent}\treturn {FromNative(fieldName)};");
+            textWriter.WriteLine($"{indent}}}");
+        }
+    }
 }
-

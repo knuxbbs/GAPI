@@ -102,7 +102,7 @@ namespace GapiCodegen {
 
 				if (gen is CallbackGen) {
 					CallbackGen cbgen = gen as CallbackGen;
-					string wrapper = cbgen.GenWrapper(gen_info);
+					string wrapper = cbgen.GenerateWrapper(gen_info);
 
 					int closure = i + 1;
 					if (p.Closure >= 0)

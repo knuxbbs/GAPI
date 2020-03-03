@@ -18,175 +18,232 @@
 // Free Software Foundation, Inc., 59 Temple Place - Suite 330,
 // Boston, MA 02111-1307, USA.
 
-
 using System.Collections.Generic;
+using System.Linq;
+using System.Text;
 using GapiCodegen.Generatables;
 using GapiCodegen.Interfaces;
 
-namespace GapiCodegen {
-	public class ManagedCallString {
-		
-		IDictionary<Parameter, bool> parms = new Dictionary<Parameter, bool> ();
-		IList<Parameter> dispose_params = new List<Parameter> ();
-		string error_param = null;
-		string user_data_param = null;
-		string destroy_param = null;
+namespace GapiCodegen
+{
+    /// <summary>
+    /// Represents a call to a managed method from a method that has unmanaged data.
+    /// </summary>
+    public class ManagedCallString
+    {
+        private readonly IDictionary<Parameter, bool> _paramDictionary = new Dictionary<Parameter, bool>();
+        private readonly IList<Parameter> _disposeParams = new List<Parameter>();
+        private readonly string _errorParam;
+        private readonly string _userDataParam;
+        private readonly string _destroyParam;
 
-		public ManagedCallString (Parameters parms)
-		{
-			for (int i = 0; i < parms.Count; i ++) {
-				Parameter p = parms [i];
-				if (p.IsLength && i > 0 && parms [i-1].IsString) 
-					continue;
-				else if (p.Scope == "notified") {
-					user_data_param = parms[i+1].Name;
-					destroy_param = parms[i+2].Name;
-					i += 2;
-				} else if ((p.IsCount || p.IsUserData) && parms.IsHidden (p)) {
-					user_data_param = p.Name;
-					continue;
-				} else if (p is ErrorParameter) {
-					error_param = p.Name;
-					continue;
-				}
+        public ManagedCallString(Parameters parameters)
+        {
+            for (var i = 0; i < parameters.Count; i++)
+            {
+                var parameter = parameters[i];
 
-				bool special = false;
-				if (p.PassAs != string.Empty && p.Name != p.FromNative (p.Name))
-					special = true;
-				else if (p.Generatable is CallbackGen)
-					special = true;
+                if (parameter.IsLength && i > 0 && parameters[i - 1].IsString)
+                    continue;
 
-				this.parms.Add (p, special);
+                if (parameter.Scope == "notified")
+                {
+                    _userDataParam = parameters[i + 1].Name;
+                    _destroyParam = parameters[i + 2].Name;
+                    i += 2;
+                }
+                else if ((parameter.IsCount || parameter.IsUserData) && parameters.IsHidden(parameter))
+                {
+                    _userDataParam = parameter.Name;
+                    continue;
+                }
+                else if (parameter is ErrorParameter)
+                {
+                    _errorParam = parameter.Name;
+                    continue;
+                }
 
-				if (p.IsOwnable) {
-					dispose_params.Add (p);
-				}
-			}
-		}
+                var isSpecial =
+                    parameter.PassAs != string.Empty && parameter.Name != parameter.FromNative(parameter.Name) ||
+                    parameter.Generatable is CallbackGen;
 
-		public bool HasOutParam {
-			get {
-				foreach (Parameter p in parms.Keys) {
-					if (p.PassAs == "out")
-						return true;
-				}
-				return false;
-			}
-		}
+                _paramDictionary.Add(parameter, isSpecial);
 
-		public bool HasDisposeParam {
-			get { return dispose_params.Count > 0; }
-		}
+                if (parameter.IsOwnable)
+                {
+                    _disposeParams.Add(parameter);
+                }
+            }
+        }
 
-		public string Unconditional (string indent) {
-			string ret = "";
-			if (error_param != null)
-				ret = indent + error_param + " = IntPtr.Zero;\n";
+        public bool HasOutParam
+        {
+            get
+            {
+                return _paramDictionary.Keys.Any(parameter => parameter.PassAs == "out");
+            }
+        }
 
-			foreach (Parameter p in dispose_params) {
-				ret += indent + p.CsType + " my" + p.Name + " = null;\n";
-			}
-			return ret;
-		}
+        public bool HasDisposeParam => _disposeParams.Count > 0;
 
-		public string Setup (string indent)
-		{
-			string ret = "";
+        public string Unconditional(string indent)
+        {
+            var ret = new StringBuilder();
 
-			foreach (Parameter p in parms.Keys) {
-				if (parms [p] == false) {
-					continue;
-				}
+            if (_errorParam != null)
+                ret.Append($"{indent}{_errorParam} = IntPtr.Zero;\n");
 
-				IGeneratable igen = p.Generatable;
+            foreach (var parameter in _disposeParams)
+            {
+                ret.Append($"{indent}{parameter.CsType} my{parameter.Name} = null;\n");
+            }
 
-				if (igen is CallbackGen) {
-					if (user_data_param == null)
-						ret += indent + string.Format ("{0} {1}_invoker = new {0} ({1});\n", (igen as CallbackGen).InvokerName, p.Name);
-					else if (destroy_param == null)
-						ret += indent + string.Format ("{0} {1}_invoker = new {0} ({1}, {2});\n", (igen as CallbackGen).InvokerName, p.Name, user_data_param);
-					else
-						ret += indent + string.Format ("{0} {1}_invoker = new {0} ({1}, {2}, {3});\n", (igen as CallbackGen).InvokerName, p.Name, user_data_param, destroy_param);
-				} else {
-					ret += indent + igen.QualifiedName + " my" + p.Name;
-					if (p.PassAs == "ref")
-						ret += " = " + p.FromNative (p.Name);
-					ret += ";\n";
-				}
-			}
+            return ret.ToString();
+        }
 
-			foreach (Parameter p in dispose_params) {
-				ret += indent + "my" + p.Name + " = " + p.FromNative (p.Name) + ";\n";
-			}
+        public string Setup(string indent)
+        {
+            var ret = new StringBuilder();
 
-			return ret;
-		}
+            foreach (var parameter in _paramDictionary.Keys)
+            {
+                //Verify if parameter is special
+                if (_paramDictionary[parameter] == false)
+                {
+                    continue;
+                }
 
-		public override string ToString ()
-		{
-			if (parms.Count < 1)
-				return "";
+                var generatable = parameter.Generatable;
 
-			string[] result = new string [parms.Count];
+                if (generatable is CallbackGen callbackGen)
+                {
+                    string format;
 
-			int i = 0;
-			foreach (Parameter p in parms.Keys) {
-				result [i] = p.PassAs == "" ? "" : p.PassAs + " ";
-				if (p.Generatable is CallbackGen) {
-					result [i] += p.Name + "_invoker.Handler";
-				} else {
-					if (parms [p] || dispose_params.Contains(p)) {
-						// Parameter was declared and marshalled earlier
-						result [i] +=  "my" + p.Name;
-					} else {
-						result [i] +=  p.FromNative (p.Name);
-					}
-				}
-				i++;
-			}
+                    if (_userDataParam == null)
+                        format = string.Format("{0} {1}_invoker = new {0} ({1});\n", callbackGen.InvokerName,
+                            parameter.Name);
+                    else if (_destroyParam == null)
+                        format = string.Format("{0} {1}_invoker = new {0} ({1}, {2});\n",
+                            callbackGen.InvokerName, parameter.Name, _userDataParam);
+                    else
+                        format = string.Format("{0} {1}_invoker = new {0} ({1}, {2}, {3});\n",
+                            callbackGen.InvokerName, parameter.Name, _userDataParam, _destroyParam);
 
-			return string.Join (", ", result);
-		}
+                    ret.Append($"{indent}{format}");
+                }
+                else
+                {
+                    ret.Append($"{indent}{generatable.QualifiedName} my{parameter.Name}");
 
-		public string Finish (string indent)
-		{
-			string ret = "";
+                    if (parameter.PassAs == "ref")
+                        ret.Append($" = {parameter.FromNative(parameter.Name)}");
 
-			foreach (Parameter p in parms.Keys) {
-				if (parms [p] == false) {
-					continue;
-				}
+                    ret.Append(";\n");
+                }
+            }
 
-				IGeneratable igen = p.Generatable;
+            foreach (var p in _disposeParams)
+            {
+                ret.Append($"{indent}my{p.Name} = {p.FromNative(p.Name)};\n");
+            }
 
-				if (igen is CallbackGen)
-					continue;
-				else if (igen is StructBase || igen is ByRefGen)
-					ret += indent + string.Format ("if ({0} != IntPtr.Zero) System.Runtime.InteropServices.Marshal.StructureToPtr (my{0}, {0}, false);\n", p.Name);
-				else if (igen is IManualMarshaler)
-					ret += string.Format ("{0}{1} = {2};", indent, p.Name, (igen as IManualMarshaler).AllocNative ("my" + p.Name));
-				else
-					ret += indent + p.Name + " = " + igen.CallByName ("my" + p.Name) + ";\n";
-			}
+            return ret.ToString();
+        }
 
-			return ret;
-		}
+        public string Finish(string indent)
+        {
+            var ret = new StringBuilder();
 
-		public string DisposeParams (string indent)
-		{
-			string ret = "";
+            foreach (var parameter in _paramDictionary.Keys)
+            {
+                //Verify if parameter is special
+                if (_paramDictionary[parameter] == false)
+                {
+                    continue;
+                }
 
-			foreach (Parameter p in dispose_params) {
-				string name = "my" + p.Name;
-				string disp_name = "disposable_" + p.Name;
+                var generatable = parameter.Generatable;
+                string format;
 
-				ret += indent + "var " + disp_name + " = " + name + " as IDisposable;\n";
-				ret += indent + "if (" + disp_name + " != null)\n";
-				ret += indent + "\t" + disp_name + ".Dispose ();\n";
-			}
+                switch (generatable)
+                {
+                    case CallbackGen _:
+                        continue;
+                    case StructBase _:
+                    case ByRefGen _:
+                        format = string.Format(
+                            "if ({0} != IntPtr.Zero) System.Runtime.InteropServices.Marshal.StructureToPtr (my{0}, {0}, false);\n",
+                            parameter.Name);
+                        break;
 
-			return ret;
-		}
-	}
+                    case IManualMarshaler marshaler:
+                        format = $"{parameter.Name} = {marshaler.AllocNative($"my{parameter.Name}")};";
+                        break;
+
+                    default:
+                        format = $"{parameter.Name} = {generatable.CallByName($"my{parameter.Name}")};\n";
+                        break;
+                }
+
+                ret.Append($"{indent}{format}");
+            }
+
+            return ret.ToString();
+        }
+
+        public string DisposeParams(string indent)
+        {
+            var ret = new StringBuilder();
+
+            foreach (var p in _disposeParams)
+            {
+                var name = $"my{p.Name}";
+                var disposableName = $"disposable_{p.Name}";
+
+                ret.Append($"{indent}var {disposableName} = {name} as IDisposable;\n");
+                ret.Append($"{indent}if ({disposableName} != null)\n");
+                ret.Append($"{indent}\t{disposableName}.Dispose ();\n");
+            }
+
+            return ret.ToString();
+        }
+
+        public override string ToString()
+        {
+            if (_paramDictionary.Count < 1)
+                return string.Empty;
+
+            var result = new string[_paramDictionary.Count];
+
+            var i = 0;
+
+            foreach (var parameter in _paramDictionary.Keys)
+            {
+                result[i] = parameter.PassAs == string.Empty
+                    ? string.Empty
+                    : $"{parameter.PassAs} ";
+
+                if (parameter.Generatable is CallbackGen)
+                {
+                    result[i] += $"{parameter.Name}_invoker.Handler";
+                }
+                else
+                {
+                    if (_paramDictionary[parameter] || _disposeParams.Contains(parameter))
+                    {
+                        // Parameter was declared and marshalled earlier
+                        result[i] += $"my{parameter.Name}";
+                    }
+                    else
+                    {
+                        result[i] += parameter.FromNative(parameter.Name);
+                    }
+                }
+
+                i++;
+            }
+
+            return string.Join(", ", result);
+        }
+    }
 }
-

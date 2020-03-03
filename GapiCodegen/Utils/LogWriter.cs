@@ -48,11 +48,6 @@ namespace GapiCodegen.Utils
 
         public string Type { get; set; }
 
-        public void Warn(string format, params object[] args)
-        {
-            Warn(string.Format(format, args));
-        }
-
         public void Warn(string warning)
         {
             if (_level > 0)

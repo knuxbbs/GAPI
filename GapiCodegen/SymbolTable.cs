@@ -170,7 +170,7 @@ namespace GapiCodegen
             AddType(new SimpleGen("GHookList", "GLib.HookList", "null",
                 "GLib.HookList.abi_info.Size"));
 
-            //TODO: FIXME: These ought to be handled properly.
+            //TODO: These ought to be handled properly.
             AddType(new SimpleGen("GC", "IntPtr", "IntPtr.Zero"));
             AddType(new SimpleGen("GError", "IntPtr", "IntPtr.Zero"));
             AddType(new SimpleGen("GMemChunk", "IntPtr", "IntPtr.Zero"));
